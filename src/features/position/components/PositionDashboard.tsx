@@ -4,6 +4,7 @@ import { HealthMeter } from '#/components/ui/HealthMeter'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { EmptyState } from '#/components/ui/states/EmptyState'
+import { ErrorState } from '#/components/ui/states/ErrorState'
 import { usePosition } from '../hooks/usePosition'
 import type { BorrowRow, SupplyRow } from '../types'
 
@@ -58,7 +59,7 @@ function BorrowItem({ row }: { row: BorrowRow }) {
 
 /** The connected user's position (U6, R9, R12, R24, R29). */
 export function PositionDashboard({ empty = false }: { empty?: boolean }) {
-  const { data, isLoading } = usePosition({ empty })
+  const { data, isLoading, error } = usePosition({ empty })
 
   if (isLoading) {
     return (
@@ -66,6 +67,12 @@ export function PositionDashboard({ empty = false }: { empty?: boolean }) {
         <LoadingCard />
         <LoadingCard />
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <ErrorState message="Could not load your position. Try again shortly." />
     )
   }
 
