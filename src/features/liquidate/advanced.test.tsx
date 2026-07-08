@@ -1,8 +1,20 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
+import { QueryWrapper } from '#/test/utils'
+import { MOCK_MARKETS } from '#/features/markets/mock'
 import { LiquidatePanel } from './components/LiquidatePanel'
 import { CreatePoolPanel } from '#/features/pool-create/components/CreatePoolPanel'
 
+vi.mock('wagmi', () => ({
+  useAccount: () => ({
+    address: '0x1111111111111111111111111111111111111111',
+    chainId: 177,
+    isConnected: true,
+  }),
+  useSwitchChain: () => ({ switchChainAsync: vi.fn() }),
+}))
+
+const market = MOCK_MARKETS[0]
 const target = {
   borrower: '0x742d35Cc6634C0532925a3b844Bc9e7595f89f3A',
   debtUsd: 3200,
@@ -10,9 +22,17 @@ const target = {
   healthFactor: 0.95,
 }
 
+function renderLiquidate(healthFactor = target.healthFactor) {
+  return render(
+    <QueryWrapper>
+      <LiquidatePanel market={market} target={{ ...target, healthFactor }} />
+    </QueryWrapper>,
+  )
+}
+
 describe('LiquidatePanel', () => {
   it('is actionable (behind an acknowledgement) for an unhealthy borrower', () => {
-    render(<LiquidatePanel target={target} />)
+    renderLiquidate(0.95)
     const button = screen.getByRole('button', { name: /Liquidate/ })
     expect(button.hasAttribute('disabled')).toBe(true)
     fireEvent.click(screen.getByRole('checkbox'))
@@ -20,7 +40,7 @@ describe('LiquidatePanel', () => {
   })
 
   it('is not actionable for a healthy borrower', () => {
-    render(<LiquidatePanel target={{ ...target, healthFactor: 2.0 }} />)
+    renderLiquidate(2.0)
     expect(screen.queryByRole('button', { name: /Liquidate/ })).toBeNull()
     expect(screen.getByText(/healthy and can’t be liquidated/)).toBeTruthy()
   })
@@ -28,7 +48,11 @@ describe('LiquidatePanel', () => {
 
 describe('CreatePoolPanel', () => {
   it('blocks a below-minimum seed and enables at/above the minimum once acknowledged', () => {
-    render(<CreatePoolPanel minSeed={1000} />)
+    render(
+      <QueryWrapper>
+        <CreatePoolPanel minSeed={1000} />
+      </QueryWrapper>,
+    )
     const button = screen.getByRole('button', { name: /Create pool/ })
     const seed = screen.getByLabelText('Seed liquidity')
 

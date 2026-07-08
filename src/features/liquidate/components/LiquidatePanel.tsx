@@ -3,6 +3,9 @@ import { formatUsd } from '#/lib/format'
 import { HealthMeter } from '#/components/ui/HealthMeter'
 import { ActionButton } from '#/components/ui/ActionButton'
 import { truncateAddress } from '#/components/ui/wallet/AccountPill'
+import type { Address } from '#/lib/contracts'
+import type { MarketView } from '#/features/markets/types'
+import { useLiquidate } from '../hooks/useLiquidate'
 
 export interface LiquidationTarget {
   borrower: string
@@ -12,11 +15,19 @@ export interface LiquidationTarget {
 }
 
 /**
- * Liquidate an unhealthy position (U16, R7, R13, R30). Advanced-gated, guided
- * framing, and a deliberate acknowledgement; a healthy borrower is not actionable.
+ * Liquidate an unhealthy position (U13, R22, R30). Guided framing + a deliberate
+ * acknowledgement; the hook's pre-flight is the real gate (a healthy borrower is
+ * never actionable), and the over-approval is reset after a successful seize.
  */
-export function LiquidatePanel({ target }: { target: LiquidationTarget }) {
+export function LiquidatePanel({
+  market,
+  target,
+}: {
+  market: MarketView
+  target: LiquidationTarget
+}) {
   const [confirmed, setConfirmed] = useState(false)
+  const { state, liquidate } = useLiquidate(market)
   const liquidatable = target.healthFactor < 1
   const receiveUsd = target.debtUsd * (1 + target.bonusPct / 100)
 
@@ -65,9 +76,10 @@ export function LiquidatePanel({ target }: { target: LiquidationTarget }) {
             I understand I’m repaying this debt to seize the collateral.
           </label>
           <ActionButton
-            state="idle"
+            state={state}
             idleLabel="Liquidate"
             disabled={!confirmed}
+            onClick={() => void liquidate(target.borrower as Address)}
           />
         </>
       ) : (
