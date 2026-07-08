@@ -16,9 +16,9 @@ execution: code
 - **Objective:** Build the frontend dApp that drives the Paboxo money market on HashKey Chain mainnet (177), covering every user action, on a swappable data layer — starting from a thin technical foundation so UI builds against stable hooks and real data wires in later.
 - **Product authority:** ahmadzz (owner of this frontend).
 - **Open blockers (external, not FE code):**
-  - ABIs provided by the user after contract (re)deploy — until then no real on-chain wiring.
   - Indexer/subgraph not yet deployed — indexer reads mocked until then.
-  - `PaboxoCCIPSender` must be deployed on Base for the cross-chain flow.
+  - `PaboxoCCIPSender` must be deployed on Base for the cross-chain flow (still not deployed).
+  - _Resolved 2026-07-08:_ contracts are live on 177 with **known addresses**, and **ABIs are extractable** from the SC repo (`forge build`). Real addresses + 12 ABIs now live in the FE at `src/lib/contracts/` — see **Deployment Reconciliation** below. On-chain wiring is no longer ABI-blocked.
 
 ## Product Contract
 
@@ -58,7 +58,7 @@ The repository is currently a bare TanStack Start scaffold (React 19, TanStack R
 - R3. Contract addresses and ABIs are supplied as injected configuration; no address or ABI is hardcoded inside business logic.
 - R4. `indexerAdapter` ships mock-backed and is swappable to the real GraphQL subgraph with no change to hooks or UI.
 - R5. `chainAdapter` also ships mock-backed until ABIs are supplied, then swaps to live viem reads/writes with no change to hooks or UI.
-- R6. The market set is hardcoded to the four known pools (pxWHSK, pxWBTC, pxWETH, cross-chain pxWHSK — all borrow pxUSDT) until indexer-driven discovery exists; a pool created via R25 is reachable directly by its creator until discovery lands.
+- R6. The market set is hardcoded to the four known pools (pxWHSK, pxWBTC, pxWETH, cross-chain pxWHSK — all borrow pxUSDT) until indexer-driven discovery exists; a pool created via R25 is reachable directly by its creator until discovery lands. Real pool addresses + per-market LTV/liquidation-threshold are recorded in **Deployment Reconciliation** and wired at `src/lib/contracts/markets.ts`.
 - R7. The two-address rule is honored: writes and `HelperUtils.*` target the `LendingPool`; `IsHealthy.*`, `InterestRateModel.*`, and accounting-state reads target the `router` (= `LendingPool.router()`).
 - R8. Token decimals are read per token via `decimals()`, never hardcoded (pxUSDT 6, others 18/8).
 
@@ -160,8 +160,8 @@ flowchart TB
 
 ### Dependencies / Assumptions
 
-- Paboxo contracts are live on HashKey mainnet 177 (per `INTEGRATION-FRONTEND.md`); addresses may change on redeploy, so they are treated as config.
-- ABIs are provided by the user after (re)deploy — real on-chain wiring is blocked until then; both adapters start mocked and the chain adapter wires to real mainnet once ABIs arrive.
+- Paboxo contracts are live on HashKey mainnet 177 with **known deployed addresses** (see Deployment Reconciliation); they remain injected config so a redeploy is a config swap.
+- **ABIs are available** — extracted from the SC repo `forge build` into `src/lib/contracts/abis/` (12 contracts). Real on-chain wiring is no longer ABI-blocked; both adapters still start mocked and swap to real behind the hooks (R2, R5).
 - ABIs and the subgraph arrive on independent timelines (ABIs first, subgraph later); the interim window is handled by R29.
 - The indexer/subgraph does not yet exist; `indexerAdapter` is mock-backed until it is deployed.
 - Live pool totals (`totalSupplyAssets`, `totalBorrowAssets/Shares`) are not emitted as events — they are read from the router via RPC, not the indexer.
@@ -184,7 +184,8 @@ flowchart TB
 - `references/paboxo-sc/docs/INTEGRATION-INDEXER.md` — event/entity reference for the indexer adapter and mock shape; confirms pool totals are RPC-only.
 - `references/paboxo-sc/docs/INTEGRATION-BACKEND.md` — keeper roles the FE depends on (price freshness).
 - `references/paboxo-sc/src/LendingPoolRouter.sol`, `LendingPoolFactory.sol` — verified `minAmountSupplyLiquidity` applies to initial liquidity only (empty pool / pool creation).
-- `references/paboxo-sc/broadcast/` — deployed addresses per script run (until ABIs are provided directly).
+- `references/paboxo-sc/docs/DEPLOYMENT.md` — canonical live addresses (mainnet 177), per-market IRM tiers, price feeds, cross-chain (reconciled into the FE 2026-07-08); `broadcast/` holds per-run deploy artifacts.
+- `references/paboxo-sc/docs/AI.md` — AI Copilot / operator authorization layer (opt-in `factory.setOperator`).
 
 ### Appendix — Formulas & Units
 
@@ -195,6 +196,50 @@ Verbatim from `INTEGRATION-FRONTEND.md §6`, captured here so implementers apply
 - **Utilization (WAD, 1e18 = 100%):** `totalBorrowAssets × 1e18 / totalSupplyAssets` (0 when `totalSupplyAssets == 0`).
 - **Available pool liquidity:** `totalSupplyAssets − totalBorrowAssets` (gates borrow/withdraw).
 - **Units — do not mix:** `HelperUtils.*` returns borrow-token decimals; `IsHealthy.*` returns 1e18 USD; price feeds return 8-dp USD (`1e8 = $1`).
+
+### Deployment Reconciliation — mainnet 177 (2026-07-08)
+
+Reconciled against `references/paboxo-sc/docs/DEPLOYMENT.md` (live on HashKey Chain 177; **mock-asset path** — pxUSDT/pxWHSK/pxWBTC/pxWETH are Paboxo-minted mocks, no real USDT; cross-chain over real Chainlink CCIP). Addresses + 12 ABIs are wired in the FE at `src/lib/contracts/` (`chains.ts`, `addresses.ts`, `markets.ts`, `abis/`).
+
+**Core singletons**
+
+| Contract | Address |
+|---|---|
+| LendingPoolFactory (proxy) | `0xF0D1c69cc148db2437131a5A736d77FD6fa20B47` |
+| TokenDataStream | `0x007F735Fd070DeD4B0B58D430c392Ff0190eC20F` |
+| IsHealthy | `0xb3B458299864487520d3B0cEDf9F5cfF2629a27B` |
+| InterestRateModel | `0x175867CAF278eB0610F216F3E0a6E671f2382E22` |
+| PaboxoEmitter | `0x290CAcb1bc6e35797Db6243a1C10C12F16d93370` |
+| PaboxoCCIPReceiver | `0x3D94E3385FeD1c8ad3f026b9aF3033DbbA3e7282` |
+| Chainlink CCIP Router | `0xf2Fd62c083F3BF324e99ce157D1a42d7EbA77f1d` |
+
+Per-market `router` (accounting reads) = `LendingPool(pool).router()` resolved at runtime; `HelperUtils` is discovered via factory/broadcast — neither is a fixed address (left runtime-resolved in config, per the two-address rule / R7).
+
+**Tokens:** pxUSDT `0x4852…7aAa` (6dp), pxWHSK `0xc3be…A65b` (18dp), pxWBTC `0x718b…bA13` (8dp), pxWETH `0x4663…7eCE` (18dp).
+
+**Markets (collateral / pxUSDT) + IRM tier** — rates are **per-market** (two-slope, keyed by router), not global:
+
+| Market | Pool | LTV | Liq. threshold | opt. util | rate@opt | max rate | reserve | seed |
+|---|---|---|---|---|---|---|---|---|
+| pxWHSK | `0xB456…6406` | 70% | 75% | 75% | 7% | 120% | 15% | $0.05 |
+| pxWBTC | `0xC6FA…7270` | 80% | 85% | 85% | 4% | 75% | 10% | $60,000 |
+| pxWETH | `0xF1a0…942D` | 80% | 85% | 85% | 4% | 75% | 10% | $3,000 |
+| pxWHSK-xchain | `0xE1AC…0DFd` | 65% | 72% | 70% | 8% | 150% | 15% | $0.05 |
+
+Seed prices are the deploy values; the backend keeper moves Push feeds live (pxWHSK `0x54f6…2Be3`, pxWBTC `0xec32…9c7e`, pxWETH `0x3870…07B8`, pxWHSK-xchain `0x6449…638b`; pxUSDT Constant $1 `0xB9B3…6f6f`).
+
+**Cross-chain (real CCIP, Base ↔ HashKey):** PaboxoBridgeToken pxWHSK — HashKey `0x7c9c…918A`, Base `0x4024…549B`; BurnMintTokenPool — HashKey `0x5e66…6546`, Base `0x1b0C…d601`; selectors HashKey→Base `15971525489660198786`, Base→HashKey `7613811247471741961`. **The Base-side sender (`supplyToHashKey`/`quote`) is not deployed yet** → R26 stays mock-UI-first.
+
+**New deployment facts folded in** (supersede stale points in the assumptions above):
+
+- **Per-market IRM tiers** (table) replace any single/global rate assumption; each market now has an LTV **and** a distinct **liquidation threshold** — the FE previously modeled a single `lltv`, now carried as `ltv` + `liqThreshold` in `src/lib/contracts/markets.ts`.
+- **AI Copilot / operator layer** (`AI.md`): a user may opt-in authorize an operator via `factory.setOperator` for hands-off rebalancing on access-controlled functions, revocable — no new contract privileges. A possible future FE surface (authorize/revoke operator); **out of scope for the current delivery.**
+- **HSP settlement:** supply/repay may settle through an HSP `pay()` producing a Receipt (+ optional KYC Attestation) — relevant only if the FE later surfaces settlement receipts. Out of scope now.
+- **`HelperUtils`** is the discovered read contract for `getMaxBorrowAmount` / `getCollateralValue` / `getAddressPosition` / `isLiquidatable` (borrow-token decimals) — resolve its address via the factory, not a constant.
+- **Price staleness** (`TokenDataStream.latestRoundData` reverts `PriceStale` past 1h) is already covered by R9/R10; the keeper keeps feeds fresh.
+- **Repay modes B/C** confirmed to use a DEX (DODO-style) fee tier `fee: 1000` (0.1%) with `amountOutMinimum` — unchanged in scope (R20).
+
+**Product Contract preservation:** unchanged — this reconciliation corrects stale external facts and records the real addresses/ABIs; no R/U/AE scope changed.
 
 ---
 

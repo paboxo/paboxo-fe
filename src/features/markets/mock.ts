@@ -1,70 +1,81 @@
+import { MARKETS } from '#/lib/contracts'
+import type { MarketConfig } from '#/lib/contracts'
 import type { MarketView } from './types'
 
 /**
- * Placeholder market data (U11). Stands in for the integration plan's
- * `useMarkets` hook so the UI is viewable now; the real adapter swaps in behind
- * this same shape with no component change.
+ * Preview market data (U11). The market identity + risk params are the REAL
+ * deployment (addresses, decimals, LTV/liq-threshold, IRM tier, seed price)
+ * from src/lib/contracts; only the rate/utilization/TVL numbers below are
+ * illustrative placeholders the integration plan's RPC reads will replace.
  */
-export const MOCK_MARKETS: MarketView[] = [
-  {
-    id: 'pxwhsk',
-    collateralSymbol: 'pxWHSK',
-    collateralDecimals: 18,
-    borrowSymbol: 'pxUSDT',
-    supplyApy: 5.24,
-    rewardsApy: 0.8,
-    borrowApr: 7.8,
+interface Display {
+  utilization: number
+  tvlUsd: number
+  availableLiquidityUsd: number
+  rewardsApy?: number
+}
+
+const DISPLAY: Record<string, Display> = {
+  pxwhsk: {
     utilization: 61,
     tvlUsd: 4_200_000,
     availableLiquidityUsd: 1_600_000,
-    lltv: 80,
-    oracle: 'TokenDataStream · WHSK/USD',
-    priceUsd: 1.08,
+    rewardsApy: 0.8,
   },
-  {
-    id: 'pxwbtc',
-    collateralSymbol: 'pxWBTC',
-    collateralDecimals: 8,
-    borrowSymbol: 'pxUSDT',
-    supplyApy: 3.91,
-    borrowApr: 6.2,
+  pxwbtc: {
     utilization: 44,
     tvlUsd: 9_800_000,
     availableLiquidityUsd: 5_500_000,
-    lltv: 75,
-    oracle: 'TokenDataStream · WBTC/USD',
-    priceUsd: 96_400,
   },
-  {
-    id: 'pxweth',
-    collateralSymbol: 'pxWETH',
-    collateralDecimals: 18,
-    borrowSymbol: 'pxUSDT',
-    supplyApy: 4.4,
-    borrowApr: 6.9,
+  pxweth: {
     utilization: 52,
     tvlUsd: 3_100_000,
     availableLiquidityUsd: 1_480_000,
-    lltv: 78,
-    oracle: 'TokenDataStream · WETH/USD',
-    priceUsd: 3_320,
   },
-  {
-    id: 'pxwhsk-base',
-    collateralSymbol: 'pxWHSK',
-    collateralDecimals: 18,
-    borrowSymbol: 'pxUSDT',
-    supplyApy: 5.61,
-    rewardsApy: 1.2,
-    borrowApr: 8.1,
+  'pxwhsk-xchain': {
     utilization: 66,
     tvlUsd: 1_240_000,
     availableLiquidityUsd: 420_000,
-    lltv: 80,
-    oracle: 'TokenDataStream · WHSK/USD',
-    priceUsd: 1.08,
+    rewardsApy: 1.2,
   },
-]
+}
+
+function toView(market: MarketConfig): MarketView {
+  const display = DISPLAY[market.id]
+  // Illustrative borrow APR ≈ the market's rate-at-optimal; supply APY derived
+  // from it, the shown utilization, and the reserve factor (same shape the real
+  // InterestRateModel uses).
+  const borrowApr = market.rateAtOptimal
+  const supplyApy = Number(
+    (
+      borrowApr *
+      (display.utilization / 100) *
+      (1 - market.reserveFactor / 100)
+    ).toFixed(2),
+  )
+  return {
+    id: market.id,
+    collateralSymbol: market.collateralSymbol,
+    collateralDecimals: market.collateralDecimals,
+    borrowSymbol: market.borrowSymbol,
+    supplyApy,
+    rewardsApy: display.rewardsApy,
+    borrowApr,
+    utilization: display.utilization,
+    tvlUsd: display.tvlUsd,
+    availableLiquidityUsd: display.availableLiquidityUsd,
+    lltv: market.ltv,
+    liqThreshold: market.liqThreshold,
+    oracle: `TokenDataStream · ${market.collateralSymbol}/USD`,
+    priceUsd: market.priceSeedUsd,
+    poolAddress: market.pool,
+    collateralAddress: market.collateralAddress,
+    oracleFeed: market.oracleFeed,
+    crossChain: market.crossChain,
+  }
+}
+
+export const MOCK_MARKETS: MarketView[] = MARKETS.map(toView)
 
 export interface MockQuery<T> {
   data: T

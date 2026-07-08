@@ -29,12 +29,13 @@ export interface PositionView {
 
 /** Placeholder position (U12). The integration plan's `usePosition` replaces this. */
 export const MOCK_POSITION: PositionView = {
-  netWorthUsd: 18_204,
+  // pxWHSK priced at the real deploy seed ($0.05); values below are coherent with it.
+  netWorthUsd: 9_758,
   netApy: 4.12,
   healthFactor: 2.41,
   liquidationAsset: 'pxWHSK',
-  currentPrice: 1.08,
-  liquidationPrice: 0.84,
+  currentPrice: 0.05,
+  liquidationPrice: 0.039,
   supplies: [
     {
       symbol: 'pxUSDT',
@@ -47,7 +48,7 @@ export const MOCK_POSITION: PositionView = {
       symbol: 'pxWHSK',
       balance: 8_200_000_000_000_000_000_000n,
       decimals: 18,
-      valueUsd: 8_856,
+      valueUsd: 410,
       apy: 0,
     },
   ],

@@ -15,6 +15,7 @@ export function MarketCard({ market }: { market: MarketView }) {
           </div>
           <div className="text-sm text-[var(--sea-ink-soft)]">
             Supply · earn {market.borrowSymbol}
+            {market.crossChain ? ' · cross-chain' : ''}
           </div>
         </div>
       </div>
