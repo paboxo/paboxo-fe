@@ -5,6 +5,7 @@ date: 2026-07-06
 topic: paboxo-frontend-integration
 artifact_contract: ce-unified-plan/v1
 artifact_readiness: implementation-ready
+deepened: 2026-07-08
 product_contract_source: ce-brainstorm
 execution: code
 ---
@@ -252,13 +253,38 @@ Seed prices are the deploy values; the backend keeper moves Push feeds live (pxW
 - KTD1. **Provider stack (grounded in Reown docs).** `@reown/appkit` + `@reown/appkit-adapter-wagmi` + `wagmi` (v3) + `@tanstack/react-query`. Build the config outside React: `WagmiAdapter({ networks, projectId, ssr: true, customRpcUrls })` and `createAppKit({ adapters, networks, defaultNetwork, projectId, metadata, customRpcUrls })`. HashKey 177 is a **custom network** (`defineChain`, RPC `https://mainnet.hsk.xyz`), not a built-in. SSR reads the request `Cookie` header via `getWebRequest()`/`getHeaders()` from `@tanstack/react-start/server` in the `src/routes/__root.tsx` loader (NOT from `RootDocument`, which is a synchronous shell with no request access), feeds it to `cookieToInitialState(wagmiAdapter.wagmiConfig, cookie)`, and passes the result as `WagmiProvider initialState`; the adapter is configured with `cookieStorage` so `ssr:true` round-trips. This mechanism is **spike-first in U1** — if TanStack Start does not expose the request cookie at SSR render, fall back to client-only wagmi init. `projectId` comes from the Reown dashboard via env.
 - KTD2. **Data seam = per-domain adapter interfaces behind typed hooks.** Domain hooks (`useMarkets`, `usePosition`, `useSupplyLiquidity`, …) depend only on injected adapter interfaces, never on viem/GraphQL directly. A single registry resolves the implementation (mock vs live) from `VITE_DATA_MODE`. This is the seam the whole build is organized around (R2).
 - KTD3. **Two adapter families, both starting as mock modules.** `chainAdapter` (viem reads/writes, incl. live pool totals + all pre-flight reads) and `indexerAdapter` (GraphQL over TanStack Query: history, cumulative volume, discovery). Each ships a `.mock.ts` returning fixtures and a real impl swapped in later (R4, R5, R13).
-- KTD4. **Addresses + ABIs are injected config.** `src/lib/contracts/` holds address maps and typed ABI modules read from config; a redeploy is a config edit. ABIs are placeholders until the user supplies them post-deploy — the mock `chainAdapter` needs no ABI (R3).
+- KTD4. **Addresses + ABIs are injected config — now built.** `src/lib/contracts/` holds the real HashKey-177 address maps, the 4 markets with IRM tiers, and 12 ABIs extracted from the SC `forge build`; a redeploy is a config edit. ABIs are **no longer placeholders** (see Refresh 2026-07-08). Each market's `router` is resolved at runtime via `LendingPool.router()` (R3, R7).
 - KTD5. **One shared pre-flight gate.** `src/lib/tx/preflight.ts` reads every revert-condition value live from `chainAdapter` and returns `{ enabled, reason }`, consumed by every write hook — encodes R9/R10 (health, max-borrow, debt, allowance, price freshness, available liquidity, mint-≥1-share, swap slippage).
 - KTD6. **Mock mechanism: plain TS mock adapter modules** (fixtures behind the interface), toggled by `VITE_DATA_MODE=mock|live`. No MSW — mocking lives at the adapter boundary, not the network. Mock write failures throw **viem-shaped errors** (`shortMessage` + `cause` chain) so the revert-reason UI path is exercised in mock mode rather than first discovered at U18; both adapters feed a shared `normalizeRevertReason()` boundary.
 - KTD7. **Formulas centralized and unit-tested.** `src/lib/math/` implements the Appendix formulas (debt, supply value, utilization, available liquidity, decimals) once; adapters and hooks reuse them so agents don't re-derive them (addresses the review's formula-explicitness concern).
 - KTD8. **Write wrapper enforces guards, parameterized by target chain.** `src/lib/tx/useWriteAction.ts` takes a `requiredChainId` (default `177`; Base `8453` for the CCIP path), verifies wallet connected + on that chain (prompt switch), runs the pre-flight gate, drives the tx state machine (pending/confirmed/failed/**rejected**) with an **extension point for the R27 post-confirm async destination-event state** ("bridging / pending on HashKey"), and invalidates TanStack Query keys on success (R15, R16, R27, R28). Every write path — including cross-chain — composes this one wrapper; none is bespoke.
 - KTD9. **Interim window handled at the query layer.** When `chainAdapter` is live but `indexerAdapter` is still mock, indexer-backed surfaces are badged placeholder or optimistically patched with the just-sent tx (R29).
 - KTD10. **Real writes use `@wagmi/core` imperative actions, not React hooks.** `chainAdapter` writes are implemented with `writeContract` / `simulateContract` / `waitForTransactionReceipt` from `@wagmi/core` bound to the `WagmiConfig` — never the `useWriteContract` hook — so every write stays an awaitable adapter method behind the interface. Reads likewise use `@wagmi/core` / viem `readContract`, not `useReadContract`. This is what keeps the mock↔real swap free of hook/UI changes.
+
+### Refresh (2026-07-08) — re-sequenced after the UI kit + contracts config landed
+
+Two upstream deliveries changed this plan's remaining scope:
+
+1. **The UI presentational layer is built** by the app UI/UX plan (`docs/plans/2026-07-08-001-feat-paboxo-app-ui-ux-plan.html`) — the Tide shell, markets/dashboard/market-detail surfaces, the action panel, the health/tx/money-input/wallet/state primitives, and per-feature placeholder hooks (`useMarkets`, `usePosition`) that return mock data behind stable shapes (`src/features/*/mock.ts`). The kit is **data-agnostic** (no adapter imports). So this plan no longer *builds* those UI units — it **wires the existing components to real data**.
+2. **The contracts config + ABIs are built** at `src/lib/contracts/` — real addresses, the 4 markets with IRM tiers, and 12 ABIs from `forge build`. U2's config/ABI work is largely done and the "ABIs are placeholders" assumption is retired.
+
+**Re-sequenced remaining work** (the data / provider / adapter layer + wiring the existing UI):
+
+- **True starting point — foundation:** U1 (provider: wagmi v3 + viem + Reown AppKit + wallet connect), U2 (**finish only** `env.ts` / `VITE_DATA_MODE` + the domain market map reading from `src/lib/contracts` — addresses/ABIs already exist), U3 (adapter interfaces + registry + mock/live resolution), U4 (on-chain accounting math in `src/lib/math/` + live `preflight.ts`; **reuse** the existing `src/lib/tx/revertReason.ts` and `src/lib/risk/health.ts`, don't re-create).
+- **Read/Display (U5–U8, U20) → data-wiring:** replace each feature's placeholder mock hook with the real adapter-backed hook (TanStack Query over `chainAdapter` / `indexerAdapter`). The components already exist — wire `VITE_DATA_MODE=live` to real reads; do not rebuild UI.
+- **Write core + advanced (U9–U17) → wiring the existing action surfaces:** `useWriteAction` (KTD8) drives the **existing** `src/lib/tx/txState.ts` + `TxStatus`/`ActionButton` and the existing `ActionPanel`/`MoneyInput`/`ProjectedHealth`; cross-chain (U17) wires the existing `CrossChainTracker`.
+- **Swap-to-real (U18) is UNBLOCKED** — ABIs exist, so the real viem `chainAdapter` can be built now. Only U19 (real subgraph) stays blocked on the indexer deploy; the Base `PaboxoCCIPSender` stays undeployed (R26 mock-first).
+
+**Unit status at refresh** (no U-IDs renumbered; the unit sections below keep their original text — this note governs the re-scoping):
+
+| Unit(s) | Status | What changed |
+|---|---|---|
+| U2 (config/ABIs) | ~done | Real addresses + 12 ABIs at `src/lib/contracts/`; remaining = `env.ts` + `VITE_DATA_MODE` + domain market map. |
+| U5–U8, U20 (read/display UI) | UI done → wire data | Components + placeholder hooks exist; build the real hooks/adapters behind them. |
+| U9–U17 (write/advanced UI) | UI done → wire data | Action panel + tx primitives exist; build `useWriteAction` + per-action hooks feeding them. |
+| U4 (`revertReason`, health) | partial | `normalizeRevertReason` + the tx state machine + health model exist; the on-chain math + live preflight remain. |
+| U18 (chainAdapter real) | unblocked | ABIs exist; no longer waits on user-supplied ABIs. |
+| U19 (indexer real), Base sender | still blocked | Subgraph + Base `PaboxoCCIPSender` not deployed. |
 
 ### High-Level Technical Design
 
@@ -351,14 +377,14 @@ src/
 - **Verification:** app boots with providers mounted, no hydration mismatch; connect modal opens and reports the connected chain.
 
 #### U2. Config, contracts & network map
-- **Goal:** Hold addresses, ABIs, and env as injected config so a redeploy is a config swap.
+- **Goal:** Hold addresses, ABIs, and env as injected config so a redeploy is a config swap. **Status (2026-07-08): the address maps + 12 ABIs are already built at `src/lib/contracts/`** — this unit now finishes only the env layer and the domain-facing market map.
 - **Requirements:** R3, R6, R7.
 - **Dependencies:** U1.
-- **Files:** `src/lib/contracts/addresses.ts`, `src/lib/contracts/abis/` (typed placeholders), `src/lib/contracts/index.ts`, `src/lib/config/env.ts`.
-- **Approach:** Address maps for core singletons + the 4 markets (from Product Contract table), each market carrying pool + derived `router` (resolved via `LendingPool.router()` at runtime, KTD/R7). ABI modules exported as typed placeholders to be replaced when the user supplies them. `VITE_DATA_MODE` read here.
-- **Patterns to follow:** none local; keep pure data + types.
-- **Test scenarios:** `Covers R6.` address map exposes exactly the 4 known markets with distinct pxWHSK vs cross-chain pxWHSK collateral addresses; unknown market key throws.
-- **Verification:** importing config in mock mode requires no ABI; types compile.
+- **Files:** `src/lib/config/env.ts` (new — `VITE_DATA_MODE`, `projectId`, optional RPC override), and the existing `src/lib/contracts/` (`addresses.ts`, `markets.ts`, `abis/`, `chains.ts`).
+- **Approach:** `src/lib/contracts` already exposes core singletons + the 4 markets (real pool addresses, collateral/decimals, oracle feed, IRM tier) and the 12 ABIs; each market's `router` resolves at runtime via `LendingPool.router()` (R7). This unit adds `env.ts` and, if the adapter layer needs it, a thin domain map bridging `src/lib/contracts` to the adapter interfaces.
+- **Patterns to follow:** the existing typed config in `src/lib/contracts` (the `0x${string}` address type and interface-annotated maps).
+- **Test scenarios:** `Covers R6.` the market config exposes exactly the 4 markets with distinct same-chain vs cross-chain pxWHSK collateral addresses (already enforced by the config's types); `env.ts` throws a clear error when `projectId` is missing.
+- **Verification:** `env.ts` gates `VITE_DATA_MODE`; `src/lib/contracts` imports with no ABI requirement in mock mode and real ABIs available for live mode; types compile.
 
 #### U3. Data seam: adapter interfaces, registry & hook scaffold
 - **Goal:** Establish the swappable seam — interfaces, a mode registry, and empty domain hooks — so UI can build against stable hooks.
@@ -556,10 +582,10 @@ Mock mode (`VITE_DATA_MODE=mock`) is the default verification environment throug
 
 ## Definition of Done
 
-- Foundation (U1–U4): providers mount SSR-clean, wallet connects on 177, the adapter seam + registry + math/pre-flight are in place and unit-tested — reviewable before any UI.
+- Foundation (U1–U4): providers mount SSR-clean, wallet connects on 177, the adapter seam + registry + math/pre-flight are in place and unit-tested — reviewable before any UI. (Config + 12 ABIs are pre-built at `src/lib/contracts/`; U2 finishes only `env.ts` / `VITE_DATA_MODE`. Reuse the existing `src/lib/tx/revertReason.ts` + `src/lib/risk/health.ts`.)
 - Read/display (U5–U8): markets, dashboard, history, and all loading/empty/error + wallet-gating states render from mocks.
 - Write core (U9–U12): supply, borrow, repay-A, withdraw run through the guarded write wrapper (connect + chain-177 + pre-flight + exact approval + tx state + invalidation) against mocks.
 - Advanced (U13–U15): liquidation, delegation + allowance management, and create-pool complete against mocks. Repay modes B/C (U16) are a **follow-on delivery** gated on the DODO fee-tier/slippage Outstanding Question — not part of this delivery's DoD.
 - Cross-chain (U17): mock UI shows the two-hop async bridging state.
-- Real wiring (U18–U19) is explicitly deferred until the user supplies ABIs and the subgraph deploys; the swap requires no hook/UI change.
+- Real wiring: **U18 (chainAdapter → real viem) is unblocked** — ABIs now exist at `src/lib/contracts/abis/`, so the real chain adapter can be built without waiting on user-supplied ABIs. U19 (indexerAdapter → real subgraph) stays deferred until the subgraph deploys; the swap requires no hook/UI change. The Read/Display and Write units (U5–U17, U20) wire the **already-built** UI components to real hooks rather than building UI (see Refresh 2026-07-08).
 - All Verification Contract gates pass in mock mode; Product Contract R1–R30 are each advanced by at least one unit; no unlimited approvals and no write bypasses the expected-chain + pre-flight guards.
