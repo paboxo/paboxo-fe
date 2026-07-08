@@ -44,9 +44,7 @@ export function AppHeader({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden sm:block">
-            <DensityToggle />
-          </span>
+          <DensityToggle />
           {networkStatus}
           {account ?? connect}
           <ThemeToggle />
