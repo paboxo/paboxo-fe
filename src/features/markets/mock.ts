@@ -65,7 +65,8 @@ export const MOCK_MARKETS: MarketView[] = [
 export interface MockQuery<T> {
   data: T
   isLoading: boolean
-  error: null
+  /** Widened so the error branch stays live — the real hook can reject. */
+  error: unknown
 }
 
 export function useMarkets(): MockQuery<MarketView[]> {
