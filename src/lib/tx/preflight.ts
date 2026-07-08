@@ -30,6 +30,11 @@ export function isPriceStale(updatedAt: number, nowSeconds: number): boolean {
   return nowSeconds - updatedAt > PRICE_MAX_AGE_SECONDS
 }
 
+/** Current unix seconds — the `nowSeconds` a caller feeds the freshness checks. */
+export function unixNow(): number {
+  return Math.floor(Date.now() / 1000)
+}
+
 // ---- primitive checks ----
 
 const positiveAmount = (amount: bigint): PreflightResult =>
@@ -63,6 +68,23 @@ export function preflightSupply(ctx: SupplyContext): PreflightResult {
     mints > 0n
       ? OK
       : block('Amount too small to mint a share — increase the amount'),
+  )
+}
+
+export interface SupplyCollateralContext {
+  amount: bigint
+  priceUpdatedAt: number
+  nowSeconds: number
+}
+
+/** Supply collateral: positive amount on a fresh price (collateral is not
+ *  share-minted, so the mint-≥1-share rule does not apply). */
+export function preflightSupplyCollateral(
+  ctx: SupplyCollateralContext,
+): PreflightResult {
+  return firstBlock(
+    positiveAmount(ctx.amount),
+    freshPrice(ctx.priceUpdatedAt, ctx.nowSeconds),
   )
 }
 

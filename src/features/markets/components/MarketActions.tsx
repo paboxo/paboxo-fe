@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import type { TxState } from '#/lib/tx/txState'
+import { SupplyPanel } from '#/features/supply/components/SupplyPanel'
 import type { MarketView } from '../types'
 
 type ActionKey = 'supply' | 'borrow' | 'repay' | 'withdraw'
@@ -80,21 +81,26 @@ export function MarketActions({ market }: { market: MarketView }) {
         ))}
       </div>
 
-      <ActionPanel
-        title={`${label} ${symbol}`}
-        idleLabel={label}
-        symbol={symbol}
-        decimals={decimals}
-        priceUsd={priceUsd}
-        maxTokens={1000}
-        currentHf={DEMO_CURRENT_HF}
-        projectHf={projectHf}
-        preflight={preflight}
-        reviewApy={active === 'supply' ? market.supplyApy : market.borrowApr}
-        networkFeeUsd={0.42}
-        txState={txState}
-        onSubmit={submit}
-      />
+      {active === 'supply' ? (
+        <SupplyPanel market={market} />
+      ) : (
+        // Borrow/Repay/Withdraw stay demo-wired until U11/U12 land their hooks.
+        <ActionPanel
+          title={`${label} ${symbol}`}
+          idleLabel={label}
+          symbol={symbol}
+          decimals={decimals}
+          priceUsd={priceUsd}
+          maxTokens={1000}
+          currentHf={DEMO_CURRENT_HF}
+          projectHf={projectHf}
+          preflight={preflight}
+          reviewApy={market.borrowApr}
+          networkFeeUsd={0.42}
+          txState={txState}
+          onSubmit={submit}
+        />
+      )}
     </div>
   )
 }
