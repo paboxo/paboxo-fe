@@ -4,6 +4,7 @@ import { DensityContext } from './useDensity'
 import type { Density } from './useDensity'
 
 const STORAGE_KEY = 'density'
+const DESKTOP_QUERY = '(min-width: 640px)'
 
 function readStored(): Density {
   if (typeof window === 'undefined') return 'simple'
@@ -17,21 +18,32 @@ function applyDensity(density: Density) {
 }
 
 /**
- * Provides the Simple↔Pro density and mirrors it onto `data-density` so CSS can
- * reveal Pro-only fields in place (U9, R7). Persisted like the theme preference.
+ * Density is responsive (U9, R7): desktop always renders the full **Pro** layout,
+ * and the Simple/Pro choice is a **mobile-only** affordance (default Simple on
+ * small screens). The toggle is therefore only shown on mobile.
  */
 export function DensityProvider({ children }: { children: ReactNode }) {
-  const [density, setDensityState] = useState<Density>('simple')
+  // The user's mobile preference; ignored on desktop (which is always Pro).
+  const [stored, setStored] = useState<Density>('simple')
+  const [isDesktop, setIsDesktop] = useState(true)
 
   useEffect(() => {
-    const initial = readStored()
-    setDensityState(initial)
-    applyDensity(initial)
+    setStored(readStored())
+    const mq = window.matchMedia(DESKTOP_QUERY)
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
   }, [])
 
+  const density: Density = isDesktop ? 'pro' : stored
+
+  useEffect(() => {
+    applyDensity(density)
+  }, [density])
+
   const setDensity = useCallback((next: Density) => {
-    setDensityState(next)
-    applyDensity(next)
+    setStored(next)
     try {
       window.localStorage.setItem(STORAGE_KEY, next)
     } catch {
@@ -40,8 +52,8 @@ export function DensityProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const toggle = useCallback(() => {
-    setDensity(density === 'pro' ? 'simple' : 'pro')
-  }, [density, setDensity])
+    setDensity(stored === 'pro' ? 'simple' : 'pro')
+  }, [stored, setDensity])
 
   const value = useMemo(
     () => ({ density, setDensity, toggle }),
