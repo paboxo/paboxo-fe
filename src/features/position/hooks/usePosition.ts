@@ -19,12 +19,10 @@ import {
   wadToPercent,
 } from '#/lib/math'
 import type { QueryResult } from '#/features/shared/query'
+import { PREVIEW_ADDRESS } from '#/features/shared/preview'
 import type { BorrowRow, PositionView, SupplyRow } from '../types'
 
 const BORROW_DECIMALS = TOKENS.pxUSDT.decimals
-
-/** The mock adapter ignores the address; live mode passes the wallet address. */
-const PREVIEW_ADDRESS: Address = '0x0000000000000000000000000000000000000001'
 
 interface MarketPosition {
   supplies: SupplyRow[]
