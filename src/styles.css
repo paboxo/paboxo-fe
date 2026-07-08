@@ -1,10 +1,11 @@
-
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 :root {
@@ -29,7 +30,7 @@
   --hero-b: rgba(47, 106, 74, 0.2);
 }
 
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   --sea-ink: #d7ece8;
   --sea-ink-soft: #afcdc8;
   --lagoon: #60d7cf;
@@ -52,7 +53,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme='light']) {
     --sea-ink: #d7ece8;
     --sea-ink-soft: #afcdc8;
     --lagoon: #60d7cf;
@@ -75,6 +76,40 @@
   }
 }
 
+/* Semantic risk scale + motion tokens (U1). Warm, never neon; escalate by
+   weight/motion, not saturation. Color is never the sole signal (pair with
+   label + shape in components). */
+:root {
+  --safe: #2f6a4a;
+  --safe-soft: rgba(47, 106, 74, 0.12);
+  --caution: #b8791f;
+  --caution-soft: rgba(184, 121, 31, 0.14);
+  --danger: #c0503f;
+  --danger-soft: rgba(192, 80, 63, 0.14);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
+  --dur-slow: 380ms;
+}
+:root[data-theme='dark'] {
+  --safe: #6ec89a;
+  --safe-soft: rgba(110, 200, 154, 0.16);
+  --caution: #e0b055;
+  --caution-soft: rgba(224, 176, 85, 0.16);
+  --danger: #e58a76;
+  --danger-soft: rgba(229, 138, 118, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --safe: #6ec89a;
+    --safe-soft: rgba(110, 200, 154, 0.16);
+    --caution: #e0b055;
+    --caution-soft: rgba(224, 176, 85, 0.16);
+    --danger: #e58a76;
+    --danger-soft: rgba(229, 138, 118, 0.16);
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -93,28 +128,45 @@ body {
   background:
     radial-gradient(1100px 620px at -8% -10%, var(--hero-a), transparent 58%),
     radial-gradient(1050px 620px at 112% -12%, var(--hero-b), transparent 62%),
-    radial-gradient(720px 380px at 50% 115%, rgba(79, 184, 178, 0.1), transparent 68%),
-    linear-gradient(180deg, color-mix(in oklab, var(--sand) 68%, white) 0%, var(--foam) 44%, var(--bg-base) 100%);
+    radial-gradient(
+      720px 380px at 50% 115%,
+      rgba(79, 184, 178, 0.1),
+      transparent 68%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--sand) 68%, white) 0%,
+      var(--foam) 44%,
+      var(--bg-base) 100%
+    );
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -1;
   opacity: 0.28;
   background:
-    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.8), transparent 34%),
-    radial-gradient(circle at 78% 26%, rgba(79, 184, 178, 0.2), transparent 42%),
+    radial-gradient(
+      circle at 20% 15%,
+      rgba(255, 255, 255, 0.8),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 78% 26%,
+      rgba(79, 184, 178, 0.2),
+      transparent 42%
+    ),
     radial-gradient(circle at 42% 82%, rgba(47, 106, 74, 0.14), transparent 36%);
 }
 
 body::after {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
@@ -161,7 +213,7 @@ pre code {
 }
 
 .display-title {
-  font-family: "Fraunces", Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
 }
 
 .island-shell {
@@ -175,7 +227,11 @@ pre code {
 }
 
 .feature-card {
-  background: linear-gradient(165deg, color-mix(in oklab, var(--surface-strong) 93%, white 7%), var(--surface));
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--surface-strong) 93%, white 7%),
+    var(--surface)
+  );
   box-shadow:
     0 1px 0 var(--inset-glint) inset,
     0 18px 34px rgba(30, 90, 72, 0.1),
@@ -255,7 +311,10 @@ pre code {
   background: color-mix(in oklab, var(--surface-strong) 88%, white 12%);
   color: var(--sea-ink);
   outline: none;
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
 }
 
 .demo-input,
@@ -393,7 +452,10 @@ pre code {
 button,
 .island-shell,
 a {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
     transform 180ms ease;
 }
 
@@ -414,7 +476,7 @@ a {
 }
 
 .nav-link::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   bottom: -6px;
@@ -462,3 +524,81 @@ a {
   }
 }
 
+/* Tabular mono numerals for all financial figures (U1, R3). */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Tide density hook (U1, KTD3). Simple is the default; Pro reveals reserved
+   fields in place. Components prefer the useDensity() hook; these utilities
+   are a convenience for static reveal/hide. */
+.pro-only {
+  display: none;
+}
+[data-density='pro'] .pro-only {
+  display: revert;
+}
+[data-density='pro'] .simple-only {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in {
+    animation: none;
+  }
+}
+
+/* Accessibility pass (U17, R27/R28). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Honor reduced motion globally, not just for the intro animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Reduce transparency: opaque surfaces + no blur (OS preference, or manual
+   opt-in via data-reduce-transparency="true"). Keeps text contrast on glass. */
+@media (prefers-reduced-transparency: reduce) {
+  :root:not([data-reduce-transparency='false']) {
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+  }
+  :root[data-theme='dark']:not([data-reduce-transparency='false']),
+  :root:not([data-theme='light']):not([data-reduce-transparency='false']) {
+    --surface: #122025;
+    --surface-strong: #0f1b1f;
+  }
+}
+:root[data-reduce-transparency='true'] {
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+}
+:root[data-theme='dark'][data-reduce-transparency='true'] {
+  --surface: #122025;
+  --surface-strong: #0f1b1f;
+}
+:root[data-reduce-transparency='true'] .island-shell,
+:root[data-reduce-transparency='true'] .feature-card,
+:root[data-reduce-transparency='true'] .demo-panel,
+:root[data-reduce-transparency='true'] .demo-card {
+  backdrop-filter: none;
+}

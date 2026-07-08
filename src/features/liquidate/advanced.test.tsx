@@ -1,0 +1,43 @@
+import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { LiquidatePanel } from './components/LiquidatePanel'
+import { CreatePoolPanel } from '#/features/pool-create/components/CreatePoolPanel'
+
+const target = {
+  borrower: '0x742d35Cc6634C0532925a3b844Bc9e7595f89f3A',
+  debtUsd: 3200,
+  bonusPct: 8,
+  healthFactor: 0.95,
+}
+
+describe('LiquidatePanel', () => {
+  it('is actionable (behind an acknowledgement) for an unhealthy borrower', () => {
+    render(<LiquidatePanel target={target} />)
+    const button = screen.getByRole('button', { name: /Liquidate/ })
+    expect(button.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect(button.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('is not actionable for a healthy borrower', () => {
+    render(<LiquidatePanel target={{ ...target, healthFactor: 2.0 }} />)
+    expect(screen.queryByRole('button', { name: /Liquidate/ })).toBeNull()
+    expect(screen.getByText(/healthy and can’t be liquidated/)).toBeTruthy()
+  })
+})
+
+describe('CreatePoolPanel', () => {
+  it('blocks a below-minimum seed and enables at/above the minimum once acknowledged', () => {
+    render(<CreatePoolPanel minSeed={1000} />)
+    const button = screen.getByRole('button', { name: /Create pool/ })
+    const seed = screen.getByLabelText('Seed liquidity')
+
+    fireEvent.change(seed, { target: { value: '500' } })
+    expect(screen.getByRole('alert').textContent).toMatch(/at least 1000/)
+    expect(button.hasAttribute('disabled')).toBe(true)
+
+    fireEvent.change(seed, { target: { value: '2000' } })
+    fireEvent.click(screen.getByRole('checkbox'))
+    expect(button.hasAttribute('disabled')).toBe(false)
+  })
+})

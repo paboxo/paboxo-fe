@@ -2,7 +2,8 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
-import Header from '../components/Header'
+import { AppHeader } from '../components/layout/AppHeader'
+import { DensityProvider } from '../components/density/DensityProvider'
 
 import appCss from '../styles.css?url'
 
@@ -19,7 +20,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Paboxo — earn and borrow on HashKey',
       },
     ],
     links: [
@@ -40,9 +41,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <Header />
-        {children}
-        <Footer />
+        <DensityProvider>
+          <AppHeader />
+          {children}
+          <Footer />
+        </DensityProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
