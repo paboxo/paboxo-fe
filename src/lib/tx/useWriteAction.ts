@@ -44,7 +44,9 @@ export interface WriteActionInput {
 export interface UseWriteAction {
   state: TxState
   revert: NormalizedRevert | null
-  run: (input: WriteActionInput) => Promise<void>
+  /** Resolves `true` only when the tx confirmed — lets a caller run a follow-up
+   *  (e.g. reset a liquidation over-approval) exactly on success. */
+  run: (input: WriteActionInput) => Promise<boolean>
   reset: () => void
 }
 
@@ -64,13 +66,13 @@ export function useWriteAction(
   }, [])
 
   const run = useCallback(
-    async (input: WriteActionInput) => {
+    async (input: WriteActionInput): Promise<boolean> => {
       setRevert(null)
 
       if (!isConnected || !address) {
         setState('error')
         setRevert({ message: 'Connect your wallet to continue.' })
-        return
+        return false
       }
 
       if (input.preflight && !input.preflight.enabled) {
@@ -79,7 +81,7 @@ export function useWriteAction(
           message:
             input.preflight.reason ?? 'This action is not available right now.',
         })
-        return
+        return false
       }
 
       // Guard the chain before anything is signed.
@@ -94,7 +96,7 @@ export function useWriteAction(
           setState('error')
           setRevert({ message: 'Switch to the required network to continue.' })
         }
-        return
+        return false
       }
 
       const { chain } = getAdapters()
@@ -128,13 +130,15 @@ export function useWriteAction(
             ),
           )
         }
+        return true
       } catch (error) {
         if (isUserRejection(error)) {
           setState('rejected')
-          return
+          return false
         }
         setState('reverted')
         setRevert(normalizeRevertReason(error))
+        return false
       }
     },
     [address, chainId, isConnected, requiredChainId, switchChainAsync, queryClient],
