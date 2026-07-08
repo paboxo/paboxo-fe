@@ -1,21 +1,19 @@
+import '@rainbow-me/rainbowkit/styles.css'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { WagmiProvider } from 'wagmi'
 import type { State } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createAppKit } from '@reown/appkit/react'
-import { appkitOptions, wagmiConfig } from './appkit'
+import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
+import { wagmiConfig } from './config'
 
-// AppKit initializes the connect modal once, client-side only (it touches the
-// DOM); the SSR import never runs it. Always initialized on the client so the
-// `useAppKit` hook is available — a preview project id just can't connect.
-// Client-only init is the fallback path from U1's SSR spike.
-let appkitStarted = false
-function ensureAppKit() {
-  if (appkitStarted || typeof window === 'undefined') return
-  appkitStarted = true
-  createAppKit(appkitOptions)
-}
+// Coastal-glass accent so the wallet modal matches the app (palm green).
+const rainbowTheme = lightTheme({
+  accentColor: '#2f6a4a',
+  accentColorForeground: '#f3faf5',
+  borderRadius: 'large',
+  overlayBlur: 'small',
+})
 
 export function Web3Provider({
   children,
@@ -24,11 +22,12 @@ export function Web3Provider({
   children: ReactNode
   initialState?: State
 }) {
-  ensureAppKit()
   const [queryClient] = useState(() => new QueryClient())
   return (
     <WagmiProvider config={wagmiConfig} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider theme={rainbowTheme}>{children}</RainbowKitProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   )
 }
