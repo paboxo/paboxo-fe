@@ -117,7 +117,6 @@ describe('preflightWithdraw', () => {
       amount: 1_000_000n,
       currentDebt: 800_000_000n,
       maxBorrowAfterWithdraw: 500_000_000n, // debt would exceed post-withdraw power
-      availableLiquidity: 10_000_000_000n,
       priceUpdatedAt: FRESH,
       nowSeconds: NOW,
     })
@@ -131,7 +130,6 @@ describe('preflightWithdraw', () => {
         amount: 1_000_000n,
         currentDebt: 100_000_000n,
         maxBorrowAfterWithdraw: 500_000_000n,
-        availableLiquidity: 10_000_000_000n,
         priceUpdatedAt: FRESH,
         nowSeconds: NOW,
       }).enabled,

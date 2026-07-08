@@ -30,6 +30,11 @@ export function isPriceStale(updatedAt: number, nowSeconds: number): boolean {
   return nowSeconds - updatedAt > PRICE_MAX_AGE_SECONDS
 }
 
+/** Current unix seconds — the `nowSeconds` a caller feeds the freshness checks. */
+export function unixNow(): number {
+  return Math.floor(Date.now() / 1000)
+}
+
 // ---- primitive checks ----
 
 const positiveAmount = (amount: bigint): PreflightResult =>
@@ -63,6 +68,23 @@ export function preflightSupply(ctx: SupplyContext): PreflightResult {
     mints > 0n
       ? OK
       : block('Amount too small to mint a share — increase the amount'),
+  )
+}
+
+export interface SupplyCollateralContext {
+  amount: bigint
+  priceUpdatedAt: number
+  nowSeconds: number
+}
+
+/** Supply collateral: positive amount on a fresh price (collateral is not
+ *  share-minted, so the mint-≥1-share rule does not apply). */
+export function preflightSupplyCollateral(
+  ctx: SupplyCollateralContext,
+): PreflightResult {
+  return firstBlock(
+    positiveAmount(ctx.amount),
+    freshPrice(ctx.priceUpdatedAt, ctx.nowSeconds),
   )
 }
 
@@ -100,24 +122,21 @@ export function preflightBorrow(ctx: BorrowContext): PreflightResult {
 
 export interface WithdrawContext {
   amount: bigint
-  /** Live debt after this withdrawal is factored in. */
+  /** Live debt this withdrawal must leave covered. */
   currentDebt: bigint
   /** Live max-borrow the position would still support post-withdraw. */
   maxBorrowAfterWithdraw: bigint
-  availableLiquidity: bigint
   priceUpdatedAt: number
   nowSeconds: number
 }
 
-/** Withdraw: positive amount, fresh price, pool can fund it, and the position
- *  stays healthy afterward (debt ≤ post-withdraw borrowing power). */
+/** Withdraw collateral: positive amount, fresh price, and the position stays
+ *  healthy afterward (debt ≤ post-withdraw borrowing power). Pool-liquidity is
+ *  not a factor for collateral — that gate applies to liquidity withdrawal. */
 export function preflightWithdraw(ctx: WithdrawContext): PreflightResult {
   return firstBlock(
     positiveAmount(ctx.amount),
     freshPrice(ctx.priceUpdatedAt, ctx.nowSeconds),
-    ctx.amount <= ctx.availableLiquidity
-      ? OK
-      : block('Not enough available liquidity to withdraw right now'),
     ctx.currentDebt <= ctx.maxBorrowAfterWithdraw
       ? OK
       : block('Withdrawing this much would make your position unhealthy'),

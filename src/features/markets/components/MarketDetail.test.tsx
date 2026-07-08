@@ -1,14 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { DensityProvider } from '#/components/density/DensityProvider'
+import { QueryWrapper } from '#/test/utils'
 import { MOCK_MARKETS } from '../mock'
 import { MarketDetail } from './MarketDetail'
 
+vi.mock('wagmi', () => ({
+  useAccount: () => ({
+    address: '0x1111111111111111111111111111111111111111',
+    chainId: 177,
+    isConnected: true,
+  }),
+  useSwitchChain: () => ({ switchChainAsync: vi.fn() }),
+}))
+
 function renderDetail() {
   return render(
-    <DensityProvider>
-      <MarketDetail market={MOCK_MARKETS[0]} />
-    </DensityProvider>,
+    <QueryWrapper>
+      <DensityProvider>
+        <MarketDetail market={MOCK_MARKETS[0]} />
+      </DensityProvider>
+    </QueryWrapper>,
   )
 }
 
