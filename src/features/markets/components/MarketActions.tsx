@@ -3,6 +3,7 @@ import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import type { TxState } from '#/lib/tx/txState'
 import { SupplyPanel } from '#/features/supply/components/SupplyPanel'
+import { BorrowPanel } from '#/features/borrow/components/BorrowPanel'
 import type { MarketView } from '../types'
 
 type ActionKey = 'supply' | 'borrow' | 'repay' | 'withdraw'
@@ -81,10 +82,10 @@ export function MarketActions({ market }: { market: MarketView }) {
         ))}
       </div>
 
-      {active === 'supply' ? (
-        <SupplyPanel market={market} />
-      ) : (
-        // Borrow/Repay/Withdraw stay demo-wired until U11/U12 land their hooks.
+      {active === 'supply' && <SupplyPanel market={market} />}
+      {active === 'borrow' && <BorrowPanel market={market} />}
+      {(active === 'repay' || active === 'withdraw') && (
+        // Repay/Withdraw stay demo-wired until U12 lands their hooks.
         <ActionPanel
           title={`${label} ${symbol}`}
           idleLabel={label}
