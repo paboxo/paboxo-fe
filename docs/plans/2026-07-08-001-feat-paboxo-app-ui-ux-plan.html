@@ -1,0 +1,1257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paboxo App UI/UX - Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   Paboxo App UI/UX — coastal-glass design brief
+   Palette + primitives extracted verbatim from src/styles.css
+   ============================================================ */
+:root{
+  --sea-ink:#173a40; --sea-ink-soft:#416166;
+  --lagoon:#4fb8b2; --lagoon-deep:#328f97; --palm:#2f6a4a;
+  --sand:#e7f0e8; --foam:#f3faf5;
+  --surface:rgba(255,255,255,.74); --surface-strong:rgba(255,255,255,.9);
+  --line:rgba(23,58,64,.14); --inset-glint:rgba(255,255,255,.82);
+  --kicker:rgba(47,106,74,.9); --bg-base:#e7f3ec;
+  --header-bg:rgba(251,255,248,.84); --chip-bg:rgba(255,255,255,.8);
+  --chip-line:rgba(47,106,74,.18); --link-bg-hover:rgba(255,255,255,.9);
+  --hero-a:rgba(79,184,178,.36); --hero-b:rgba(47,106,74,.2);
+  /* semantic risk scale (warm, never neon) */
+  --safe:#2f6a4a; --safe-soft:rgba(47,106,74,.12);
+  --caution:#b8791f; --caution-soft:rgba(184,121,31,.14);
+  --danger:#c0503f; --danger-soft:rgba(192,80,63,.14);
+  --font-sans:"Manrope",ui-sans-serif,system-ui,sans-serif;
+  --font-display:"Fraunces",Georgia,serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+:root[data-theme="dark"]{
+  --sea-ink:#d7ece8; --sea-ink-soft:#afcdc8;
+  --lagoon:#60d7cf; --lagoon-deep:#8de5db; --palm:#6ec89a;
+  --sand:#0f1a1e; --foam:#101d22;
+  --surface:rgba(16,30,34,.8); --surface-strong:rgba(15,27,31,.92);
+  --line:rgba(141,229,219,.18); --inset-glint:rgba(194,247,238,.14);
+  --kicker:#b8efe5; --bg-base:#0a1418;
+  --header-bg:rgba(10,20,24,.8); --chip-bg:rgba(13,28,32,.9);
+  --chip-line:rgba(141,229,219,.24); --link-bg-hover:rgba(24,44,49,.8);
+  --hero-a:rgba(96,215,207,.18); --hero-b:rgba(110,200,154,.12);
+  --safe:#6ec89a; --safe-soft:rgba(110,200,154,.16);
+  --caution:#e0b055; --caution-soft:rgba(224,176,85,.16);
+  --danger:#e58a76; --danger-soft:rgba(229,138,118,.16);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --sea-ink:#d7ece8; --sea-ink-soft:#afcdc8;
+    --lagoon:#60d7cf; --lagoon-deep:#8de5db; --palm:#6ec89a;
+    --sand:#0f1a1e; --foam:#101d22;
+    --surface:rgba(16,30,34,.8); --surface-strong:rgba(15,27,31,.92);
+    --line:rgba(141,229,219,.18); --inset-glint:rgba(194,247,238,.14);
+    --kicker:#b8efe5; --bg-base:#0a1418;
+    --header-bg:rgba(10,20,24,.8); --chip-bg:rgba(13,28,32,.9);
+    --chip-line:rgba(141,229,219,.24); --link-bg-hover:rgba(24,44,49,.8);
+    --hero-a:rgba(96,215,207,.18); --hero-b:rgba(110,200,154,.12);
+    --safe:#6ec89a; --safe-soft:rgba(110,200,154,.16);
+    --caution:#e0b055; --caution-soft:rgba(224,176,85,.16);
+    --danger:#e58a76; --danger-soft:rgba(229,138,118,.16);
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; color:var(--sea-ink); font-family:var(--font-sans);
+  font-size:15px; line-height:1.62; background-color:var(--bg-base);
+  background:
+    radial-gradient(1100px 620px at -8% -10%,var(--hero-a),transparent 58%),
+    radial-gradient(1050px 620px at 112% -12%,var(--hero-b),transparent 62%),
+    radial-gradient(720px 380px at 50% 115%,rgba(79,184,178,.1),transparent 68%),
+    linear-gradient(180deg,color-mix(in oklab,var(--sand) 68%,white) 0%,var(--foam) 44%,var(--bg-base) 100%);
+  background-attachment:fixed; -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1080px,calc(100% - 2rem));margin-inline:auto;padding-block:2rem 4rem}
+.measure{max-width:72ch}
+a{color:var(--lagoon-deep);text-underline-offset:2px}
+code,.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+code{font-size:.86em;border:1px solid var(--line);background:color-mix(in oklab,var(--surface-strong) 82%,white 18%);border-radius:6px;padding:1px 6px}
+h1,h2,h3,h4{font-family:var(--font-display);line-height:1.12;letter-spacing:-.01em;color:var(--sea-ink);margin:0}
+h1{font-size:clamp(2rem,4.5vw,2.9rem);font-weight:600}
+h2{font-size:clamp(1.5rem,3vw,1.95rem);font-weight:600;margin-top:.2rem}
+h3{font-size:1.2rem;font-weight:600}
+h4{font-size:1rem;font-weight:600;font-family:var(--font-sans)}
+.kicker{font-family:var(--font-sans);letter-spacing:.16em;text-transform:uppercase;font-weight:700;font-size:.68rem;color:var(--kicker);margin:0 0 .5rem}
+p{margin:.6rem 0}
+hr{border:0;border-top:1px solid var(--line);margin:2.5rem 0}
+.glass{
+  border:1px solid var(--line);
+  background:linear-gradient(165deg,var(--surface-strong),var(--surface));
+  box-shadow:0 1px 0 var(--inset-glint) inset,0 18px 34px rgba(30,90,72,.1),0 4px 14px rgba(23,58,64,.06);
+  backdrop-filter:blur(6px);border-radius:1.1rem;
+}
+.pad{padding:clamp(1.1rem,3vw,1.7rem)}
+.muted{color:var(--sea-ink-soft)}
+.small{font-size:.86rem}
+/* ---- doc header ---- */
+.doc-head{position:relative;overflow:hidden}
+.doc-head .orb{position:absolute;pointer-events:none;border-radius:50%}
+.o1{width:220px;height:220px;left:-70px;top:-90px;background:radial-gradient(circle,rgba(79,184,178,.3),transparent 66%)}
+.o2{width:220px;height:220px;right:-70px;bottom:-90px;background:radial-gradient(circle,rgba(47,106,74,.16),transparent 66%)}
+dl.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.4rem 1.2rem;margin:1.2rem 0 0}
+dl.meta div{display:flex;flex-direction:column}
+dl.meta dt{font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--kicker)}
+dl.meta dd{margin:.1rem 0 0;font-family:var(--font-mono);font-size:.82rem}
+/* ---- nav ---- */
+nav.toc{position:sticky;top:0;z-index:40;margin:1.4rem 0 2rem;padding:.55rem .8rem;
+  background:var(--header-bg);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;
+  display:flex;flex-wrap:wrap;gap:.3rem .5rem;align-items:center}
+nav.toc a{font-family:var(--font-sans);font-size:.8rem;font-weight:600;text-decoration:none;color:var(--sea-ink-soft);
+  padding:.28rem .6rem;border-radius:999px}
+nav.toc a:hover,nav.toc a.active{color:var(--sea-ink);background:var(--link-bg-hover)}
+nav.toc .sp{flex:1}
+button.tt{font-family:var(--font-sans);font-size:.78rem;font-weight:700;cursor:pointer;color:var(--sea-ink);
+  border:1px solid var(--chip-line);background:var(--chip-bg);border-radius:999px;padding:.3rem .7rem}
+section{scroll-margin-top:70px;margin-top:2.6rem}
+/* ---- chips / pills ---- */
+.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--chip-line);background:var(--chip-bg);
+  color:var(--sea-ink-soft);border-radius:999px;padding:.22rem .6rem;font-size:.72rem;font-weight:700;font-family:var(--font-sans)}
+.chip.id{color:var(--lagoon-deep);border-color:color-mix(in oklab,var(--lagoon-deep) 34%,var(--line))}
+.chip.safe{color:var(--safe);background:var(--safe-soft);border-color:transparent}
+.chip.caution{color:var(--caution);background:var(--caution-soft);border-color:transparent}
+.chip.danger{color:var(--danger);background:var(--danger-soft);border-color:transparent}
+.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pos{color:var(--palm);font-weight:700}
+.neg{color:var(--danger);font-weight:700}
+/* ---- swatches ---- */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem}
+.sw{border:1px solid var(--line);border-radius:.7rem;overflow:hidden;background:var(--surface)}
+.sw .cap{height:56px}
+.sw .lab{padding:.4rem .55rem;font-size:.72rem;line-height:1.3}
+.sw .lab b{display:block;font-size:.76rem}
+.sw .lab .mono{font-size:.68rem;color:var(--sea-ink-soft)}
+/* ---- grids ---- */
+.cols{display:grid;gap:1rem}
+@media(min-width:760px){.cols.two{grid-template-columns:1fr 1fr}.cols.three{grid-template-columns:repeat(3,1fr)}}
+/* ---- mockup shell ---- */
+.mock{border:1px solid var(--line);border-radius:1rem;padding:.9rem;background:
+  radial-gradient(600px 200px at 10% -20%,var(--hero-a),transparent 60%),
+  linear-gradient(180deg,color-mix(in oklab,var(--foam) 70%,transparent),transparent);}
+.mock .bar{display:flex;align-items:center;gap:.5rem;margin-bottom:.7rem}
+.mock .dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(90deg,#56c6be,#7ed3bf)}
+.mock .barname{font-family:var(--font-display);font-weight:600;font-size:.92rem}
+.mock .navpill{margin-left:auto;font-size:.68rem;font-weight:700;color:var(--sea-ink-soft);border:1px solid var(--chip-line);background:var(--chip-bg);border-radius:999px;padding:.2rem .55rem}
+.mcard{border:1px solid var(--line);border-radius:.8rem;padding:.75rem .85rem;background:linear-gradient(165deg,var(--surface-strong),var(--surface));box-shadow:0 1px 0 var(--inset-glint) inset,0 8px 18px rgba(30,90,72,.08)}
+.mrow{display:flex;align-items:center;gap:.6rem;padding:.55rem .4rem;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.tok{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;
+  font-size:.62rem;font-weight:800;color:#0a1418;background:linear-gradient(140deg,#7ed3bf,#4fb8b2);border:1.5px solid var(--surface-strong)}
+.tok.b{background:linear-gradient(140deg,#f0c674,#e0a94f)}
+.tok.c{background:linear-gradient(140deg,#8fb4f0,#6f93e0)}
+.tok.d{background:linear-gradient(140deg,#e89f8f,#d9776a)}
+.cluster{display:inline-flex}
+.cluster .tok{margin-left:-8px;width:20px;height:20px}
+.cluster .tok:first-child{margin-left:0}
+.hero-apy{font-family:var(--font-display);font-weight:600;font-size:2rem;color:var(--palm);line-height:1}
+.stat{display:flex;flex-direction:column;gap:.1rem}
+.stat .k{font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--sea-ink-soft)}
+.stat .v{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:.95rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;border-radius:.7rem;font-weight:700;font-size:.82rem;
+  padding:.55rem .9rem;cursor:default;border:1px solid color-mix(in oklab,var(--lagoon-deep) 34%,var(--line));
+  background:color-mix(in oklab,var(--lagoon) 22%,var(--surface-strong));color:var(--sea-ink)}
+.btn.primary{background:var(--palm);color:#f3faf5;border-color:transparent}
+.btn.ghost{background:transparent;color:var(--sea-ink-soft)}
+.btn.block{width:100%}
+.seg{display:inline-flex;border:1px solid var(--chip-line);background:var(--chip-bg);border-radius:999px;padding:2px;gap:2px}
+.seg span{font-size:.72rem;font-weight:700;padding:.24rem .6rem;border-radius:999px;color:var(--sea-ink-soft)}
+.seg span.on{background:var(--palm);color:#f3faf5}
+/* buffer arc / meter */
+.meter{height:9px;border-radius:999px;background:color-mix(in oklab,var(--sea-ink) 12%,transparent);overflow:hidden;position:relative}
+.meter i{display:block;height:100%;border-radius:999px}
+.zones{display:flex;height:9px;border-radius:999px;overflow:hidden}
+.zones i{height:100%}
+/* tables */
+table.rq{width:100%;border-collapse:collapse;font-size:.9rem}
+table.rq th,table.rq td{border-bottom:1px solid var(--line);padding:.6rem .7rem;text-align:left;vertical-align:top}
+table.rq th{font-family:var(--font-sans);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sea-ink-soft);font-weight:700}
+table.rq td:first-child{white-space:nowrap}
+.tblshell{overflow-x:auto;border:1px solid var(--line);border-radius:.9rem;background:color-mix(in oklab,var(--surface-strong) 78%,transparent)}
+/* callouts */
+.callout{border-radius:.9rem;padding:.9rem 1.05rem;border:1px solid var(--line)}
+.callout .eye{font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:.25rem}
+.callout.rec{background:var(--safe-soft)} .callout.rec .eye{color:var(--safe)}
+.callout.defer{background:var(--caution-soft)} .callout.defer .eye{color:var(--caution)}
+.callout.note{background:color-mix(in oklab,var(--lagoon) 12%,transparent)} .callout.note .eye{color:var(--lagoon-deep)}
+.caption{font-size:.76rem;color:var(--sea-ink-soft);font-style:italic;margin-top:.5rem}
+/* requirement group */
+.rgroup{margin-top:1.4rem}
+.rgroup>h4{font-family:var(--font-sans);font-weight:800;font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;color:var(--lagoon-deep);margin-bottom:.2rem}
+ul.req{list-style:none;margin:.4rem 0 0;padding:0}
+ul.req li{padding:.5rem 0 .5rem 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:2.6rem 1fr;gap:.5rem}
+ul.req li:last-child{border-bottom:0}
+ul.req li .rid{font-family:var(--font-mono);font-weight:600;color:var(--lagoon-deep);font-size:.82rem}
+.flow{padding-left:0;list-style:none}
+.flow li{margin:.55rem 0;padding:.7rem .9rem}
+.stepper{display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0}
+.stepper .st{font-size:.72rem;font-weight:700;border-radius:999px;padding:.24rem .6rem;border:1px solid var(--line);color:var(--sea-ink-soft)}
+.stepper .st.done{background:var(--palm);color:#f3faf5;border-color:transparent}
+.stepper .st.now{background:color-mix(in oklab,var(--lagoon) 26%,var(--surface-strong));color:var(--sea-ink);border-color:transparent}
+footer.sig{margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:.76rem;color:var(--sea-ink-soft);font-family:var(--font-mono)}
+.leadnum{display:flex;align-items:baseline;gap:.5rem}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.74rem;margin-top:.5rem}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+.dotc{width:10px;height:10px;border-radius:50%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* ---- planning contract ---- */
+.subnav{display:flex;flex-wrap:wrap;gap:.35rem;margin:.7rem 0 1rem}
+.subnav a{font-family:var(--font-mono);font-size:.73rem;text-decoration:none;color:var(--lagoon-deep);border:1px solid var(--chip-line);background:var(--chip-bg);border-radius:.5rem;padding:.18rem .48rem}
+.subnav a:hover{background:var(--link-bg-hover)}
+.phase-h{font-family:var(--font-sans);font-weight:800;font-size:.76rem;letter-spacing:.09em;text-transform:uppercase;color:var(--kicker);margin:1.7rem 0 .3rem}
+article.unit{border:1px solid var(--line);border-radius:1rem;background:linear-gradient(165deg,var(--surface-strong),var(--surface));box-shadow:0 1px 0 var(--inset-glint) inset,0 8px 18px rgba(30,90,72,.07);padding:1rem 1.1rem;margin:.7rem 0}
+article.unit>h4{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;font-family:var(--font-display);font-weight:600;font-size:1.06rem}
+article.unit>h4 .uid{font-family:var(--font-mono);font-size:.78rem;font-weight:600;color:var(--lagoon-deep);border:1px solid color-mix(in oklab,var(--lagoon-deep) 30%,var(--line));border-radius:.4rem;padding:.05rem .4rem}
+.unit dl.strip{display:grid;grid-template-columns:auto 1fr;gap:.28rem .8rem;margin:.6rem 0 .2rem;font-size:.86rem}
+.unit dl.strip dt{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--sea-ink-soft);padding-top:.18rem}
+.unit dl.strip dd{margin:0}
+.unit dl.strip code{font-size:.76rem}
+.unit details{margin-top:.55rem;border-top:1px solid var(--line);padding-top:.45rem}
+.unit summary{cursor:pointer;font-weight:700;font-size:.8rem;color:var(--sea-ink);list-style:none}
+.unit summary::-webkit-details-marker{display:none}
+.unit summary::before{content:"▸ ";color:var(--lagoon-deep)}
+.unit details[open] summary::before{content:"▾ "}
+.unit details .body{margin-top:.4rem}
+.unit .exec{margin-top:.55rem;border-radius:.6rem;padding:.5rem .7rem;background:var(--caution-soft);font-size:.82rem}
+.unit .exec b{color:var(--caution)}
+.unit ul{margin:.3rem 0;padding-left:1.15rem;font-size:.85rem}
+.unit ul li{margin:.22rem 0}
+table.gates{width:100%;border-collapse:collapse;font-size:.86rem}
+table.gates th,table.gates td{border-bottom:1px solid var(--line);padding:.5rem .65rem;text-align:left;vertical-align:top}
+table.gates th{font-size:.62rem;text-transform:uppercase;letter-spacing:.07em;color:var(--sea-ink-soft);font-weight:700}
+table.gates td code{font-size:.78rem}
+.tree{font-family:var(--font-mono);font-size:.79rem;line-height:1.5;white-space:pre;overflow-x:auto;padding:.9rem 1rem;border:1px solid var(--line);border-radius:.8rem;background:color-mix(in oklab,var(--chip-bg) 80%,transparent);margin-top:.6rem}
+svg.htd{width:100%;height:auto;max-width:660px;display:block;margin:.6rem auto}
+svg.htd .band{fill:var(--surface-strong);stroke:var(--line);stroke-width:1}
+svg.htd .kit{fill:color-mix(in oklab,var(--lagoon) 16%,var(--surface-strong))}
+svg.htd .foundation{fill:color-mix(in oklab,var(--palm) 15%,var(--surface-strong))}
+svg.htd .side{fill:color-mix(in oklab,var(--caution) 14%,var(--surface-strong))}
+svg.htd text{fill:var(--sea-ink);font-family:var(--font-sans);font-size:13px;font-weight:600}
+svg.htd text.sub{fill:var(--sea-ink-soft);font-size:10.5px;font-weight:500}
+svg.htd .conn{stroke:var(--sea-ink-soft);stroke-width:1.4;opacity:.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="glass pad doc-head" id="top">
+  <span class="orb o1"></span><span class="orb o2"></span>
+  <p class="kicker">Implementation-ready plan · UI/UX</p>
+  <h1>Paboxo App UI/UX — Plan</h1>
+  <p class="measure muted">The design layer for the Paboxo money-market app: how the existing coastal-glass identity extends into markets, dashboard, action panels, and transaction flows — with the interaction and safety patterns of the best DeFi lenders translated into a warm, calm surface. A design-system + UI-kit layer (18 units) that layers on top of the existing <a href="https://github.com/paboxo/paboxo-fe/blob/main/docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md">frontend-integration plan</a> and defers all data/contract wiring to it.</p>
+  <dl class="meta">
+    <div><dt>Type</dt><dd>feat</dd></div>
+    <div><dt>Date</dt><dd><time datetime="2026-07-08">2026-07-08</time></dd></div>
+    <div><dt>Topic</dt><dd>paboxo-app-ui-ux</dd></div>
+    <div><dt>Execution</dt><dd>code</dd></div>
+    <div><dt>Artifact contract</dt><dd>ce-unified-plan/v1</dd></div>
+    <div><dt>Readiness</dt><dd>implementation-ready</dd></div>
+    <div><dt>Product contract source</dt><dd>ce-brainstorm</dd></div>
+    <div><dt>Product authority</dt><dd>ahmadzz</dd></div>
+  </dl>
+</header>
+
+<nav class="toc" aria-label="Section navigation">
+  <a href="#goal-capsule">Goal</a>
+  <a href="#design-anchor">Anchor</a>
+  <a href="#directions">Directions</a>
+  <a href="#component-system">Components</a>
+  <a href="#product-contract">Product Contract</a>
+  <a href="#planning-contract">Planning</a>
+  <a href="#implementation-units">Units</a>
+  <a href="#verification-contract">Verify</a>
+  <a href="#definition-of-done">Done</a>
+  <a href="#appendix">Appendix</a>
+  <span class="sp"></span>
+  <button class="tt" id="themeBtn" type="button" aria-label="Toggle light or dark theme">◑ Theme</button>
+</nav>
+
+<!-- ================= GOAL CAPSULE ================= -->
+<section id="goal-capsule">
+  <p class="kicker">Goal Capsule</p>
+  <h2>What this brief delivers</h2>
+  <div class="cols two" style="margin-top:1rem">
+    <div class="glass pad">
+      <h4>Objective</h4>
+      <p class="muted small">Define the app's UI/UX so every money-market surface — markets, dashboard, supply/borrow/repay/withdraw/liquidate/delegation/create-pool/cross-chain, and all transaction states — is visually excellent, calm, trustworthy, and unmistakably Paboxo, by extending the existing coastal-glass system rather than inventing a new one, and by translating best-in-class DeFi lending patterns into that warm surface.</p>
+    </div>
+    <div class="glass pad">
+      <h4>Open blockers</h4>
+      <ul class="small muted" style="margin:.4rem 0 0;padding-left:1.1rem">
+        <li><b>Design direction — resolved:</b> <b>C · Tide</b> (calm default + Simple↔Pro toggle). No blockers remain.</li>
+        <li>None external to design. All <b>data / ABI / indexer</b> blockers are owned by the integration plan, not this brief.</li>
+      </ul>
+      <p class="small muted" style="margin-top:.6rem"><b>Product authority:</b> ahmadzz (owner of this frontend).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DESIGN ANCHOR ================= -->
+<section id="design-anchor">
+  <p class="kicker">The Anchor · already built</p>
+  <h2>The coastal-glass system we extend</h2>
+  <p class="measure muted">Paboxo already has a mature visual language in <code>src/styles.css</code>: a warm island/lagoon palette, Fraunces + Manrope type, and glassmorphic <code>island-shell</code> surfaces, in full light + dark. Research across Aave, Morpho, Mercury and Spark all point to the same conclusion — <b>muted, warm, calm reads as more trustworthy than saturated dark-neon</b> — so this identity is a competitive asset, not just a look. Every direction below stays inside it.</p>
+
+  <h4 style="margin-top:1.4rem">Palette</h4>
+  <div class="swatches" style="margin-top:.6rem">
+    <div class="sw"><div class="cap" style="background:var(--sea-ink)"></div><div class="lab"><b>Sea ink</b><span class="mono">--sea-ink · text</span></div></div>
+    <div class="sw"><div class="cap" style="background:var(--lagoon)"></div><div class="lab"><b>Lagoon</b><span class="mono">--lagoon · accent</span></div></div>
+    <div class="sw"><div class="cap" style="background:var(--lagoon-deep)"></div><div class="lab"><b>Lagoon deep</b><span class="mono">--lagoon-deep · links</span></div></div>
+    <div class="sw"><div class="cap" style="background:var(--palm)"></div><div class="lab"><b>Palm</b><span class="mono">--palm · positive/CTA</span></div></div>
+    <div class="sw"><div class="cap" style="background:var(--sand)"></div><div class="lab"><b>Sand</b><span class="mono">--sand · surface</span></div></div>
+    <div class="sw"><div class="cap" style="background:var(--foam)"></div><div class="lab"><b>Foam</b><span class="mono">--foam · canvas</span></div></div>
+  </div>
+
+  <div class="cols two" style="margin-top:1.4rem">
+    <div>
+      <h4>Type &amp; glass</h4>
+      <div class="glass pad" style="margin-top:.6rem">
+        <div style="font-family:var(--font-display);font-weight:600;font-size:1.7rem">Fraunces — titles &amp; hero numbers</div>
+        <div style="margin-top:.2rem">Manrope — body, labels, UI. Calm humanist sans.</div>
+        <div class="mono" style="margin-top:.4rem">IBM Plex Mono — 1,234.56 · 3.60% · $4.2M</div>
+        <p class="caption" style="font-style:normal">Refinement (R3): the system today uses Manrope for everything. All five references insist on <b>tabular mono numerals with serif reserved for titles</b> — so a mono face joins the stack for data. Fraunces never sits inside a dense data table.</p>
+      </div>
+    </div>
+    <div>
+      <h4>Semantic risk scale — warm, never neon</h4>
+      <div class="glass pad" style="margin-top:.6rem">
+        <p class="small muted" style="margin-top:0">One accent (lagoon) for action. Health/risk maps to the palette, escalating by weight &amp; motion — not saturation.</p>
+        <div class="legend">
+          <span><i class="dotc" style="background:var(--safe)"></i> Safe · palm</span>
+          <span><i class="dotc" style="background:var(--caution)"></i> Caution · amber</span>
+          <span><i class="dotc" style="background:var(--danger)"></i> Danger · coral</span>
+        </div>
+        <div style="margin-top:.7rem;display:flex;gap:.4rem;flex-wrap:wrap">
+          <span class="chip safe">● Safe</span>
+          <span class="chip caution">◐ Watch</span>
+          <span class="chip danger">△ At risk</span>
+        </div>
+        <p class="caption" style="font-style:normal">Color is never the sole signal — every state pairs color + label + shape (R2, R27).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DIRECTIONS ================= -->
+<section id="directions">
+  <p class="kicker">Explore · pick or mix</p>
+  <h2>Three visual directions for the app</h2>
+  <p class="measure muted">All three live inside the coastal-glass system; they differ on one axis — <b>how much density and power the default surface shows</b>. Rendered below in the real theme so you can react. The recommendation follows.</p>
+  <p class="caption">Directional only — illustrates the intended user-facing shape. Exact colors, spacing, copy, and component choices are placeholders for review, not requirements.</p>
+
+  <!-- Direction A -->
+  <div class="glass pad" style="margin-top:1.4rem">
+    <div style="display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap">
+      <h3>A · Harbor <span class="muted" style="font-size:.9rem">— calm consumer</span></h3>
+      <span class="chip">north stars: Spark · Mercury · Morpho&nbsp;Lite</span>
+    </div>
+    <p class="small muted">A savings-account front door. One hero number per market, generous whitespace, power actions hidden until asked for. The warmest, most approachable read.</p>
+    <div class="mock" style="margin-top:.8rem">
+      <div class="bar"><span class="dot"></span><span class="barname">Paboxo</span><span class="navpill">Earn · Borrow</span></div>
+      <div class="cols two">
+        <div class="mcard">
+          <div class="mrow" style="border:0;padding-bottom:.2rem"><span class="tok">HSK</span><div><div style="font-weight:700">pxWHSK</div><div class="small muted">Supply · earn pxUSDT</div></div></div>
+          <div class="leadnum" style="margin:.3rem 0 .1rem"><span class="hero-apy">5.24%</span><span class="chip safe" style="font-size:.64rem">+0.8% rewards</span></div>
+          <div class="small muted">Supply APY · <span class="num">$4.2M</span> supplied</div>
+          <div class="btn primary block" style="margin-top:.6rem">Supply</div>
+        </div>
+        <div class="mcard">
+          <div class="mrow" style="border:0;padding-bottom:.2rem"><span class="tok b">BTC</span><div><div style="font-weight:700">pxWBTC</div><div class="small muted">Supply · earn pxUSDT</div></div></div>
+          <div class="leadnum" style="margin:.3rem 0 .1rem"><span class="hero-apy">3.91%</span></div>
+          <div class="small muted">Supply APY · <span class="num">$9.8M</span> supplied</div>
+          <div class="btn primary block" style="margin-top:.6rem">Supply</div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Markets as spacious cards; the APY is the loudest thing on the screen. Borrow/liquidate/delegation live one tab deeper.</p>
+  </div>
+
+  <!-- Direction B -->
+  <div class="glass pad" style="margin-top:1.2rem">
+    <div style="display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap">
+      <h3>B · Reef <span class="muted" style="font-size:.9rem">— data instrument</span></h3>
+      <span class="chip">north stars: Aave · Euler · Hyperliquid discipline</span>
+    </div>
+    <p class="small muted">A serious money-market console. A portfolio strip up top, one dense glass table (never glass-on-glass), more metrics visible at rest, mono numerals leading. Power-user fluency at a glance.</p>
+    <div class="mock" style="margin-top:.8rem">
+      <div class="bar"><span class="dot"></span><span class="barname">Paboxo</span><span class="navpill">Markets · Dashboard</span></div>
+      <div class="mcard" style="display:flex;gap:1.2rem;flex-wrap:wrap;margin-bottom:.6rem">
+        <div class="stat"><span class="k">Net worth</span><span class="v" style="font-family:var(--font-display);font-size:1.3rem">$18,204</span></div>
+        <div class="stat"><span class="k">Net APY</span><span class="v pos">+4.12%</span></div>
+        <div class="stat"><span class="k">Borrow used</span><span class="v">38%</span></div>
+        <div class="stat"><span class="k">Health</span><span class="v" style="color:var(--safe)">2.41 ● Safe</span></div>
+      </div>
+      <div class="tblshell" style="background:transparent;border:0">
+        <table class="rq" style="font-size:.82rem">
+          <thead><tr><th>Market</th><th>Supply APY</th><th>Borrow APR</th><th>Utilization</th><th>Liquidity</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tok" style="width:18px;height:18px;font-size:.5rem;vertical-align:middle">HSK</span> pxWHSK</td><td class="num pos">5.24%</td><td class="num">7.8%</td><td class="num">61%</td><td class="num">$1.6M</td></tr>
+            <tr><td><span class="tok b" style="width:18px;height:18px;font-size:.5rem;vertical-align:middle">BTC</span> pxWBTC</td><td class="num pos">3.91%</td><td class="num">6.2%</td><td class="num">44%</td><td class="num">$5.5M</td></tr>
+            <tr><td><span class="tok c" style="width:18px;height:18px;font-size:.5rem;vertical-align:middle">ETH</span> pxWETH</td><td class="num pos">4.40%</td><td class="num">6.9%</td><td class="num">52%</td><td class="num">$3.1M</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="caption">Dense but calm — density is tasteful because color is signal-only (green = yield) and everything else is neutral. Rows collapse to cards below ~640px (R28).</p>
+  </div>
+
+  <!-- Direction C -->
+  <div class="glass pad" style="margin-top:1.2rem;border-color:color-mix(in oklab,var(--palm) 40%,var(--line))">
+    <div style="display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap">
+      <h3>C · Tide <span class="muted" style="font-size:.9rem">— adaptive</span></h3>
+      <span class="chip safe">Recommended</span>
+    </div>
+    <p class="small muted">Harbor <b>is</b> the default; a single <b>Simple ↔ Pro</b> toggle expands the same market into Reef's density. One vocabulary, two densities — exactly the "simple by default, power on demand" pattern Pendle, Spark and Morpho all converge on.</p>
+    <div class="mock" style="margin-top:.8rem">
+      <div class="bar"><span class="dot"></span><span class="barname">Paboxo</span>
+        <span class="seg" style="margin-left:auto"><span>Simple</span><span class="on">Pro</span></span>
+      </div>
+      <div class="mcard">
+        <div class="mrow" style="border:0"><span class="tok">HSK</span><div style="flex:1"><div style="font-weight:700">pxWHSK <span class="small muted">· borrow pxUSDT</span></div></div>
+          <div class="leadnum"><span class="hero-apy" style="font-size:1.4rem">5.24%</span></div></div>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.3rem;padding-top:.5rem;border-top:1px solid var(--line)">
+          <div class="stat"><span class="k">Borrow APR</span><span class="v">7.8%</span></div>
+          <div class="stat"><span class="k">Utilization</span><span class="v">61%</span></div>
+          <div class="stat"><span class="k">Available</span><span class="v">$1.6M</span></div>
+          <div class="stat"><span class="k">LLTV</span><span class="v">80%</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Pro revealed the extra stat row in place — the card never changed shape, just depth. Same for the dashboard and every action panel.</p>
+  </div>
+
+  <div class="tblshell" style="margin-top:1.3rem">
+    <table class="rq">
+      <thead><tr><th>Direction</th><th>Best when</th><th>Strength</th><th>Watch-out</th></tr></thead>
+      <tbody>
+        <tr><td><b>A · Harbor</b></td><td>Growth / mainstream savers are the priority</td><td>Warmest, lowest cognitive load, fastest to trust</td><td>Power users feel throttled; density is a tab away</td></tr>
+        <tr><td><b>B · Reef</b></td><td>Audience skews DeFi-native from day one</td><td>Fluency, everything visible, "serious money market"</td><td>Can intimidate newcomers; harder to keep calm</td></tr>
+        <tr><td><b>C · Tide</b></td><td>You want both audiences without a rebuild</td><td>Calm default + power on demand, one vocabulary</td><td>Two states to design &amp; test per surface</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout rec" style="margin-top:1.1rem">
+    <div class="eye">Decision · locked</div>
+    <p style="margin:0"><b>C · Tide.</b> Chosen. It resolves the central tension every reference wrestled with — newcomers want calm, power users want density — instead of betting the product on one audience. The extra cost (a Pro state per surface) is small because Pro only <em>reveals</em> fields the Simple layout already reserves; it never re-lays-out. <b>A · Harbor</b> remains the fallback: it is Tide's Simple state standalone, so a v1 could ship Harbor and add Pro later without redesign.</p>
+  </div>
+</section>
+
+<!-- ================= COMPONENT SYSTEM ================= -->
+<section id="component-system">
+  <p class="kicker">Cross-cutting · direction-independent</p>
+  <h2>The component system</h2>
+  <p class="measure muted">These patterns hold in any direction — they are where the money-market UX is won or lost. Rendered here as the visual spec behind the requirements they map to.</p>
+  <p class="caption">Directional only — illustrates the intended shape; exact copy, spacing, and thresholds are placeholders for review.</p>
+
+  <div class="cols two" style="margin-top:1.2rem">
+    <!-- Health -->
+    <div class="glass pad">
+      <h4>Health as buffer-to-liquidation <span class="chip id">R10 R11 R12</span></h4>
+      <p class="small muted" style="margin-top:.3rem">The buffer empties toward danger (never a "100% = good" bar). Liquidation <em>price</em> is the primary statement; the raw number is subordinate.</p>
+      <div class="mcard" style="margin-top:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="chip safe">● Comfortable</span><span class="num muted">HF 2.41</span></div>
+        <div class="zones" style="margin:.55rem 0 .3rem"><i style="flex:6;background:var(--safe)"></i><i style="flex:2;background:var(--caution)"></i><i style="flex:2;background:var(--danger)"></i></div>
+        <div class="small">Liquidates if <b>WHSK</b> falls below <span class="num">$0.84</span> <span class="neg">(−22%)</span></div>
+      </div>
+    </div>
+    <!-- Action panel with before->after -->
+    <div class="glass pad">
+      <h4>Action panel · projected before → after <span class="chip id">R12 R14 R19 R21</span></h4>
+      <div class="mcard" style="margin-top:.5rem">
+        <div style="display:flex;justify-content:space-between"><span class="small muted">Borrow pxUSDT</span><span class="small muted">Balance <span class="num">1,900</span></span></div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.35rem 0"><span class="num" style="font-size:1.4rem;font-weight:600">1,200</span><span class="small muted">≈ $1,200</span>
+          <span class="seg" style="margin-left:auto"><span>25</span><span>50</span><span class="on">75</span><span>Max</span></span></div>
+        <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;padding:.4rem .5rem;border-radius:.6rem;background:var(--caution-soft)">
+          Health <span class="num" style="color:var(--safe)">2.41</span> → <span class="num" style="color:var(--caution)">1.68</span> <span class="chip caution" style="margin-left:auto">◐ Watch</span></div>
+        <div class="stepper"><span class="st done">1 · Allow pxUSDT</span><span class="st now">2 · Borrow</span></div>
+        <div class="btn primary block">Borrow 1,200 pxUSDT</div>
+      </div>
+      <p class="caption" style="font-style:normal">MAX is risk-bounded to a safe-HF floor, not the theoretical max at HF 1.0 (R20). Approval is exact-amount (R16).</p>
+    </div>
+
+    <!-- Tx states -->
+    <div class="glass pad">
+      <h4>One transaction state machine <span class="chip id">R14 R15 R17</span></h4>
+      <p class="small muted" style="margin-top:.3rem">The primary button is the state machine's face; one toast updates in place. Rejection is gentle, revert is explained.</p>
+      <div class="stepper" style="margin-top:.4rem">
+        <span class="st">idle</span><span class="st done">approving</span><span class="st now">signing</span><span class="st">pending</span><span class="st">confirmed ✔</span>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
+        <span class="chip">Signature cancelled · gentle, no red</span>
+        <span class="chip danger">Reverted · plain-language reason</span>
+      </div>
+    </div>
+
+    <!-- Network / wallet -->
+    <div class="glass pad">
+      <h4>Read-only first · proactive network switch <span class="chip id">R22 R23</span></h4>
+      <div class="mcard" style="margin-top:.5rem;background:var(--caution-soft);border-color:transparent">
+        <div style="display:flex;align-items:center;gap:.6rem"><span class="chip caution">⚠ Wrong network</span>
+          <span class="small">You're on Base. Switch to HashKey to continue.</span>
+          <span class="btn primary" style="margin-left:auto">Switch</span></div>
+      </div>
+      <p class="caption" style="font-style:normal">Markets/APYs render with no wallet; only position-specific surfaces prompt connect. One-click switch to chain 177, add-chain fallback, no refresh.</p>
+    </div>
+
+    <!-- Cross-chain -->
+    <div class="glass pad">
+      <h4>Cross-chain supply tracker <span class="chip id">R25</span></h4>
+      <p class="small muted" style="margin-top:.3rem">A persistent, refresh-surviving tracker distinct from a local tx — a coastal "in-transit" motif and an honest ETA.</p>
+      <div class="stepper" style="margin-top:.4rem"><span class="st done">① Sent on Base ✔</span><span class="st now">② Relaying · ~4 min ⛵</span><span class="st">③ Arriving on HashKey</span></div>
+      <p class="caption" style="font-style:normal">"You can safely leave this page." Both-ledger explorer links; a recovery path if it runs long.</p>
+    </div>
+
+    <!-- Empty / approvals -->
+    <div class="glass pad">
+      <h4>Teaching empty states · exact-amount approvals <span class="chip id">R16 R24 R26 R30</span></h4>
+      <div class="mcard" style="margin-top:.5rem;text-align:center">
+        <div style="font-family:var(--font-display);font-size:1.05rem">Put your assets to work</div>
+        <div class="small muted">Earn yield by supplying — takes about a minute.</div>
+        <div class="btn primary" style="margin-top:.5rem">Supply an asset</div>
+      </div>
+      <p class="caption" style="font-style:normal">Empty = onboarding, never a blank panel. Approvals management lists allowances with one-click revoke; delegation gets its own deliberate flow — never the "Approve" chrome.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRODUCT CONTRACT ================= -->
+<section id="product-contract">
+  <p class="kicker">Product Contract</p>
+  <h2>Requirements</h2>
+
+  <h3 id="summary" style="margin-top:1.2rem">Summary</h3>
+  <p class="measure">Design the UI/UX for the Paboxo money-market app by extending the existing coastal-glass system (<code>src/styles.css</code>) into every app surface, and by translating the interaction and safety patterns of the best DeFi lenders (Aave, Morpho, Spark, Fluid, Euler) plus number-heavy fintech craft (Mercury, Stripe, Linear) into that warm, calm surface. The default surface is a calm "Lite" front door with power-user density one tap away; risk is shown as buffer-to-liquidation with a named-zone scale and a live liquidation price; every risk-changing action previews its before→after effect; and every state — wallet, network, transaction, cross-chain, empty, loading, error — is designed against the mock adapter so real wiring is a data swap, not a redesign.</p>
+
+  <h3 id="problem-frame">Problem Frame</h3>
+  <p class="measure">The repository already has two of the three pieces: a finished visual system in <code>src/styles.css</code> and an implementation-ready <a href="https://github.com/paboxo/paboxo-fe/blob/main/docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md">integration plan</a> that defines the data seam, hooks, and every functional action. What neither addresses is the app's <em>interaction and visual design</em> — how a market row looks, how health and liquidation risk are made legible without alarm, how a two-signature approve→act flow feels calm, how a multi-minute cross-chain supply communicates progress, how a newcomer is taught the three verbs of lending. Money markets are where UX carelessness is most expensive: a mis-shown health bar or a raw revert string can cost a user real money or their trust. This brief resolves those product-and-design decisions so planning builds screens against a settled UX, not an invented one.</p>
+
+  <h3 id="key-decisions">Key Decisions</h3>
+  <div class="cols two" style="margin-top:.6rem">
+    <div class="glass pad" style="border-color:color-mix(in oklab,var(--palm) 40%,var(--line))"><h4>Direction: C · Tide (adaptive)</h4><p class="small muted">The app commits to the Tide direction — Harbor's calm surface as the default with a Simple↔Pro toggle that reveals density in place. Pro reveals reserved fields; it never re-lays-out. A · Harbor is the standalone fallback if v1 ships without the Pro state.</p></div>
+    <div class="glass pad"><h4>Calm "Lite posture" default, power on demand</h4><p class="small muted">The default surface is a savings-style front door; liquidate, delegation, allowance management and create-pool live behind an Advanced/Pro layer. Newcomers get calm; power users get density one tap away — the convergent finding across Morpho Lite, Spark, Pendle and Aave's "fintech test."</p></div>
+    <div class="glass pad"><h4>Buffer-to-liquidation + liquidation price over a bare health number</h4><p class="small muted">Health empties toward danger and carries a named-zone scale; the primary risk statement is "liquidates if X falls below $Y (−Z%)". The raw factor stays visible but subordinate. A full "100% = good" bar is banned.</p></div>
+    <div class="glass pad"><h4>Exact-amount approvals as a stated trust feature</h4><p class="small muted">Never unlimited/max-uint; the exact amount is surfaced before signing with reassurance copy. The extra signature is accepted and softened by the stepper — the security stance is made visible, not hidden.</p></div>
+    <div class="glass pad"><h4>One accent, semantic-only color, mono numerals</h4><p class="small muted">Lagoon is the only action accent; palm-green = positive, amber/coral = risk, always paired with label+shape. All financial numbers move to a tabular mono; Fraunces is reserved for titles and hero numbers — never inside data tables.</p></div>
+    <div class="glass pad"><h4>Every UX state designed against the mock adapter</h4><p class="small muted">Pending delays, wallet rejection, on-chain revert, indexer-down, and the cross-chain relay are all exercised in mock mode so the real contract/subgraph swap changes data, not screens.</p></div>
+    <div class="glass pad"><h4>Adapt Morpho's patterns, not its model</h4><p class="small muted">Paboxo is a classic isolated market with four hardcoded pools — not a curator/vault protocol. Curated-vault ideas (exposure clusters, APY provenance split, progressive disclosure) are borrowed selectively; the curator abstraction itself is out of scope.</p></div>
+  </div>
+
+  <h3 id="actors">Actors</h3>
+  <ul class="small" style="columns:2;column-gap:2rem">
+    <li>A1. <b>Newcomer</b> — the primary UX persona; browses read-only, needs the three verbs taught.</li>
+    <li>A2. <b>Lender</b> — supplies liquidity, earns yield, withdraws.</li>
+    <li>A3. <b>Borrower</b> — supplies collateral, borrows pxUSDT, manages health, repays.</li>
+    <li>A4. <b>Liquidator</b> — advanced; repays unhealthy debt for a bonus.</li>
+    <li>A5. <b>Delegator / Delegate</b> — advanced; grants/exercises borrow or withdraw rights.</li>
+    <li>A6. <b>Cross-chain supplier</b> — supplies from Base via CCIP.</li>
+    <li>A7. <b>Pool creator</b> — advanced; creates and seeds a new market.</li>
+  </ul>
+
+  <h3 id="product-requirements">Product Requirements</h3>
+
+  <div class="rgroup"><h4>Visual identity &amp; design system</h4>
+    <ul class="req">
+      <li><span class="rid">R1.</span><span>App surfaces extend the existing coastal-glass system (tokens in <code>src/styles.css</code>) — sea-ink / lagoon / palm / sand, Fraunces + Manrope, <code>island-shell</code> glass, full light + dark. No new visual language is introduced.</span></li>
+      <li><span class="rid">R2.</span><span>One saturated accent (lagoon) is reserved for primary actions and links; palm-green signals positive/yield/safe, amber/coral signals risk. Color is never the sole signal — each state pairs color with a label and a shape/icon.</span></li>
+      <li><span class="rid">R3.</span><span>All financial numerals render in a tabular-figure mono face; Fraunces is used only for titles and hero numbers, never inside dense data tables.</span></li>
+      <li><span class="rid">R4.</span><span>A standardized metric vocabulary (Supply APY, Net APY, Borrow APR, Utilization, Health, TVL) renders in the same slot, order, label, and color on every row, card, and panel.</span></li>
+      <li><span class="rid">R5.</span><span>Number formatting is uniform: compact above 99,999 (K/M/B), 2-dp for USD and percentages, <code>&lt; 0.01</code> for dust, round-down for withdrawable/available amounts, per-token decimals read from token metadata (never hardcoded), and the user's own entered amounts and balances shown at full precision. A USD⟷token denomination toggle is sticky per user.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Information architecture &amp; progressive disclosure</h4>
+    <ul class="req">
+      <li><span class="rid">R6.</span><span>Two planes: a public "all markets" plane viewable without a wallet, and a wallet-gated personal dashboard, with a single top-level nav switch between them.</span></li>
+      <li><span class="rid">R7.</span><span>The default surface is calm (Simple), with power density one tap away (Advanced/Pro): retail sees supply / borrow / repay / withdraw, while liquidate, delegation, allowance management, and create-pool live behind Advanced with guided framing.</span></li>
+      <li><span class="rid">R8.</span><span>Each market has a detail surface fusing live market data, the user's position, and its actions, deep-linkable by pool id.</span></li>
+      <li><span class="rid">R9.</span><span>Once connected, a persistent portfolio strip shows total supplied, total borrowed, net APY, and aggregate health across the user's whole footprint.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Risk &amp; health visualization</h4>
+    <ul class="req">
+      <li><span class="rid">R10.</span><span>Health is shown as a buffer that empties toward liquidation, plus a named-zone scale (Safe / Comfortable / Watch / At risk / Critical / Liquidatable) carrying color + label + shape; the raw health number stays visible but subordinate. A "full bar = good" representation is prohibited.</span></li>
+      <li><span class="rid">R11.</span><span>The primary risk statement is the liquidation price / required price move ("Liquidates if X falls below $Y, −Z%"), shown alongside the health zone.</span></li>
+      <li><span class="rid">R12.</span><span>Every risk-changing action (borrow, withdraw, repay) previews the projected before→after health and new liquidation price before confirm, recoloring live as the input changes.</span></li>
+      <li><span class="rid">R13.</span><span>Danger is escalated through weight, opacity, motion, and a mandatory acknowledgment — not neon saturation; every warning is paired with an inline remedy (add collateral / repay).</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Transaction &amp; action flow</h4>
+    <ul class="req">
+      <li><span class="rid">R14.</span><span>All writes drive one shared transaction state machine (idle → approving → signing → pending → confirmed, with rejected and reverted/error terminal states); the primary button is its face, its label mutating through states, with a numbered stepper for multi-step approve→act.</span></li>
+      <li><span class="rid">R15.</span><span>Wallet rejection is treated as a non-error (soft, no red, returns to idle); an on-chain revert decodes its reason to plain language, with the raw error kept behind a Details disclosure.</span></li>
+      <li><span class="rid">R16.</span><span>Approvals are exact-amount only — never unlimited/max-uint — surfaced before signing as a stated trust feature; the approval step is skipped when an existing allowance already covers the amount.</span></li>
+      <li><span class="rid">R17.</span><span>Optimistic UI applies only on confirmed (marked "syncing" and reconciled against the adapter), never on pending; success is a calm palm-green check, not gamified celebration.</span></li>
+      <li><span class="rid">R18.</span><span>Pre-flight validation blocks invalid or unsafe actions before the wallet opens — insufficient balance, insufficient liquidity, unsafe projected health, and price feeds older than 1h.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Money input</h4>
+    <ul class="req">
+      <li><span class="rid">R19.</span><span>Every amount input pairs a token amount with a live USD equivalent (flip to switch denomination), a balance line, and quick-fill chips (25/50/75/Max); the amount field auto-focuses.</span></li>
+      <li><span class="rid">R20.</span><span>MAX is context-aware: gas-reserved for the native token, risk-bounded to a safe-health floor for borrow/withdraw (not the theoretical max at HF 1.0), and capped by available liquidity.</span></li>
+      <li><span class="rid">R21.</span><span>A mandatory "your new position" review precedes signing: amount, resulting balance, projected health + liquidation price, APY earned/paid, and the network fee in USD.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Wallet, network &amp; states</h4>
+    <ul class="req">
+      <li><span class="rid">R22.</span><span>Read-only first: markets, APYs, and pool stats render without a wallet; only position-specific surfaces prompt connect (via Reown AppKit) through one canonical connect entry plus contextual inline CTAs.</span></li>
+      <li><span class="rid">R23.</span><span>Wrong-network is handled proactively — a calm banner and one-click switch to HashKey 177 (with add-chain fallback) and no page refresh; every write verifies the target chain (177, or Base 8453 for cross-chain) before building the transaction.</span></li>
+      <li><span class="rid">R24.</span><span>Every data surface specifies its loading (skeleton mirroring final layout), empty (a teaching new-user state with a next-action CTA), and error/unavailable states — including indexer-unreachable degradation that keeps on-chain balances and actions working.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Cross-chain, approvals &amp; delegation</h4>
+    <ul class="req">
+      <li><span class="rid">R25.</span><span>Cross-chain supply from Base is a persistent, refresh-surviving multi-step tracker (Sent → Relaying (~est) → Arriving on HashKey), visually distinct from a local tx, with an expected duration / elapsed timer, a coastal in-transit motif, both-ledger explorer links, and a "taking longer than usual" recovery path.</span></li>
+      <li><span class="rid">R26.</span><span>An approvals &amp; delegation management surface lists active ERC20 allowances and delegations (spender, token, amount) with plain-language explanations and one-click revoke/reset (approve 0); delegation uses a deliberate flow distinct from the "Approve" chrome that restates the consequence ("you're letting 0x… borrow against YOUR collateral"), shows an exact cap, and requires an explicit confirmation.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Accessibility, onboarding &amp; voice</h4>
+    <ul class="req">
+      <li><span class="rid">R27.</span><span>WCAG AA holds on the actual glass: text ≥ 4.5:1 tested against blurred backdrops in both themes, risk chips and critical numbers on opaque backing, a "reduce transparency" preference, and risk never signaled by color alone.</span></li>
+      <li><span class="rid">R28.</span><span>Full keyboard operability, visible focus, <code>aria-live</code> announcements for health and transaction-status changes, and text alternatives for gauges/charts; tables collapse to cards below ~640px, touch targets are ≥ 44px, amount fields use <code>inputmode="decimal"</code>, and <code>prefers-reduced-motion</code> is respected.</span></li>
+      <li><span class="rid">R29.</span><span>First-run teaches the three verbs (supply to earn, borrow against it, health keeps you safe); read-only browsing is itself onboarding, and a no-wallet preview of the deposit flow is offered.</span></li>
+      <li><span class="rid">R30.</span><span>A calm plain-language voice is the brand: every risk term carries a one-sentence tooltip, reassurance microcopy accompanies risky moments ("nothing happens until you confirm," "we only ever request the exact amount," "you can safely leave this page"), and errors name the cause and offer the fix.</span></li>
+    </ul>
+  </div>
+
+  <div class="rgroup"><h4>Charts &amp; data-viz</h4>
+    <ul class="req">
+      <li><span class="rid">R31.</span><span>Charts are quiet: a single palm-green/lagoon line with a soft area-gradient fade, one series, no gridline clutter, and frosted mono tooltips; allocation and utilization render as bar-in-cell (never pies), with optional row sparklines, following the one-accent rule for light/dark consistency.</span></li>
+    </ul>
+  </div>
+
+  <h3 id="key-flows">Key Flows</h3>
+  <ul class="flow">
+    <li class="glass"><b>F1 · Supply / earn (Simple front door).</b> <span class="muted small">Trigger: A1/A2 wants to earn on a market.</span> Browse read-only → connect → open market → enter amount (MAX + USD + quick-fill) → review "your new position" (balance, APY, projected earnings) → exact-amount approve → supply → optimistic confirmed + single updating toast. <span class="chip id">R6 R16 R17 R19 R21 R22</span></li>
+    <li class="glass"><b>F2 · Borrow with live health preview.</b> <span class="muted small">Trigger: A3 borrows against collateral.</span> Verify chain 177 → enter amount → buffer arc + liquidation price recolor live → acknowledgment required if projected health enters At-risk → pre-flight (max-borrow, liquidity, staleness) → approve→borrow via the shared state machine. <span class="chip id">R11 R12 R13 R18 R20 R23</span></li>
+    <li class="glass"><b>F3 · Cross-chain supply from Base.</b> <span class="muted small">Trigger: A6 supplies from Base.</span> Switch to Base → quote fee → approve → supply → the persistent tracker takes over (Sent → Relaying → Arriving) surviving refresh until the destination event lands. <span class="chip id">R23 R25</span></li>
+    <li class="glass"><b>F4 · Advanced action (liquidate / delegate / create-pool).</b> <span class="muted small">Trigger: A4/A5/A7 in the Advanced layer.</span> Enter Advanced → guided framing explains the action and its stakes → deliberate confirmation restating the exact consequence → shared write flow with exact approvals. <span class="chip id">R7 R14 R16 R26 R30</span></li>
+  </ul>
+
+  <h3 id="acceptance-examples">Acceptance Examples</h3>
+  <ul class="flow">
+    <li class="glass"><span class="chip id">AE1</span> <b>Stale price blocks.</b> Given a feed's <code>updatedAt</code> is older than 1h, when the user opens a dependent action, then the FE blocks it and flags the feed as stale rather than sending a tx that would revert. <b>Covers R18.</b></li>
+    <li class="glass"><span class="chip id">AE2</span> <b>Borrow crossing into At-risk.</b> Given a borrow amount that would push projected health below 1.25, when the user types it, then the buffer arc recolors live, the liquidation price updates, and an acknowledgment checkbox is required before the action enables. <b>Covers R12, R13.</b></li>
+    <li class="glass"><span class="chip id">AE3</span> <b>Wallet rejection is not an error.</b> Given the user declines the signature in their wallet, when the flow returns, then it shows a soft "signature cancelled" and resets to idle — no red, no retry-shaming. <b>Covers R15.</b></li>
+    <li class="glass"><span class="chip id">AE4</span> <b>On-chain revert is explained.</b> Given a mined tx fails, when the failure surfaces, then a plain-language reason is shown with the raw error behind a Details disclosure — never a raw hex selector. <b>Covers R15.</b></li>
+    <li class="glass"><span class="chip id">AE5</span> <b>Wrong network on a write.</b> Given the wallet is on a chain other than the action's target, when the user initiates a write, then a switch prompt appears before the transaction is built. <b>Covers R23.</b></li>
+    <li class="glass"><span class="chip id">AE6</span> <b>Indexer unreachable.</b> Given the indexer is down, when the user views a surface, then history/aggregates badge as unavailable while on-chain balances and actions keep working. <b>Covers R24.</b></li>
+    <li class="glass"><span class="chip id">AE7</span> <b>Cross-chain in-flight survives refresh.</b> Given a Base supply has confirmed but not yet arrived, when the user reloads, then the tracker still shows "Relaying / arriving on HashKey," distinct from a local tx. <b>Covers R25.</b></li>
+    <li class="glass"><span class="chip id">AE8</span> <b>New-user empty dashboard teaches.</b> Given a connected wallet with no position, when the dashboard renders, then it shows a teaching empty state with a Supply CTA, not a blank panel. <b>Covers R24, R29.</b></li>
+  </ul>
+
+  <h3 id="scope-boundaries">Scope Boundaries</h3>
+  <div class="cols two" style="margin-top:.6rem">
+    <div class="callout defer"><div class="eye">Deferred for later</div>
+      <ul class="small" style="margin:.2rem 0 0;padding-left:1.1rem">
+        <li>Repay-mode B/C panel polish — follows the functional deferral in the integration plan (R20 there).</li>
+        <li>Dynamic market-discovery UI — markets stay the four hardcoded pools until discovery lands.</li>
+        <li>A Cmd+K command palette and theme-aware ambient shift — delighters, not v1.</li>
+        <li>A no-wallet interactive "sandbox" of the full flow — nice onboarding, revisit after the core loop.</li>
+      </ul></div>
+    <div class="callout note"><div class="eye">Outside this brief's identity</div>
+      <ul class="small" style="margin:.2rem 0 0;padding-left:1.1rem">
+        <li>The landing page — already done; this brief is the app only.</li>
+        <li>The data / adapter / contract / indexer wiring — owned by the integration plan; this brief attaches to its stable hooks.</li>
+        <li>Morpho's curator/vault model — Paboxo is four isolated pools; those patterns are adapted, not adopted.</li>
+        <li>A full "network explorer" pro app as the default — we take the Lite posture.</li>
+      </ul></div>
+  </div>
+
+  <h3 id="dependencies">Dependencies / Assumptions</h3>
+  <ul class="small measure">
+    <li>Builds on the coastal-glass tokens in <code>src/styles.css</code> and attaches to the integration plan's stable typed hooks and mock-first data seam.</li>
+    <li>All UX states are exercised against the mock adapter (pending delays, faults, relay) so real ABI/subgraph wiring is a data swap, not a redesign.</li>
+    <li>Paboxo is a classic isolated money market with four hardcoded pools (pxWHSK, pxWBTC, pxWETH, cross-chain pxWHSK — all borrow pxUSDT), not a curator/vault protocol.</li>
+    <li>A tabular-mono numeral face is added to the type stack (Manrope alone lacks a machined mono for data); the exact face is a planning choice.</li>
+    <li>Health-factor thresholds and zone boundaries will be reconciled from the reference set (Aave's ≥3 safe / 1.1 danger vs. the UX-bible zone scale) during planning.</li>
+  </ul>
+
+  <h3 id="outstanding-questions">Outstanding Questions</h3>
+  <p class="small" style="margin-bottom:.2rem"><b>Resolve before planning</b></p>
+  <ul class="small measure" style="margin-top:.2rem">
+    <li>None — the design direction is resolved (<b>C · Tide</b>). Planning is unblocked.</li>
+  </ul>
+  <p class="small" style="margin-bottom:.2rem"><b>Deferred to planning</b></p>
+  <ul class="small measure" style="margin-top:.2rem">
+    <li>Exact mono font choice and the reconciled HF threshold/zone numbers.</li>
+    <li>Chart approach for APY/TVL history and whether row sparklines ship in v1.</li>
+    <li>Whether the no-wallet deposit "preview/sandbox" (R29) ships in v1 or defers.</li>
+    <li>Whether an IRM "you-are-here" utilization curve (Euler pattern) is worth adding to the market detail.</li>
+  </ul>
+
+  <h3 id="sources">Sources / Research</h3>
+  <ul class="small">
+    <li><b>Existing system —</b> <a href="https://github.com/paboxo/paboxo-fe/blob/main/src/styles.css">src/styles.css</a> (coastal-glass tokens, light+dark) · <a href="https://github.com/paboxo/paboxo-fe/blob/main/docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md">frontend-integration plan</a> (surfaces, hooks, actions this brief designs for).</li>
+    <li><b>Reference apps —</b> <a href="https://app.aave.com">Aave</a> (health-factor thresholds, formatting, action modal, Glass framework) · <a href="https://app.morpho.org/vaults">Morpho</a> + <a href="https://lite.morpho.org">Morpho Lite</a> (Lite posture, APY provenance, restraint) · <a href="https://app.spark.fi">Spark</a> (named-zone LTV slider, savings front door) · <a href="https://fluid.io/vaults">Fluid</a> (draggable health gauge, one-click strategies) · <a href="https://app.euler.finance">Euler</a> (curator-as-navigation, exposure clusters, IRM curve).</li>
+    <li><b>Fintech craft —</b> Mercury, Stripe, Linear, Robinhood, Hyperliquid (muted-over-saturated trust, semantic-only color, mono numerals, interaction quality).</li>
+    <li><b>UX guidance —</b> Aave Health-Factor &amp; Liquidations docs; Jon Crabb "UX of DeFi loans"; Web3 UX Design Handbook; WCAG 1.4.1 &amp; WCAG-for-finance; NN/g skeleton screens; Across / LI.FI cross-chain status patterns; kalis.me on unlimited allowances.</li>
+    <li>Full teardown reports (five research passes) captured this session; screenshots archived to the session scratchpad.</li>
+  </ul>
+</section>
+
+<!-- ================= PLANNING CONTRACT ================= -->
+<section id="planning-contract">
+  <p class="kicker">Planning Contract · HOW</p>
+  <h2>Planning Contract</h2>
+  <div class="callout note" style="margin-top:.8rem"><div class="eye">Product Contract preservation</div><p style="margin:0" class="small">Unchanged. R1–R31, actors, flows, and acceptance examples carry forward verbatim; this enrichment adds HOW only. Depth <b>Deep</b>, <code>execution: code</code>, target repo <code>praboxo-fe</code>. Direction resolved to <b>C · Tide</b>.</p></div>
+
+  <h3 style="margin-top:1.4rem">Key Technical Decisions</h3>
+  <div class="cols two" style="margin-top:.6rem">
+    <div class="glass pad"><h4>KTD1 · A UI-kit layer the integration plan consumes</h4><p class="small muted">Presentational primitives live in <code>src/components/ui/</code> as a standalone kit. Where the <a href="https://github.com/paboxo/paboxo-fe/blob/main/docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md">integration plan</a> named <code>src/components/{states,tx,wallet}</code>, those are realized as (or re-exported from) the kit. This plan owns visual + interaction design; the integration plan owns data wiring. They meet at shared files.</p></div>
+    <div class="glass pad"><h4>KTD2 · Foundation sequences first</h4><p class="small muted">Tokens, the format library, and the metric-vocabulary primitives are a dependency the integration plan's UI units build on — they land before or alongside them, not after.</p></div>
+    <div class="glass pad"><h4>KTD3 · Tide density via a data-attribute + provider</h4><p class="small muted">A <code>DensityProvider</code> sets <code>data-density="simple|pro"</code> on a root element; CSS reveals reserved Pro fields in place (no re-layout). Persisted like the existing theme preference. Simple is the default.</p></div>
+    <div class="glass pad"><h4>KTD4 · Extend the existing theming, don't reinvent it</h4><p class="small muted">Build on the <code>data-theme</code> + <code>light</code>/<code>dark</code> class system and the <code>@theme</code>/<code>island-*</code> tokens already in <code>src/styles.css</code> and <code>ThemeToggle</code>. Add a tabular mono face, semantic risk tokens (<code>--safe/--caution/--danger</code>), and motion tokens — no parallel theming layer.</p></div>
+    <div class="glass pad"><h4>KTD5 · Primitives are data-agnostic</h4><p class="small muted">Kit components take props / render-props and never import adapters or hooks; the integration plan's hooks are consumed only at the composition layer, so the mock↔real swap never touches the kit.</p></div>
+    <div class="glass pad"><h4>KTD6 · Health is a pure, tested function</h4><p class="small muted">HF → zone mapping lives in one small module (<code>src/lib/risk/health.ts</code>), unit-tested once, reused by the meter, the zone chips, and the projected before→after preview — no re-derivation per component.</p></div>
+    <div class="glass pad"><h4>KTD7 · One formatting library</h4><p class="small muted"><code>src/lib/format/</code> centralizes every number rule (R5); all surfaces import it. No ad-hoc <code>toFixed</code> in components — full precision kept internally, display formatted at the edge.</p></div>
+    <div class="glass pad"><h4>KTD8 · Motion is calm by default</h4><p class="small muted">Slow ease-out tokens (250–400ms), count-up on value change, skeleton shimmer over spinners; everything gated behind <code>prefers-reduced-motion</code>. No bouncy/springy motion — it fights the coastal calm.</p></div>
+  </div>
+
+  <h3 id="high-level-technical-design" style="margin-top:1.6rem">High-Level Technical Design</h3>
+  <p class="small muted measure">The kit is a four-layer stack. Higher layers build on lower ones; the integration plan's data hooks feed in only at the composition layer, keeping the kit pure.</p>
+  <div class="glass pad">
+    <svg class="htd" viewBox="0 0 660 356" role="img" aria-labelledby="htd-title">
+      <title id="htd-title">Four-layer UI kit stack: surface compositions build on the Tide shell, which builds on the shared UI kit, which builds on the design foundation; integration-plan hooks feed the composition layer.</title>
+      <rect class="band" x="70" y="16" width="440" height="58" rx="12"/>
+      <text x="290" y="40" text-anchor="middle">Surface compositions</text>
+      <text class="sub" x="290" y="58" text-anchor="middle">Markets · Dashboard · Market detail — U11 U12 U13</text>
+
+      <rect class="band" x="70" y="98" width="440" height="58" rx="12"/>
+      <text x="290" y="122" text-anchor="middle">Tide shell + density</text>
+      <text class="sub" x="290" y="140" text-anchor="middle">AppHeader · DensityProvider · PortfolioStrip — U9 U10</text>
+
+      <rect class="band kit" x="70" y="180" width="440" height="58" rx="12"/>
+      <text x="290" y="204" text-anchor="middle">Shared UI kit (presentational)</text>
+      <text class="sub" x="290" y="222" text-anchor="middle">Health/Risk · TxStatus · MoneyInput · States · Wallet — U4–U8</text>
+
+      <rect class="band foundation" x="70" y="262" width="440" height="58" rx="12"/>
+      <text x="290" y="286" text-anchor="middle">Design foundation</text>
+      <text class="sub" x="290" y="304" text-anchor="middle">Tokens + type · Format lib · Metric vocabulary — U1 U2 U3</text>
+
+      <line class="conn" x1="290" y1="74" x2="290" y2="98"/>
+      <line class="conn" x1="290" y1="156" x2="290" y2="180"/>
+      <line class="conn" x1="290" y1="238" x2="290" y2="262"/>
+
+      <rect class="band side" x="540" y="98" width="104" height="58" rx="12"/>
+      <text class="sub" x="592" y="120" text-anchor="middle">Integration-</text>
+      <text class="sub" x="592" y="134" text-anchor="middle">plan hooks</text>
+      <text class="sub" x="592" y="148" text-anchor="middle">(data)</text>
+      <line class="conn" x1="540" y1="127" x2="510" y2="127"/>
+    </svg>
+    <p class="caption">Build order: foundation → kit → shell → surfaces; advanced surfaces (U14–U16) and the cross-cutting quality pass (U17–U18) follow the core loop.</p>
+  </div>
+
+  <h3 id="output-structure" style="margin-top:1.6rem">Output Structure</h3>
+  <p class="small muted">New/renamed files this plan adds (the kit hierarchy). Per-unit <b>Files</b> lists remain authoritative.</p>
+  <div class="tree">src/
+  styles.css                      # U1  +mono, --safe/--caution/--danger, motion, data-density
+  lib/
+    format/  number.ts amount.ts currency.ts index.ts  number.test.ts   # U2
+    risk/    health.ts  health.test.ts                                    # U4
+  components/
+    ui/
+      MetricValue.tsx APYValue.tsx StatTile.tsx                # U3
+      HealthMeter.tsx RiskZone.tsx LiquidationPrice.tsx ProjectedHealth.tsx  # U4
+      TxStatus.tsx ActionButton.tsx TxToast.tsx                # U5  (realizes components/tx)
+      MoneyInput.tsx AmountChips.tsx                           # U6
+      Tooltip.tsx                                              # U18
+      states/  Loading.tsx EmptyState.tsx ErrorState.tsx       # U7  (realizes components/states)
+      wallet/  ConnectPrompt.tsx NetworkBanner.tsx AccountPill.tsx  # U8 (realizes components/wallet)
+      CrossChainTracker.tsx                                    # U14
+      ApprovalsManager.tsx DelegationFlow.tsx                  # U15
+    layout/  AppHeader.tsx PortfolioStrip.tsx                  # U9
+    density/ DensityProvider.tsx useDensity.ts                 # U9
+    action/  ActionPanel.tsx ReviewBlock.tsx                   # U10
+  features/  markets · dashboard · market.$id                  # U11–U13 presentation layer
+             (compose the integration plan's hooks + this kit)</div>
+</section>
+
+<!-- ================= IMPLEMENTATION UNITS ================= -->
+<section id="implementation-units">
+  <p class="kicker">Planning Contract · units</p>
+  <h2>Implementation Units</h2>
+  <nav class="subnav" aria-label="Jump to unit">
+    <a href="#u1">U1</a><a href="#u2">U2</a><a href="#u3">U3</a><a href="#u4">U4</a><a href="#u5">U5</a><a href="#u6">U6</a><a href="#u7">U7</a><a href="#u8">U8</a><a href="#u9">U9</a><a href="#u10">U10</a><a href="#u11">U11</a><a href="#u12">U12</a><a href="#u13">U13</a><a href="#u14">U14</a><a href="#u15">U15</a><a href="#u16">U16</a><a href="#u17">U17</a><a href="#u18">U18</a>
+  </nav>
+
+  <p class="phase-h">Phase 1 · Design foundation</p>
+
+  <article class="unit" id="u1"><h4><span class="uid">U1</span> Token, type &amp; motion foundation</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>Extend the coastal-glass tokens so every later unit has semantic risk colors, tabular mono numerals, motion tokens, and a density hook.</dd>
+      <dt>Requirements</dt><dd>R1, R2, R3</dd>
+      <dt>Dependencies</dt><dd>none</dd>
+      <dt>Files</dt><dd><code>src/styles.css</code>, <code>src/routes/__root.tsx</code> (font link)</dd>
+    </dl>
+    <div class="exec"><b>Execution note:</b> non-behavioral foundation — verified visually in both themes and by the a11y pass (U17), not by unit tests.</div>
+    <details><summary>Approach · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Add a tabular mono face (e.g. IBM Plex Mono) to the <code>@theme</code> font stack; add <code>--safe/--caution/--danger</code> + <code>-soft</code> tokens for light &amp; dark mirroring the existing block; add motion-duration/easing tokens; reserve <code>[data-density]</code> selectors. Reuse the existing <code>data-theme</code>/class mechanism — do not add a parallel theming system. Introduce a <code>.num</code> tabular-nums utility.</p>
+      <p class="small"><b>Test expectation:</b> none — token/style layer. <b>Verification:</b> tokens resolve in light + dark; a mono numeral sample aligns; no regression to existing <code>island-*</code>/<code>demo-*</code> classes.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u2"><h4><span class="uid">U2</span> Number &amp; value formatting library</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>One tested utility implementing every formatting rule so no component formats numbers ad hoc.</dd>
+      <dt>Requirements</dt><dd>R5</dd>
+      <dt>Dependencies</dt><dd>U1</dd>
+      <dt>Files</dt><dd><code>src/lib/format/{number,amount,currency,index}.ts</code>, <code>src/lib/format/number.test.ts</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Pure functions over <code>bigint</code>/string inputs; per-token decimals passed in from metadata, never hardcoded; a denomination preference read from storage (sticky). Display-only rounding; full precision retained by callers.</p>
+      <ul class="small">
+        <li>Compact: 100,000 → <code>100K</code>; 4,231,905 → <code>4.2M</code>; 999 stays <code>999</code>.</li>
+        <li>Precision: USD &amp; % → 2 dp; a value &lt; 1 → up to 7 dp; <code>0.004</code> → <code>&lt; 0.01</code>, never <code>0.00</code>.</li>
+        <li>Round-down: a withdrawable of <code>1.239</code> at 2 dp renders <code>1.23</code>, never <code>1.24</code>.</li>
+        <li>Decimals: same raw amount formats differently for pxUSDT (6) vs. an 18-dp token; decimals are an argument, not a constant.</li>
+        <li>Denomination: token↔USD flip converts using a passed price; the user's own entered amount is shown full-precision, not compacted.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> all format tests green; a grep shows components import <code>format</code> rather than calling <code>toFixed</code>.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u3"><h4><span class="uid">U3</span> Standardized metric vocabulary primitives</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>Render the canonical metrics (Supply APY, Net APY, Borrow APR, Utilization, Health, TVL) identically everywhere.</dd>
+      <dt>Requirements</dt><dd>R4</dd>
+      <dt>Dependencies</dt><dd>U2</dd>
+      <dt>Files</dt><dd><code>src/components/ui/{MetricValue,APYValue,StatTile}.tsx</code>, <code>src/components/ui/MetricValue.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Each primitive fixes label text, slot order, mono numeral, and semantic color per metric key; positive/negative always paired with sign + arrow (never color alone). Consumes U2 for the value string.</p>
+      <ul class="small">
+        <li>Happy: an APY of 5.24% renders palm-green with a fixed label; a negative delta renders coral + a down arrow + a minus sign.</li>
+        <li>Consistency: the same metric key produces the same label and color regardless of surface (unit test asserts the mapping).</li>
+      </ul>
+      <p class="small"><b>Verification:</b> a market row and a dashboard tile using the same key render identically.</p>
+    </div></details>
+  </article>
+
+  <p class="phase-h">Phase 2 · Shared UI kit</p>
+
+  <article class="unit" id="u4"><h4><span class="uid">U4</span> Health &amp; liquidation risk visualization</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The buffer meter, named-zone chips, liquidation-price statement, and the projected before→after preview.</dd>
+      <dt>Requirements</dt><dd>R10, R11, R12, R13</dd>
+      <dt>Dependencies</dt><dd>U3</dd>
+      <dt>Files</dt><dd><code>src/lib/risk/health.ts</code>, <code>src/lib/risk/health.test.ts</code>, <code>src/components/ui/{HealthMeter,RiskZone,LiquidationPrice,ProjectedHealth}.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> <code>health.ts</code> is the single pure HF→zone function (KTD6). The meter empties toward danger; a "full = good" bar is prohibited. <code>ProjectedHealth</code> takes current + projected and recolors live; danger escalates by weight/motion, not saturation, and always pairs a remedy.</p>
+      <ul class="small">
+        <li>Zone mapping: HF 2.41 → Comfortable/palm; 1.35 → Watch/amber; 1.15 → At-risk/coral; ∞ (no debt) → Safe with the ∞ glyph.</li>
+        <li>Meter direction: a lower HF yields a shorter (not longer) buffer fill.</li>
+        <li>Projected: current 2.41 + projected 1.68 recolors the arc toward amber and shows the new liquidation price; every state also carries a label + shape (not color alone).</li>
+        <li>Remedy: an At-risk projection surfaces "add collateral / repay" affordances.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> zone tests green; meter + chip + projected preview all read from the one function.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u5"><h4><span class="uid">U5</span> Transaction state-machine UI</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The morphing action button, stepper, single updating toast, and humane revert/rejection presentation.</dd>
+      <dt>Requirements</dt><dd>R14, R15, R17</dd>
+      <dt>Dependencies</dt><dd>U3</dd>
+      <dt>Files</dt><dd><code>src/components/ui/{TxStatus,ActionButton,TxToast}.tsx</code>, <code>src/lib/tx/revertReason.ts</code>, <code>src/components/ui/TxStatus.test.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Coordination:</b> realizes the integration plan's <code>components/tx/TxStatus.tsx</code> — this unit owns its visual/interaction design; the integration plan's write wrapper drives it with real states.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> A presentational state prop (idle→approving→signing→pending→confirmed, plus rejected/reverted/error) drives the button label and one in-place toast. <code>revertReason.ts</code> maps decoded errors to plain language with a Details disclosure for the raw error. Optimistic success only on confirmed; rejection is a soft, non-red return to idle.</p>
+      <ul class="small">
+        <li>Button face: each state renders its own label/spinner; multi-step shows a "1 Approve · 2 Act" stepper before the second signature.</li>
+        <li>Rejection vs revert: a rejected state renders soft "signature cancelled" (no red); a reverted state renders coral with a mapped plain-language reason, raw error behind Details.</li>
+        <li>Unmapped revert: falls back to a generic humane message, never a raw hex selector.</li>
+        <li>Optimistic: confirmed marks the value "syncing"; pending never shows success.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> state transitions and reason-mapping tests green; a mock revert surfaces a readable message.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u6"><h4><span class="uid">U6</span> Money input component</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The amount field with token+USD flip, balance line, quick-fill chips, and context-aware MAX.</dd>
+      <dt>Requirements</dt><dd>R19, R20, R21</dd>
+      <dt>Dependencies</dt><dd>U2, U4</dd>
+      <dt>Files</dt><dd><code>src/components/ui/{MoneyInput,AmountChips}.tsx</code>, <code>src/components/ui/MoneyInput.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Auto-focuses; <code>inputmode="decimal"</code>; MAX behavior is injected (gas-reserved for native, risk-bounded for borrow/withdraw, liquidity-capped) so the component stays data-agnostic. Live USD line via U2; invalid amounts border coral with a plain message before any submit.</p>
+      <ul class="small">
+        <li>MAX (native): fills <code>balance − gas reserve</code> and labels "Max (gas reserved)".</li>
+        <li>MAX (borrow): fills the safe-HF-floor amount, not the theoretical max at HF 1.0.</li>
+        <li>Flip: toggling denomination recomputes the field and USD line consistently.</li>
+        <li>Quick-fill: 25/50/75 fill the proportional amount; the field is focused on mount.</li>
+        <li>Insufficient: an over-balance entry disables the action with "You only have X".</li>
+      </ul>
+      <p class="small"><b>Verification:</b> input tests green; MAX variants produce the injected bound, not raw balance.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u7"><h4><span class="uid">U7</span> Display state components</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>Skeleton loading, teaching empty states, error states, and indexer-unreachable degradation.</dd>
+      <dt>Requirements</dt><dd>R24</dd>
+      <dt>Dependencies</dt><dd>U1</dd>
+      <dt>Files</dt><dd><code>src/components/ui/states/{Loading,EmptyState,ErrorState}.tsx</code>, <code>src/components/ui/states/states.test.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Coordination:</b> realizes the integration plan's <code>components/states/*</code>; wiring which surface shows which state stays with the integration plan.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Skeletons mirror final card geometry (warm shimmer, not grey spinner). Empty states teach a concept + one CTA. A degraded variant renders a slim non-blocking banner distinct from a full error.</p>
+      <ul class="small">
+        <li>Loading: renders a skeleton matching the target layout (no reflow on data arrival).</li>
+        <li>Empty (new user): renders a one-line teach + a primary CTA, not a blank panel.</li>
+        <li>Error vs degraded: a hard failure renders a card error with Retry; an indexer-down state renders a slim "history unavailable" banner while leaving the rest usable.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> each variant renders distinctly; skeleton and final layout share geometry.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u8"><h4><span class="uid">U8</span> Wallet &amp; network presentation</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>Inline connect prompts, the wrong-network banner + one-click switch, and the account pill.</dd>
+      <dt>Requirements</dt><dd>R22, R23</dd>
+      <dt>Dependencies</dt><dd>U1</dd>
+      <dt>Files</dt><dd><code>src/components/ui/wallet/{ConnectPrompt,NetworkBanner,AccountPill}.tsx</code>, <code>src/components/ui/wallet/NetworkBanner.test.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Coordination:</b> realizes the integration plan's <code>components/wallet/*</code> visuals; the actual connect/switch calls (Reown AppKit / wagmi) are wired by the integration plan.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Presentational: a <code>required</code>/<code>currentChain</code> prop drives the banner; the switch action is injected. Read-only surfaces render fully; only position-specific slots swap to a slim connect CTA.</p>
+      <ul class="small">
+        <li>Wrong network: a non-177 chain renders a calm banner + Switch button (no page-refresh copy).</li>
+        <li>Read-only: with no wallet, a market surface still renders while a position slot shows "Connect to supply".</li>
+        <li>Account pill: renders a truncated address + network identity when connected.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> banner and prompt render on the right conditions; switch action fires the injected handler.</p>
+    </div></details>
+  </article>
+
+  <p class="phase-h">Phase 3 · Tide shell &amp; core surfaces</p>
+
+  <article class="unit" id="u9"><h4><span class="uid">U9</span> Tide shell + density mechanism</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The app header (two-plane nav, connect, network status), the Simple↔Pro density provider, and the portfolio strip.</dd>
+      <dt>Requirements</dt><dd>R6, R7, R9</dd>
+      <dt>Dependencies</dt><dd>U3, U8</dd>
+      <dt>Files</dt><dd><code>src/components/layout/{AppHeader,PortfolioStrip}.tsx</code>, <code>src/components/density/{DensityProvider,useDensity}.ts(x)</code>, <code>src/routes/__root.tsx</code>, <code>src/components/density/DensityProvider.test.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Coordination:</b> overlaps the integration plan's app-shell unit — this unit owns the shell's visual/interaction shape and the density mechanism; nav destinations and connect wiring come from the integration plan.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> <code>DensityProvider</code> writes <code>data-density</code> and persists it (mirrors the theme pattern). Pro reveals reserved fields via CSS; Simple is default. The portfolio strip shows total supplied/borrowed/net APY/aggregate health once connected.</p>
+      <ul class="small">
+        <li>Toggle: switching to Pro reveals reserved stat rows without changing card dimensions (no re-layout).</li>
+        <li>Persistence: the density choice survives reload.</li>
+        <li>Two planes: the public market plane renders without a wallet; the portfolio strip appears only when connected.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> density toggle + persistence tests green; strip appears/absents on connection state.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u10"><h4><span class="uid">U10</span> Action panel composition</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The shared panel composing money input + health preview + review block + the tx button/stepper for supply/borrow/repay/withdraw.</dd>
+      <dt>Requirements</dt><dd>R12, R14, R16, R18, R21</dd>
+      <dt>Dependencies</dt><dd>U4, U5, U6</dd>
+      <dt>Files</dt><dd><code>src/components/action/{ActionPanel,ReviewBlock}.tsx</code>, <code>src/components/action/ActionPanel.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> A tabbed, single-shape panel: MoneyInput → live ProjectedHealth → ReviewBlock ("your new position") → morphing button. A pre-flight <code>{enabled, reason}</code> result (from the integration plan's gate) disables the button and blocks before the wallet opens. Approval is exact-amount and surfaced.</p>
+      <ul class="small">
+        <li>Blocked pre-flight: a failing gate (insufficient liquidity / unsafe HF / stale price) disables the button with the reason before any signature. <b>Covers AE1, AE3.</b></li>
+        <li>Review: the review block shows amount, new balance, projected health + liquidation price, APY, and USD fee before confirm.</li>
+        <li>Exact approval: the surfaced approval equals the action amount, never unlimited.</li>
+        <li>Acknowledgment: a projection into At-risk requires the checkbox before enabling. <b>Covers AE2.</b></li>
+      </ul>
+      <p class="small"><b>Verification:</b> panel composes the kit; blocked states never reach submit; review precedes signing.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u11"><h4><span class="uid">U11</span> Markets surface</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The markets plane in both densities — Simple cards, Pro table — using the standardized vocabulary.</dd>
+      <dt>Requirements</dt><dd>R4, R6, R8, R31</dd>
+      <dt>Dependencies</dt><dd>U3, U9</dd>
+      <dt>Files</dt><dd><code>src/features/markets/components/{MarketList,MarketCard,MarketRow}.tsx</code>, <code>src/routes/markets.tsx</code>, <code>src/features/markets/components/MarketList.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Consumes the integration plan's <code>useMarkets</code>. Simple renders spacious cards with APY as hero; Pro renders one dense glass table (never glass-on-glass) with more metrics. Optional row sparkline; quiet charts per R31.</p>
+      <ul class="small">
+        <li>Density: Simple shows cards with the hero APY; Pro shows the table with borrow APR / utilization / liquidity columns.</li>
+        <li>Vocabulary: APY/utilization render via the U3 primitives with identical labels/colors.</li>
+        <li>Responsive: the Pro table collapses to cards below ~640px.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> both densities render from mock markets; swapping to live data needs no component change.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u12"><h4><span class="uid">U12</span> Dashboard surface</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The personal position view — net-worth/net-APY hero, supplies/borrows split, health, teaching empty state.</dd>
+      <dt>Requirements</dt><dd>R9, R12, R24, R29</dd>
+      <dt>Dependencies</dt><dd>U4, U7, U9</dd>
+      <dt>Files</dt><dd><code>src/features/position/components/PositionDashboard.tsx</code>, <code>src/routes/dashboard.tsx</code>, <code>src/features/position/components/PositionDashboard.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Consumes <code>usePosition</code>. Fraunces net-worth hero + net-APY; supplies/borrows split with per-row actions; the health meter (U4) is persistent. New-user state uses the teaching empty (U7).</p>
+      <ul class="small">
+        <li>Populated: shows hero numbers, split panels, and the health zone for a user with a position.</li>
+        <li>Empty: a connected user with no position sees a teaching empty state + Supply CTA. <b>Covers AE8.</b></li>
+      </ul>
+      <p class="small"><b>Verification:</b> dashboard renders a mock position; empty and populated states both correct.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u13"><h4><span class="uid">U13</span> Market-detail surface + Simple/Pro</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The <code>market.$id</code> surface fusing market data + position + action panels, with Pro revealing LLTV/oracle/utilization.</dd>
+      <dt>Requirements</dt><dd>R7, R8, R31</dd>
+      <dt>Dependencies</dt><dd>U9, U10, U11</dd>
+      <dt>Files</dt><dd><code>src/routes/market.$id.tsx</code>, <code>src/features/markets/components/MarketDetail.tsx</code>, <code>src/features/markets/components/APYBreakdown.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Coordination:</b> shares the <code>market.$id</code> route with the integration plan's shell unit — this unit owns the detail composition and Pro reveal; the route/host is coordinated with the integration plan.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Hosts the U10 action panel(s); APY breakdown splits base vs. rewards by color; Simple hides oracle/LLTV/utilization, Pro reveals them in place. Advanced actions are entered from here (U16).</p>
+      <ul class="small">
+        <li>Composition: the detail renders the action panel for a valid market; an unknown id renders the error state.</li>
+        <li>Pro reveal: toggling Pro surfaces LLTV/oracle/utilization without re-laying-out the panel.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> every core action panel is reachable from the running detail surface in both densities.</p>
+    </div></details>
+  </article>
+
+  <p class="phase-h">Phase 4 · Advanced surfaces (after the core loop)</p>
+
+  <article class="unit" id="u14"><h4><span class="uid">U14</span> Cross-chain supply tracker</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>A persistent, refresh-surviving multi-step tracker distinct from a local tx.</dd>
+      <dt>Requirements</dt><dd>R25</dd>
+      <dt>Dependencies</dt><dd>U5</dd>
+      <dt>Files</dt><dd><code>src/components/ui/CrossChainTracker.tsx</code>, <code>src/features/crosschain/components/CrossChainSupplyPanel.tsx</code>, <code>src/components/ui/CrossChainTracker.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> A transfer object persisted to storage (survives reload); steps Sent → Relaying (~est) → Arriving with an elapsed timer, a coastal in-transit motif, and both-ledger explorer links; a "taking longer than usual" recovery path after the window.</p>
+      <ul class="small">
+        <li>In-flight: after source-confirm, shows "Relaying / arriving on HashKey", distinct from a local tx, and survives a reload. <b>Covers AE7.</b></li>
+        <li>Completion: the destination event flips it to complete; both explorer links are present.</li>
+        <li>Timeout: past the expected window, a "check status" recovery affordance appears.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> the mock two-hop flow renders each step; reload restores in-flight state.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u15"><h4><span class="uid">U15</span> Approvals &amp; delegation management</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The allowance/delegation list with plain-language explanations, one-click revoke/reset, and a deliberate delegation flow.</dd>
+      <dt>Requirements</dt><dd>R26</dd>
+      <dt>Dependencies</dt><dd>U5, U9</dd>
+      <dt>Files</dt><dd><code>src/components/ui/{ApprovalsManager,DelegationFlow}.tsx</code>, <code>src/features/delegation/components/DelegationPanel.tsx</code>, <code>src/components/ui/ApprovalsManager.test.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Lists allowances/delegations (spender, token, amount) with revoke (approve 0). Delegation uses a distinct, deliberate flow — never the "Approve" chrome — restating "you're letting 0x… borrow against YOUR collateral", showing an exact cap, and requiring explicit confirmation.</p>
+      <ul class="small">
+        <li>Revoke: a residual allowance lists with a one-click revoke-to-0.</li>
+        <li>Delegation: the flow restates the consequence, shows the delegate + exact cap, and gates on an explicit confirmation.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> allowances are visible + revocable; delegation cannot proceed without the deliberate confirm.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u16"><h4><span class="uid">U16</span> Advanced action surfaces (liquidate · create-pool)</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The Advanced-gated liquidate and create-pool surfaces with guided framing and deliberate confirmation.</dd>
+      <dt>Requirements</dt><dd>R7, R13, R30</dd>
+      <dt>Dependencies</dt><dd>U10</dd>
+      <dt>Files</dt><dd><code>src/features/liquidate/components/LiquidatePanel.tsx</code>, <code>src/features/pool-create/components/CreatePoolPanel.tsx</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Reachable only from the Advanced layer; each opens with plain-language framing of the action and its stakes; irreversible/high-stakes steps restate the exact consequence and require deliberate confirmation. Reuse the U10 panel + exact approvals.</p>
+      <ul class="small">
+        <li>Gating: liquidate/create-pool are absent from the retail default and present under Advanced.</li>
+        <li>Liquidate: a healthy borrower is not actionable (disabled by the gate); an unhealthy one shows the reward math.</li>
+        <li>Create-pool: the seed-below-minimum case is blocked before submit with guidance.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> advanced actions are gated and carry deliberate confirmation.</p>
+    </div></details>
+  </article>
+
+  <p class="phase-h">Phase 5 · Cross-cutting quality</p>
+
+  <article class="unit" id="u17"><h4><span class="uid">U17</span> Accessibility &amp; responsive pass</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>WCAG AA on the actual glass, keyboard/focus, aria-live status, tables→cards, and reduce-transparency/motion preferences.</dd>
+      <dt>Requirements</dt><dd>R27, R28</dd>
+      <dt>Dependencies</dt><dd>U11, U12, U13</dd>
+      <dt>Files</dt><dd><code>src/styles.css</code> (reduce-transparency), affected kit + surface components, <code>src/components/ui/a11y.test.tsx</code></dd>
+    </dl>
+    <div class="exec"><b>Execution note:</b> partly a verification pass — audit contrast against the real blurred backdrops in both themes; add a "reduce transparency" preference that swaps glass for solid surfaces.</div>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> Risk chips/critical numbers on opaque backing; text ≥ 4.5:1 tested on the blurred backdrop; <code>aria-live="polite"</code> for health + tx status; text alternatives for gauges; keyboard operability + visible focus; tables collapse to cards; touch targets ≥ 44px; honor <code>prefers-reduced-motion</code>.</p>
+      <ul class="small">
+        <li>Contrast: critical numbers pass AA in both light and dark against their real backdrop.</li>
+        <li>Non-color: every risk state is readable from label + shape with color removed.</li>
+        <li>Announce: a health-zone or tx-status change is announced to a screen reader.</li>
+        <li>Responsive: the markets table becomes stacked cards below ~640px.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> a11y assertions green; manual audit of contrast + keyboard flow in both themes.</p>
+    </div></details>
+  </article>
+
+  <article class="unit" id="u18"><h4><span class="uid">U18</span> Voice, microcopy &amp; onboarding</h4>
+    <dl class="strip">
+      <dt>Goal</dt><dd>The tooltip system for risk terms, reassurance microcopy, and the first-run three-verbs onboarding.</dd>
+      <dt>Requirements</dt><dd>R29, R30</dd>
+      <dt>Dependencies</dt><dd>U3, U9</dd>
+      <dt>Files</dt><dd><code>src/components/ui/Tooltip.tsx</code>, <code>src/features/onboarding/components/FirstRun.tsx</code>, <code>src/lib/copy/terms.ts</code></dd>
+    </dl>
+    <details><summary>Approach · Test scenarios · Verification</summary><div class="body">
+      <p class="small"><b>Approach.</b> A keyboard-focusable, dismissible tooltip; a central plain-language glossary of risk terms; reassurance microcopy at risky moments; a dismissible first-run teaching the three verbs (supply / borrow / health). Read-only browsing is itself onboarding.</p>
+      <ul class="small">
+        <li>Tooltip: risk terms expose a one-sentence plain definition, keyboard-focusable and dismissible.</li>
+        <li>First-run: shows once, teaches the three verbs, and is dismissible/persistent.</li>
+      </ul>
+      <p class="small"><b>Verification:</b> tooltips reachable by keyboard; first-run shows once and dismisses.</p>
+    </div></details>
+  </article>
+</section>
+
+<!-- ================= VERIFICATION CONTRACT ================= -->
+<section id="verification-contract">
+  <p class="kicker">Planning Contract · verification</p>
+  <h2>Verification Contract</h2>
+  <div class="tblshell" style="margin-top:.8rem">
+    <table class="gates">
+      <thead><tr><th>Gate</th><th>Command</th><th>Applies to</th><th>Done signal</th></tr></thead>
+      <tbody>
+        <tr><td>Unit tests</td><td><code>bun run test</code></td><td>U2–U18 feature-bearing units</td><td>all named scenarios green</td></tr>
+        <tr><td>Typecheck</td><td><code>tsc --noEmit</code> (add script)</td><td>all units</td><td>no type errors; kit is data-agnostic</td></tr>
+        <tr><td>Lint</td><td><code>bun run lint</code></td><td>all units</td><td>clean</td></tr>
+        <tr><td>Format</td><td><code>bun run check</code></td><td>all units</td><td>clean</td></tr>
+        <tr><td>Routes</td><td><code>bun run generate-routes</code></td><td>U11, U12, U13</td><td><code>routeTree.gen.ts</code> regenerated</td></tr>
+        <tr><td>Theme + density</td><td><code>bun run dev</code></td><td>U1, U9, U11–U13</td><td>every surface correct in light + dark and in Simple + Pro</td></tr>
+        <tr><td>A11y audit</td><td>manual + <code>a11y.test.tsx</code></td><td>U17</td><td>AA contrast on real glass; keyboard + aria-live verified</td></tr>
+        <tr><td>Visual smoke (mock)</td><td><code>bun run dev</code> (<code>VITE_DATA_MODE=mock</code>)</td><td>Phases 1–4</td><td>markets, dashboard, each action panel, and each state render from mocks</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted" style="margin-top:.6rem">Mock mode is the verification environment throughout — the kit is data-agnostic, so live data (owned by the integration plan) needs no kit change.</p>
+</section>
+
+<!-- ================= DEFINITION OF DONE ================= -->
+<section id="definition-of-done">
+  <p class="kicker">Planning Contract · done</p>
+  <h2>Definition of Done</h2>
+  <ul class="small measure">
+    <li><b>Foundation (U1–U3):</b> tokens/mono/motion extend <code>styles.css</code>; the format library and metric primitives are in place and unit-tested — reviewable before any surface.</li>
+    <li><b>Kit (U4–U8):</b> health/risk viz, tx state machine, money input, display states, and wallet/network presentation are built, data-agnostic, and unit-tested against mock props.</li>
+    <li><b>Shell + core (U9–U13):</b> the Tide shell + Simple↔Pro density, the action panel, and the markets / dashboard / market-detail surfaces render from mocks in both themes and both densities.</li>
+    <li><b>Advanced (U14–U16):</b> cross-chain tracker, approvals/delegation, and the Advanced-gated liquidate/create-pool surfaces complete against mocks — sequenced after the core loop.</li>
+    <li><b>Quality (U17–U18):</b> the a11y/responsive pass and the voice/onboarding layer land; AA contrast holds on the real glass in both themes.</li>
+    <li>All Verification Contract gates pass in mock mode; Product Contract R1–R31 are each advanced by at least one unit; the kit imports no adapters/hooks (mock↔real swap is the integration plan's, not the kit's).</li>
+  </ul>
+</section>
+
+<!-- ================= APPENDIX ================= -->
+<section id="appendix">
+  <p class="kicker">Appendix</p>
+  <h2>Steal-this reference &amp; formatting rules</h2>
+
+  <h3 style="margin-top:1rem">Pattern → coastal-glass translation</h3>
+  <div class="tblshell">
+    <table class="rq">
+      <thead><tr><th>Pattern</th><th>Source</th><th>Coastal-glass translation</th></tr></thead>
+      <tbody>
+        <tr><td>Buffer-to-liquidation + liquidation price</td><td>UX bible · Spark · Fluid</td><td>Palm→amber→coral arc that empties toward danger; "liquidates if X &lt; $Y (−Z%)" as the headline.</td></tr>
+        <tr><td>Named risk zones vs. bare number</td><td>Spark LTV slider</td><td>Safe/Comfortable/Watch/At-risk/Critical chips; number subordinate.</td></tr>
+        <tr><td>Projected before → after</td><td>Aave</td><td>Animated "2.41 → 1.68" pill tinting toward the target zone.</td></tr>
+        <tr><td>Simple ↔ Pro density toggle</td><td>Pendle · Spark · Morpho Lite</td><td>Segmented glass control; Pro reveals reserved stat rows in place, never re-lays-out.</td></tr>
+        <tr><td>One hero number per card</td><td>Spark · Ethena · Morpho</td><td>Fraunces APY in palm-green; everything else neutral.</td></tr>
+        <tr><td>APY provenance split (base + rewards)</td><td>Morpho</td><td>Segmented pill: palm-green base, lighter teal rewards — "is this yield real?"</td></tr>
+        <tr><td>Overlapping collateral-icon cluster</td><td>Morpho · Euler</td><td>Small circular glass token chips with a thin ring against the glass.</td></tr>
+        <tr><td>Sticky morphing Approve→Act button</td><td>Morpho · Aave</td><td>Solid palm-green CTA whose label mutates; stepper chips fill on completion.</td></tr>
+        <tr><td>One updating toast, status to favicon</td><td>Linear · Vercel</td><td>Frosted bottom toast with a teal progress underline; tab favicon spinner→check while pending.</td></tr>
+        <tr><td>Muted surfaces + one accent = trust</td><td>Mercury · Morpho</td><td>Sand "paper" canvas, one lagoon action color, numbers in neutrals.</td></tr>
+        <tr><td>Named-zone / one-click strategies</td><td>Fluid</td><td>Bundle multi-step actions as single calm confirms with a sequential check list.</td></tr>
+        <tr><td>Pending-timelock as trust banner</td><td>Morpho</td><td>Calm sand/amber glass banner, not a red alert.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.6rem">Number formatting rules (adopt verbatim)</h3>
+  <div class="tblshell">
+    <table class="rq">
+      <thead><tr><th>Rule</th><th>Behavior</th></tr></thead>
+      <tbody>
+        <tr><td>Compact</td><td>Above 99,999 → K / M / B (e.g. <span class="num">$4.2M</span>); the user's own entered amounts &amp; balances stay full precision.</td></tr>
+        <tr><td>Precision</td><td>USD &amp; percentages → 2 dp; small values &lt; 1 → up to 7 dp; dust → <code>&lt; 0.01</code>, never <code>0.00</code>.</td></tr>
+        <tr><td>Round-down</td><td>Withdrawable / available amounts round down so the UI never overstates what a user can act on.</td></tr>
+        <tr><td>Decimals</td><td>Per-token decimals from metadata (pxUSDT 6, others 18/8) — never hardcoded; full precision kept internally as <code>bigint</code>.</td></tr>
+        <tr><td>Glyphs</td><td><code>$</code> / <code>%</code> / token symbols in lighter ink so the numeral dominates; all numerics right-aligned, tabular.</td></tr>
+        <tr><td>Denomination</td><td>USD ⟷ token toggle, sticky per user.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.6rem">Health zone scale (starting point — reconcile in planning)</h3>
+  <div class="tblshell">
+    <table class="rq">
+      <thead><tr><th>Health factor</th><th>Zone</th><th>Color</th><th>Shape</th></tr></thead>
+      <tbody>
+        <tr><td class="num">≥ 2.0</td><td>Safe</td><td><span class="chip safe">palm</span></td><td>● shield</td></tr>
+        <tr><td class="num">1.5 – 2.0</td><td>Comfortable</td><td><span class="chip safe">palm</span></td><td>●</td></tr>
+        <tr><td class="num">1.25 – 1.5</td><td>Watch</td><td><span class="chip caution">amber</span></td><td>◐</td></tr>
+        <tr><td class="num">1.1 – 1.25</td><td>At risk</td><td><span class="chip danger">coral</span></td><td>△</td></tr>
+        <tr><td class="num">1.0 – 1.1</td><td>Critical</td><td><span class="chip danger">coral bold</span></td><td>△ pulse</td></tr>
+        <tr><td class="num">≤ 1.0</td><td>Liquidatable</td><td><span class="chip danger">coral solid</span></td><td>⛔</td></tr>
+        <tr><td class="num">∞</td><td>No debt</td><td><span class="chip safe">palm</span></td><td>∞ (Fraunces italic)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="caption">Aave's source uses ≥3 safe / &lt;1.1 danger with 2-dp round-down; the UX-bible zone model above is finer-grained. Planning reconciles the two into one scale.</p>
+</section>
+
+<footer class="sig">
+  Composed 2026-07-07T18:26Z by ce-brainstorm from the user's prompt (DeFi app UI/UX) and five research passes (Aave · Morpho · Spark/Fluid/Euler · broad DeFi+fintech survey · money-market UX); enriched to implementation-ready by ce-plan 2026-07-07T18:40Z (direction C · Tide; 18 units). Anchored to <code>src/styles.css</code> and <code>docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md</code>.
+</footer>
+
+</div>
+<script>
+/* theme toggle — persists to the same data-theme attribute src/styles.css already honors */
+(function(){
+  var btn=document.getElementById('themeBtn');
+  var root=document.documentElement;
+  try{var s=localStorage.getItem('paboxo-brief-theme');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  btn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    var next=cur==='dark'?'light':(cur==='light'?'dark':(matchMedia('(prefers-color-scheme: dark)').matches?'light':'dark'));
+    root.setAttribute('data-theme',next);
+    try{localStorage.setItem('paboxo-brief-theme',next);}catch(e){}
+  });
+})();
+/* active-section nav */
+(function(){
+  var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+  var map={};links.forEach(function(a){var id=a.getAttribute('href').slice(1);var el=document.getElementById(id);if(el)map[id]=a;});
+  var obs=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.remove('active');});var a=map[e.target.id];if(a)a.classList.add('active');}});
+  },{rootMargin:'-45% 0px -50% 0px'});
+  Object.keys(map).forEach(function(id){obs.observe(document.getElementById(id));});
+})();
+</script>
+</body>
+</html>
