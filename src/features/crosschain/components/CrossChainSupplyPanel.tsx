@@ -1,29 +1,45 @@
 import { useState } from 'react'
+import { parseUnits } from 'viem'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import { ActionButton } from '#/components/ui/ActionButton'
 import { NetworkBanner } from '#/components/ui/wallet/NetworkBanner'
 import { CrossChainTracker } from '#/components/ui/CrossChainTracker'
+import type { MarketView } from '#/features/markets/types'
 import { useCrossChainTransfer } from '../useCrossChainTransfer'
+import { useCrossChainSupply } from '../hooks/useCrossChainSupply'
 
-/** Cross-chain supply from Base (U14, R25). Built mock-first; tracker takes over post-send. */
-export function CrossChainSupplyPanel({ onBase = true }: { onBase?: boolean }) {
+/**
+ * Cross-chain supply from Base (U17, R26, R27). The real write runs through
+ * useCrossChainSupply (Base guard → quote → approve → supplyToHashKey); the
+ * tracker shows the two-hop until delivery completes on HashKey. Mock-first.
+ */
+export function CrossChainSupplyPanel({
+  market,
+  onBase = true,
+}: {
+  market: MarketView
+  onBase?: boolean
+}) {
   const [value, setValue] = useState('')
+  const { state, supply } = useCrossChainSupply(market)
   const { transfer, start, update, clear } = useCrossChainTransfer()
 
-  const submit = () => {
+  const submit = async () => {
     start({
-      id: 'demo',
+      id: 'xfer',
       sourceChain: 'Base',
       destChain: 'HashKey',
       amount: value || '0',
-      symbol: 'pxUSDT',
+      symbol: market.collateralSymbol,
       step: 'sent',
       startedAt: Date.now(),
       etaSeconds: 300,
       sourceTxUrl: '#',
     })
-    window.setTimeout(() => update({ step: 'relaying' }), 600)
-    window.setTimeout(() => update({ step: 'arrived', destTxUrl: '#' }), 1800)
+    window.setTimeout(() => update({ step: 'relaying' }), 400)
+    // Resolves once the destination InboundSupply is observed (delivered).
+    await supply(parseUnits(value || '0', market.collateralDecimals))
+    update({ step: 'arrived', destTxUrl: '#' })
   }
 
   if (transfer) {
@@ -53,16 +69,16 @@ export function CrossChainSupplyPanel({ onBase = true }: { onBase?: boolean }) {
         <NetworkBanner currentChainName="HashKey" targetName="Base" />
       ) : null}
       <MoneyInput
-        symbol="pxUSDT"
-        decimals={6}
+        symbol={market.collateralSymbol}
+        decimals={market.collateralDecimals}
         value={value}
         onChange={setValue}
       />
       <ActionButton
-        state="idle"
+        state={state}
         idleLabel="Supply to HashKey"
-        disabled={!onBase || value === ''}
-        onClick={submit}
+        disabled={value === ''}
+        onClick={() => void submit()}
       />
     </div>
   )
