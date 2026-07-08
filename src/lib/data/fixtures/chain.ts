@@ -88,16 +88,23 @@ export interface UserPoolState {
 const PXWHSK_POOL = '0xb45693e9f28ceb47fc3c81b45535e3d808196406'
 
 export const USER_POOL_STATE: Record<string, UserPoolState | undefined> = {
+  // A coherent preview position on the pxWHSK market: the user is a pxUSDT
+  // lender AND a borrower holding pxWHSK collateral. Mock shares are pre-scaled
+  // to the borrow-token (assets) domain so the supply/debt math yields clean USD.
   [PXWHSK_POOL]: {
+    // debt = borrowShares × tbA / tbS ≈ 3,172 pxUSDT
     borrowShares: usdt6(3_000),
-    supplyShares: 8_200n * WAD, // 8,200 pxWHSK supplied (18dp shares)
-    maxBorrowAmount: usdt6(287), // 70% LTV of ~$410 collateral
-    collateralValue: usdt6(410),
+    // supplyValue ≈ 12,500 pxUSDT of supplied liquidity
+    supplyShares: usdt6(12_500),
+    // 70% LTV of $8,000 collateral
+    maxBorrowAmount: usdt6(5_600),
+    // ~160,000 pxWHSK @ $0.05
+    collateralValue: usdt6(8_000),
     positionAddr: '0x2222222222222222222222222222222222222222',
     liquidatable: {
       liquidatable: false,
-      borrowValueUsd: 3_152n * WAD,
-      maxCollateralValueUsd: 7_600n * WAD,
+      borrowValueUsd: 3_172n * WAD, // 1e18 USD
+      maxCollateralValueUsd: 6_000n * WAD, // 75% liq-threshold of $8,000 → HF ≈ 1.89
       bonusUsd: 0n,
     },
   },
