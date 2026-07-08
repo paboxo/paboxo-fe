@@ -48,7 +48,11 @@ describe('LiquidatePanel', () => {
 
 describe('CreatePoolPanel', () => {
   it('blocks a below-minimum seed and enables at/above the minimum once acknowledged', () => {
-    render(<CreatePoolPanel minSeed={1000} />)
+    render(
+      <QueryWrapper>
+        <CreatePoolPanel minSeed={1000} />
+      </QueryWrapper>,
+    )
     const button = screen.getByRole('button', { name: /Create pool/ })
     const seed = screen.getByLabelText('Seed liquidity')
 
