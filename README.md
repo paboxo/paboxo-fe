@@ -1,204 +1,81 @@
-Welcome to your new TanStack Start app! 
+# Paboxo — Frontend
 
-# Getting Started
+The web app for **Paboxo**, a money-market (lending / borrowing) dApp on **HashKey Chain** (mainnet, chainId `177`). Supply assets to earn, borrow **pxUSDT** against collateral, and always know how safe your position is.
 
-To run this application:
+Built on TanStack Start (React 19, TanStack Router, Tailwind 4).
+
+> **Status: preview.** The full UI/UX layer is implemented and runs on **mock data**. The real on-chain addresses and ABIs are already wired in [`src/lib/contracts/`](src/lib/contracts), but the wallet + contract read/write integration (wagmi/viem + Reown AppKit) is not built yet — see [Roadmap](#roadmap).
+
+## Quick start
 
 ```bash
 bun install
-bun --bun run dev
+bun run dev          # http://localhost:3000
 ```
 
-# Building For Production
+Tour the app: **`/`** (home) → **`/markets`** (all markets) → **`/market/$id`** (market detail + supply panel) → **`/dashboard`** (your position). Try the **◑ Theme** toggle (light/dark). On mobile a **Simple/Pro** density toggle appears in the header; desktop always renders the full Pro layout.
 
-To build this application for production:
+## Scripts
 
-```bash
-bun --bun run build
+| Command                   | What it does                                       |
+| ------------------------- | -------------------------------------------------- |
+| `bun run dev`             | Dev server on port 3000                            |
+| `bun run build`           | Production build                                   |
+| `bun run test`            | Unit tests (Vitest)                                |
+| `bun run typecheck`       | `tsc --noEmit`                                     |
+| `bun run lint`            | ESLint                                             |
+| `bun run format`          | Prettier write + ESLint fix                        |
+| `bun run generate-routes` | Regenerate `routeTree.gen.ts` after adding a route |
+
+## Project structure
+
+```text
+src/
+  lib/
+    format/     # number/amount/currency formatting (compact, dust, per-token decimals)
+    risk/       # health-factor -> zone model (buffer-to-liquidation)
+    tx/         # transaction state machine + revert-reason mapping
+    contracts/  # REAL HashKey-177 addresses, market/IRM config, and extracted ABIs
+    copy/       # plain-language risk glossary
+  components/
+    ui/         # the shared kit - health viz, tx status, money input, states, wallet, tooltip ...
+    layout/     # AppHeader, AppPageHeader, PortfolioStrip, DensityToggle
+    density/    # DensityProvider (responsive Simple/Pro) + useDensity
+    action/     # ActionPanel (money input + projected health + review + tx button)
+  features/     # markets - position - crosschain - delegation - liquidate - pool-create - onboarding
+    */mock.ts   # placeholder data (integration plan's real hooks swap in behind these shapes)
+  routes/       # TanStack file routes: index, markets, market.$id, dashboard, about
+  styles.css    # coastal-glass design tokens (light + dark) + component primitives
 ```
 
-## Testing
+The UI kit is **data-agnostic** — components take props / injected callbacks and never import chain adapters, so the mock -> real swap is a data change, not a redesign.
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## Design system
 
-```bash
-bun --bun run test
-```
+- **Coastal-glass identity** — a warm island/lagoon palette (sea-ink, lagoon, palm, sand), Fraunces (display) + Manrope (UI) + tabular mono numerals, in full light + dark. Tokens live in [`src/styles.css`](src/styles.css); flat solid surfaces with defined borders.
+- **One accent, semantic-only color** — lagoon for actions, palm-green for positive/yield, amber/coral for risk — always paired with a label + shape (never color alone).
+- **Simple / Pro density** — the full (Pro) layout on desktop; Simple is a mobile-only, calmer default. Responsive via [`src/components/density/DensityProvider.tsx`](src/components/density/DensityProvider.tsx).
+- **Safety UX** — health as buffer-to-liquidation + liquidation price, projected before/after on every risk action, exact-amount approvals, plain-language revert reasons.
 
-## Styling
+## Contracts & deployment
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+Paboxo is **live on HashKey Chain 177** (mock-asset path; cross-chain over Chainlink CCIP). The frontend carries the real config in [`src/lib/contracts/`](src/lib/contracts):
 
-### Removing Tailwind CSS
+- `addresses.ts` — core singletons (LendingPoolFactory, TokenDataStream, IsHealthy, InterestRateModel, CCIP), tokens (pxUSDT/pxWHSK/pxWBTC/pxWETH), price feeds, cross-chain.
+- `markets.ts` — the 4 markets with real per-market **IRM tiers** (LTV 70/80/80/65, liquidation thresholds 75/85/85/72) and seed prices.
+- `abis/` — 12 ABIs extracted from the smart-contract repo's `forge build`.
 
-If you prefer not to use Tailwind CSS:
+Each market's accounting `router` is resolved at runtime via `LendingPool.router()` (two-address rule). Canonical deployment reference: `references/paboxo-sc/docs/DEPLOYMENT.md` (gitignored SC repo). The [integration plan](docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md) has a full **Deployment Reconciliation** section.
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
+## Plans & docs
 
-## Linting & Formatting
+- [`docs/plans/2026-07-08-001-feat-paboxo-app-ui-ux-plan.html`](docs/plans/2026-07-08-001-feat-paboxo-app-ui-ux-plan.html) — the UI/UX design + implementation plan (open in a browser).
+- [`docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md`](docs/plans/2026-07-06-001-feat-paboxo-frontend-integration-plan.md) — the data/contract integration plan.
 
+## Roadmap
 
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+Not yet built (owned by the integration plan): the wagmi v3 + viem + Reown AppKit provider, wallet connect, the `chainAdapter` / `indexerAdapter` data seam, and real contract reads/writes. The UI kit and the real `src/lib/contracts/` config are ready for those adapters to consume. Also external: the indexer/subgraph and the Base-side CCIP sender.
 
-```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
-```
+## Quality
 
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+Small, per-unit commits; ESLint + Vitest run and green before each commit. Tests cover the pure logic (formatting, health model, revert mapping) and the interactive components (tx states, money input, action-panel gating, density, states). Run `bun run test && bun run typecheck && bun run lint && bun run build`.
