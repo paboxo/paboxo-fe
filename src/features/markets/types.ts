@@ -1,4 +1,7 @@
-/** UI-facing market view-model (integration plan supplies the real data behind these shapes). */
+import type { Address } from '#/lib/contracts'
+
+/** UI-facing market view-model. Real fields come from src/lib/contracts; the
+ *  live rate/util/TVL numbers are filled by the integration plan's RPC reads. */
 export interface MarketView {
   id: string
   collateralSymbol: string
@@ -10,8 +13,15 @@ export interface MarketView {
   utilization: number
   tvlUsd: number
   availableLiquidityUsd: number
+  /** Loan-to-value (%). */
   lltv: number
+  /** Liquidation threshold (%). */
+  liqThreshold: number
   oracle: string
-  /** Collateral price in USD. */
   priceUsd: number
+  /** Real deployed addresses (from the contracts config). */
+  poolAddress: Address
+  collateralAddress: Address
+  oracleFeed: Address
+  crossChain: boolean
 }

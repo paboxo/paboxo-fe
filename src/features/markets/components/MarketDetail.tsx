@@ -41,6 +41,7 @@ export function MarketDetail({ market }: { market: MarketView }) {
             </h2>
             <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
               Collateral · borrow {market.borrowSymbol}
+              {market.crossChain ? ' · cross-chain' : ''}
             </p>
           </div>
         </div>
@@ -63,6 +64,10 @@ export function MarketDetail({ market }: { market: MarketView }) {
           {density === 'pro' ? (
             <>
               <StatTile label="LLTV" value={formatPercent(market.lltv)} />
+              <StatTile
+                label="Liq. threshold"
+                value={formatPercent(market.liqThreshold)}
+              />
               <StatTile
                 label="Borrow APR"
                 value={formatPercent(market.borrowApr)}
