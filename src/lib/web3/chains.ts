@@ -1,13 +1,11 @@
-import { base, defineChain } from '@reown/appkit/networks'
-import type { AppKitNetwork } from '@reown/appkit/networks'
+import { defineChain } from 'viem'
+import { base } from 'wagmi/chains'
 import { HASHKEY } from '#/lib/contracts'
 import { HASHKEY_RPC_OVERRIDE } from '#/lib/config/env'
 
-/** HashKey Chain (177) as an AppKit network — a custom chain, not a built-in. */
+/** HashKey Chain (177) as a wagmi/viem chain — a custom chain, not a built-in. */
 export const hashkey = defineChain({
   id: HASHKEY.id,
-  caipNetworkId: 'eip155:177',
-  chainNamespace: 'eip155',
   name: HASHKEY.name,
   nativeCurrency: {
     name: HASHKEY.name,
@@ -24,5 +22,5 @@ export const hashkey = defineChain({
 
 export { base }
 
-/** All networks the app knows — HashKey (home) + Base (cross-chain source). */
-export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [hashkey, base]
+/** All chains the app knows — HashKey (home) + Base (cross-chain source). */
+export const chains = [hashkey, base] as const
