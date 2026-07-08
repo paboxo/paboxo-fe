@@ -2,9 +2,11 @@ import { formatPercent, formatTokenAmount, formatUsd } from '#/lib/format'
 import { StatTile } from '#/components/ui/StatTile'
 import { HealthMeter } from '#/components/ui/HealthMeter'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
+import { LoadingCard } from '#/components/ui/states/Loading'
 import { EmptyState } from '#/components/ui/states/EmptyState'
-import { usePosition } from '../mock'
-import type { BorrowRow, SupplyRow } from '../mock'
+import { ErrorState } from '#/components/ui/states/ErrorState'
+import { usePosition } from '../hooks/usePosition'
+import type { BorrowRow, SupplyRow } from '../types'
 
 function Panel({
   title,
@@ -55,9 +57,24 @@ function BorrowItem({ row }: { row: BorrowRow }) {
   )
 }
 
-/** The connected user's position (U12, R9, R12, R24, R29). */
+/** The connected user's position (U6, R9, R12, R24, R29). */
 export function PositionDashboard({ empty = false }: { empty?: boolean }) {
-  const { data } = usePosition(empty)
+  const { data, isLoading, error } = usePosition({ empty })
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <LoadingCard />
+        <LoadingCard />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <ErrorState message="Could not load your position. Try again shortly." />
+    )
+  }
 
   if (!data) {
     return (

@@ -3,10 +3,11 @@ import type { MarketConfig } from '#/lib/contracts'
 import type { MarketView } from './types'
 
 /**
- * Preview market data (U11). The market identity + risk params are the REAL
- * deployment (addresses, decimals, LTV/liq-threshold, IRM tier, seed price)
- * from src/lib/contracts; only the rate/utilization/TVL numbers below are
- * illustrative placeholders the integration plan's RPC reads will replace.
+ * Static market view fixtures for component tests/preview. The live app reads
+ * markets through `hooks/useMarkets.ts` (adapter-backed); this stays only as a
+ * synchronous sample so pure rendering tests don't need a query client. Market
+ * identity + risk params are the REAL deployment from src/lib/contracts; the
+ * rate/utilization/TVL numbers are illustrative.
  */
 interface Display {
   utilization: number
@@ -76,22 +77,3 @@ function toView(market: MarketConfig): MarketView {
 }
 
 export const MOCK_MARKETS: MarketView[] = MARKETS.map(toView)
-
-export interface MockQuery<T> {
-  data: T
-  isLoading: boolean
-  /** Widened so the error branch stays live — the real hook can reject. */
-  error: unknown
-}
-
-export function useMarkets(): MockQuery<MarketView[]> {
-  return { data: MOCK_MARKETS, isLoading: false, error: null }
-}
-
-export function useMarket(id: string): MockQuery<MarketView | undefined> {
-  return {
-    data: MOCK_MARKETS.find((market) => market.id === id),
-    isLoading: false,
-    error: null,
-  }
-}
