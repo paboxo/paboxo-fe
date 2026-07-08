@@ -25,6 +25,8 @@ export function ProjectedHealth({
     <div
       className="flex flex-col gap-1 rounded-xl p-2.5"
       data-projected-zone={to.key}
+      role="status"
+      aria-live="polite"
       style={{
         background: leavesSafe ? 'var(--caution-soft)' : 'var(--safe-soft)',
       }}

@@ -549,3 +549,56 @@ a {
     animation: none;
   }
 }
+
+/* Accessibility pass (U17, R27/R28). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Honor reduced motion globally, not just for the intro animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Reduce transparency: opaque surfaces + no blur (OS preference, or manual
+   opt-in via data-reduce-transparency="true"). Keeps text contrast on glass. */
+@media (prefers-reduced-transparency: reduce) {
+  :root:not([data-reduce-transparency='false']) {
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+  }
+  :root[data-theme='dark']:not([data-reduce-transparency='false']),
+  :root:not([data-theme='light']):not([data-reduce-transparency='false']) {
+    --surface: #122025;
+    --surface-strong: #0f1b1f;
+  }
+}
+:root[data-reduce-transparency='true'] {
+  --surface: #ffffff;
+  --surface-strong: #ffffff;
+}
+:root[data-theme='dark'][data-reduce-transparency='true'] {
+  --surface: #122025;
+  --surface-strong: #0f1b1f;
+}
+:root[data-reduce-transparency='true'] .island-shell,
+:root[data-reduce-transparency='true'] .feature-card,
+:root[data-reduce-transparency='true'] .demo-panel,
+:root[data-reduce-transparency='true'] .demo-card {
+  backdrop-filter: none;
+}

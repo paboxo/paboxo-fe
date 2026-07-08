@@ -28,24 +28,32 @@ export function MarketList() {
 
   if (density === 'pro') {
     return (
-      <div className="island-shell overflow-x-auto rounded-2xl">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
-              <th className="px-4 py-3 text-left font-bold">Market</th>
-              <th className="px-4 py-3 text-right font-bold">Supply APY</th>
-              <th className="px-4 py-3 text-right font-bold">Borrow APR</th>
-              <th className="px-4 py-3 text-right font-bold">Utilization</th>
-              <th className="px-4 py-3 text-right font-bold">Liquidity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((market) => (
-              <MarketRow key={market.id} market={market} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <>
+        {/* Below ~640px the dense table becomes stacked cards (R28). */}
+        <div className="grid gap-4 sm:hidden">
+          {data.map((market) => (
+            <MarketCard key={market.id} market={market} />
+          ))}
+        </div>
+        <div className="island-shell hidden overflow-x-auto rounded-2xl sm:block">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
+                <th className="px-4 py-3 text-left font-bold">Market</th>
+                <th className="px-4 py-3 text-right font-bold">Supply APY</th>
+                <th className="px-4 py-3 text-right font-bold">Borrow APR</th>
+                <th className="px-4 py-3 text-right font-bold">Utilization</th>
+                <th className="px-4 py-3 text-right font-bold">Liquidity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((market) => (
+                <MarketRow key={market.id} market={market} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </>
     )
   }
 
