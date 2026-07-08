@@ -4,6 +4,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import Footer from '../components/Footer'
 import { AppHeader } from '../components/layout/AppHeader'
 import { DensityProvider } from '../components/density/DensityProvider'
+import { Web3Provider } from '../lib/web3/Web3Provider'
+import ConnectButton from '../components/wallet/ConnectButton'
 
 import appCss from '../styles.css?url'
 
@@ -41,11 +43,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <DensityProvider>
-          <AppHeader />
-          {children}
-          <Footer />
-        </DensityProvider>
+        <Web3Provider>
+          <DensityProvider>
+            <AppHeader connect={<ConnectButton />} />
+            {children}
+            <Footer />
+          </DensityProvider>
+        </Web3Provider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
