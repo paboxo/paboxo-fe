@@ -2,6 +2,7 @@
 export interface MarketView {
   id: string
   collateralSymbol: string
+  collateralDecimals: number
   borrowSymbol: string
   supplyApy: number
   rewardsApy?: number

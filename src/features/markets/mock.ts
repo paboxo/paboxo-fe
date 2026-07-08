@@ -9,6 +9,7 @@ export const MOCK_MARKETS: MarketView[] = [
   {
     id: 'pxwhsk',
     collateralSymbol: 'pxWHSK',
+    collateralDecimals: 18,
     borrowSymbol: 'pxUSDT',
     supplyApy: 5.24,
     rewardsApy: 0.8,
@@ -23,6 +24,7 @@ export const MOCK_MARKETS: MarketView[] = [
   {
     id: 'pxwbtc',
     collateralSymbol: 'pxWBTC',
+    collateralDecimals: 8,
     borrowSymbol: 'pxUSDT',
     supplyApy: 3.91,
     borrowApr: 6.2,
@@ -36,6 +38,7 @@ export const MOCK_MARKETS: MarketView[] = [
   {
     id: 'pxweth',
     collateralSymbol: 'pxWETH',
+    collateralDecimals: 18,
     borrowSymbol: 'pxUSDT',
     supplyApy: 4.4,
     borrowApr: 6.9,
@@ -49,6 +52,7 @@ export const MOCK_MARKETS: MarketView[] = [
   {
     id: 'pxwhsk-base',
     collateralSymbol: 'pxWHSK',
+    collateralDecimals: 18,
     borrowSymbol: 'pxUSDT',
     supplyApy: 5.61,
     rewardsApy: 1.2,
