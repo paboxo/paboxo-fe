@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import ThemeToggle from '#/components/ThemeToggle'
+import { DensityToggle } from './DensityToggle'
 
 const NAV = [
   {
@@ -60,6 +61,10 @@ export function AppHeader({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* Simple/Pro is a mobile-only choice — desktop always renders Pro. */}
+          <span className="sm:hidden">
+            <DensityToggle />
+          </span>
           {networkStatus}
           {account ?? connect}
           <ThemeToggle />
