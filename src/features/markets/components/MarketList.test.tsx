@@ -1,27 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { DensityProvider } from '#/components/density/DensityProvider'
+import { QueryWrapper } from '#/test/utils'
 import { MarketList } from './MarketList'
 
 function renderList() {
   return render(
-    <DensityProvider>
-      <MarketList />
-    </DensityProvider>,
+    <QueryWrapper>
+      <DensityProvider>
+        <MarketList />
+      </DensityProvider>
+    </QueryWrapper>,
   )
 }
 
 describe('MarketList', () => {
-  it('renders every market as a card in Simple density', () => {
+  it('renders every market as a card in Simple density', async () => {
     window.localStorage.setItem('density', 'simple')
     renderList()
-    expect(screen.getAllByRole('article').length).toBe(4)
+    const articles = await screen.findAllByRole('article')
+    expect(articles.length).toBe(4)
   })
 
-  it('renders one dense table in Pro density', () => {
+  it('renders one dense table in Pro density', async () => {
     window.localStorage.setItem('density', 'pro')
     renderList()
-    expect(screen.getByRole('table')).toBeTruthy()
+    const table = await screen.findByRole('table')
+    expect(table).toBeTruthy()
     // header row + one row per market
     expect(screen.getAllByRole('row').length).toBe(5)
   })

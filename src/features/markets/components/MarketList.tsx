@@ -2,7 +2,7 @@ import { useDensity } from '#/components/density/useDensity'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
-import { useMarkets } from '../mock'
+import { useMarkets } from '../hooks/useMarkets'
 import { MarketCard } from './MarketCard'
 import { MarketRow } from './MarketRow'
 

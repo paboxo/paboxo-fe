@@ -1,4 +1,4 @@
-import type { MockQuery } from '#/features/markets/mock'
+import type { QueryResult } from '#/features/shared/query'
 
 export interface SupplyRow {
   symbol: string
@@ -64,6 +64,6 @@ export const MOCK_POSITION: PositionView = {
 }
 
 /** Pass `empty` to preview the new-user state. */
-export function usePosition(empty = false): MockQuery<PositionView | null> {
+export function usePosition(empty = false): QueryResult<PositionView | null> {
   return { data: empty ? null : MOCK_POSITION, isLoading: false, error: null }
 }

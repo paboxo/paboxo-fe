@@ -38,3 +38,8 @@ export function toWholeNumber(value: bigint, decimals: number): number {
   const frac = value % denom
   return Number(whole) + Number(frac) / Number(denom)
 }
+
+/** Convert a WAD rate (1e18 = 100%) to a 2-dp percentage number, for display. */
+export function wadToPercent(wad: bigint): number {
+  return Number((wad * 10_000n) / WAD) / 100
+}
