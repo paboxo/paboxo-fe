@@ -34,6 +34,7 @@ import type {
   ChainAdapter,
   CreatePoolParams,
   Hash,
+  IrmParams,
   LiquidatableStatus,
   MarketTotals,
   PriceData,
@@ -136,6 +137,51 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'calculateBorrowRate',
       args: [router],
     })
+  },
+
+  async getIrmParams(pool): Promise<IrmParams> {
+    const router = await resolveRouter(pool)
+    const irm = { chainId: CHAIN_ID, address: CORE.interestRateModel, abi: interestRateModelAbi } as const
+    const [
+      baseRateWad,
+      rateAtOptimalWad,
+      maxRateWad,
+      optimalUtilWad,
+      maxUtilWad,
+    ] = await Promise.all([
+      readContract(wagmiConfig, {
+        ...irm,
+        functionName: 'lendingPoolBaseRate',
+        args: [router],
+      }),
+      readContract(wagmiConfig, {
+        ...irm,
+        functionName: 'lendingPoolRateAtOptimal',
+        args: [router],
+      }),
+      readContract(wagmiConfig, {
+        ...irm,
+        functionName: 'lendingPoolMaxRate',
+        args: [router],
+      }),
+      readContract(wagmiConfig, {
+        ...irm,
+        functionName: 'lendingPoolOptimalUtilization',
+        args: [router],
+      }),
+      readContract(wagmiConfig, {
+        ...irm,
+        functionName: 'lendingPoolMaxUtilization',
+        args: [router],
+      }),
+    ])
+    return {
+      baseRateWad,
+      rateAtOptimalWad,
+      maxRateWad,
+      optimalUtilWad,
+      maxUtilWad,
+    }
   },
 
   async getPrice(token): Promise<PriceData> {

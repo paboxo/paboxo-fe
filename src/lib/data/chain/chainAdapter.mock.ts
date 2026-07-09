@@ -4,11 +4,13 @@
  * viem. Writes resolve here; the viem-shaped failure path is exercised at U9.
  */
 import type { Address } from '#/lib/contracts'
+import { MARKETS } from '#/lib/contracts'
 import type {
   BorrowParams,
   ChainAdapter,
   CreatePoolParams,
   Hash,
+  IrmParams,
   LiquidatableStatus,
   MarketTotals,
   PriceData,
@@ -54,6 +56,18 @@ export const mockChainAdapter: ChainAdapter = {
   },
   getBorrowRateWad(pool) {
     return resolve(POOL_FIXTURES[key(pool)]?.borrowRateWad ?? 0n)
+  },
+  getIrmParams(pool): Promise<IrmParams> {
+    // 1% = 1e16 WAD; utilizations and rates come straight from the market config.
+    const pctToWad = (pct: number): bigint => BigInt(Math.round(pct * 1e16))
+    const market = MARKETS.find((m) => key(m.pool) === key(pool)) ?? MARKETS[0]
+    return resolve({
+      baseRateWad: pctToWad(market.baseRate),
+      rateAtOptimalWad: pctToWad(market.rateAtOptimal),
+      maxRateWad: pctToWad(market.maxRate),
+      optimalUtilWad: pctToWad(market.optimalUtil),
+      maxUtilWad: pctToWad(market.maxUtil),
+    })
   },
   getPrice(token): Promise<PriceData> {
     const price = PRICE_FIXTURES[key(token)]

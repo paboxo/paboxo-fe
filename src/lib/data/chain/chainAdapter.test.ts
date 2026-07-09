@@ -42,6 +42,16 @@ function readByFunction(name: string): bigint | string {
       return 1_500_000_000000n
     case 'totalSupply':
       return 1_000n * 10n ** 18n
+    case 'lendingPoolBaseRate':
+      return (5n * 10n ** 18n) / 1000n // 0.5%
+    case 'lendingPoolRateAtOptimal':
+      return (7n * 10n ** 18n) / 100n // 7%
+    case 'lendingPoolMaxRate':
+      return (120n * 10n ** 18n) / 100n // 120%
+    case 'lendingPoolOptimalUtilization':
+      return (75n * 10n ** 18n) / 100n // 75%
+    case 'lendingPoolMaxUtilization':
+      return (90n * 10n ** 18n) / 100n // 90%
     default:
       return 0n
   }
@@ -78,6 +88,22 @@ describe('liveChainAdapter reads', () => {
     expect(totals.totalSupplyAssets).toBe(2_600_000_000000n)
     expect(totals.totalBorrowAssets).toBe(1_586_000_000000n)
     expect(totals.totalSupplyShares).toBe(1_000n * 10n ** 18n)
+  })
+
+  it('reads the IRM curve params from the router (WAD)', async () => {
+    const pool = nextPool()
+    const params = await liveChainAdapter.getIrmParams(pool)
+    // Read on the InterestRateModel, keyed by the resolved router.
+    const irmCall = mockRead.mock.calls.find(
+      ([, p]) =>
+        (p as { functionName: string }).functionName === 'lendingPoolMaxRate',
+    )
+    expect((irmCall?.[1] as { args: readonly unknown[] }).args).toEqual([ROUTER])
+    expect(params.baseRateWad).toBe((5n * 10n ** 18n) / 1000n)
+    expect(params.rateAtOptimalWad).toBe((7n * 10n ** 18n) / 100n)
+    expect(params.maxRateWad).toBe((120n * 10n ** 18n) / 100n)
+    expect(params.optimalUtilWad).toBe((75n * 10n ** 18n) / 100n)
+    expect(params.maxUtilWad).toBe((90n * 10n ** 18n) / 100n)
   })
 
   it('reads a fresh price and its updatedAt', async () => {
