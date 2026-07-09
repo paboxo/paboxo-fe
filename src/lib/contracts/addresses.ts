@@ -22,7 +22,7 @@ export const CORE: CoreAddresses = {
   isHealthy: '0xb3B458299864487520d3B0cEDf9F5cfF2629a27B',
   interestRateModel: '0x175867CAF278eB0610F216F3E0a6E671f2382E22',
   paboxoEmitter: '0x290CAcb1bc6e35797Db6243a1C10C12F16d93370',
-  ccipReceiver: '0x3D94E3385FeD1c8ad3f026b9aF3033DbbA3e7282',
+  ccipReceiver: '0x8ab3650f02603C97dE6DeAFF927041fC536366Ae',
   ccipRouter: '0xf2Fd62c083F3BF324e99ce157D1a42d7EbA77f1d',
   owner: '0x0EcE75f3C36f7Df2136Dac7633165DBff53dE3CD',
 }
@@ -101,7 +101,9 @@ export interface CrossChainAddresses {
   /** Paboxo's own Burn&Mint bridge token (pxWHSK) — a different contract per chain. */
   bridgeToken: { hashkey: Address; base: Address }
   burnMintTokenPool: { hashkey: Address; base: Address }
-  /** The Base-side sender (supplyToHashKey / quote) is NOT deployed yet. */
+  /** Base-side sender: user calls supplyToHashKey / quote here to supply cross-chain. */
+  baseSender: Address
+  /** True once the Base sender is deployed AND allowlisted on the HashKey receiver. */
   baseSenderDeployed: boolean
 }
 
@@ -114,5 +116,7 @@ export const CROSS_CHAIN: CrossChainAddresses = {
     hashkey: '0x5e6671ef689B2B2D4391a766B0486E5054136546',
     base: '0x1b0C8546E6DECB3C1c6cc8c20E69E23407dAd601',
   },
-  baseSenderDeployed: false,
+  // Owner = deployer (authority model). Sender allowlisted on receiver 0x8ab3…66Ae.
+  baseSender: '0x54d50F364Da0c1C913B433299b3Ae6D1cD7D356A',
+  baseSenderDeployed: true,
 }

@@ -16,7 +16,10 @@ import type { Hash } from '#/lib/data'
 import { useWriteAction } from '#/lib/tx/useWriteAction'
 import type { MarketView } from '#/features/markets/types'
 
-const DEST_GAS_LIMIT = 200_000
+// Destination gas for receiver.ccipReceive -> pool.supplyCollateral. The FIRST supply per user
+// deploys their Position (proxy + init), so this must be generous. Verified on mainnet 2026-07-09:
+// 2,000,000 ran out of gas on a first-time cross-chain supply (Position deploy). 5M gives margin.
+const DEST_GAS_LIMIT = 5_000_000
 /** CCIP supply action: 1 = collateral. */
 const ACTION_COLLATERAL = 1
 
