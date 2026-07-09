@@ -22,7 +22,7 @@ export function AccountPill({
     >
       <span
         className="h-2 w-2 rounded-full"
-        style={{ background: 'linear-gradient(90deg,#56c6be,#7ed3bf)' }}
+        style={{ background: 'linear-gradient(90deg,#38a8e0,#6cc6f0)' }}
         aria-hidden="true"
       />
       {chainName ? (
