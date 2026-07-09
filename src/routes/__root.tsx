@@ -43,14 +43,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="flex min-h-dvh flex-col font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <Web3Provider>
           <DensityProvider>
             <AppHeader
               connect={<ConnectButton />}
               networkStatus={<NetworkStatus />}
             />
-            {children}
+            <div className="flex flex-1 flex-col">{children}</div>
             <Footer />
           </DensityProvider>
         </Web3Provider>

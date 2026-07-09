@@ -83,7 +83,7 @@ export function PositionDashboard({ empty = false }: { empty?: boolean }) {
         description="Supply an asset to start earning — it takes about a minute."
         action={
           <a
-            href="/markets"
+            href="/earn"
             className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-bold no-underline"
             style={{ background: 'var(--palm)', color: '#f3faf5' }}
           >
