@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MARKETS } from '#/lib/contracts'
 import { getAdapters, resolveAdapters } from './registry'
 import { mockChainAdapter } from './chain/chainAdapter.mock'
+import { liveChainAdapter } from './chain/chainAdapter'
 import { mockIndexerAdapter } from './indexer/indexerAdapter.mock'
 import { MOCK_USER } from './fixtures/chain'
 
@@ -21,11 +22,12 @@ describe('data registry', () => {
     expect(live.indexer).not.toBe(mock.indexer)
   })
 
-  it('live impls throw until U18/U19 wire them (never silently no-op)', async () => {
+  it('resolves the real viem chain adapter in live mode (U18)', () => {
+    expect(resolveAdapters('live').chain).toBe(liveChainAdapter)
+  })
+
+  it('indexer is still a notImplemented stub in live mode (U19 pending)', async () => {
     const live = resolveAdapters('live')
-    await expect(live.chain.getMarketTotals(MARKETS[0].pool)).rejects.toThrow(
-      /not wired yet/,
-    )
     await expect(live.indexer.getUserHistory(MOCK_USER)).rejects.toThrow(
       /not wired yet/,
     )
