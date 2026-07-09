@@ -8,6 +8,7 @@ import type { DataMode } from '#/lib/config/env'
 import { DATA_MODE } from '#/lib/config/env'
 import type { ChainAdapter, IndexerAdapter } from './types'
 import { mockChainAdapter } from './chain/chainAdapter.mock'
+import { liveChainAdapter } from './chain/chainAdapter'
 import { mockIndexerAdapter } from './indexer/indexerAdapter.mock'
 import { notImplemented } from './notImplemented'
 
@@ -22,7 +23,7 @@ const mockAdapters: Adapters = {
 }
 
 const liveAdapters: Adapters = {
-  chain: notImplemented<ChainAdapter>('live chainAdapter (U18)'),
+  chain: liveChainAdapter,
   indexer: notImplemented<IndexerAdapter>('live indexerAdapter (U19)'),
 }
 
