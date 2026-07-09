@@ -13,6 +13,11 @@ export const PROJECT_ID: string = import.meta.env.VITE_REOWN_PROJECT_ID ?? ''
 export const HASHKEY_RPC_OVERRIDE: string | undefined =
   import.meta.env.VITE_HASHKEY_RPC || undefined
 
+/** GraphQL indexer/subgraph endpoint. Absent → the mock indexer is used even
+ *  in live mode (the subgraph is not deployed yet). */
+export const INDEXER_URL: string | undefined =
+  import.meta.env.VITE_INDEXER_URL || undefined
+
 /** Assert a real project id is present (needed to actually connect a wallet). */
 export function requireProjectId(): string {
   if (!PROJECT_ID) {

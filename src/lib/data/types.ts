@@ -204,8 +204,17 @@ export interface CrossChainStatus {
   status: 'pending' | 'delivered'
 }
 
+/** A point on a market's rate history, for charts. Rates are display percents. */
+export interface RatePoint {
+  /** Unix seconds. */
+  timestamp: number
+  borrowApr: number
+  supplyApy: number
+}
+
 export interface IndexerAdapter {
   getUserHistory: (user: Address) => Promise<HistoryEvent[]>
   getProtocolAggregates: () => Promise<ProtocolAggregates>
   getCrossChainStatus: (messageId: Hash) => Promise<CrossChainStatus>
+  getRateHistory: (pool: Address) => Promise<RatePoint[]>
 }

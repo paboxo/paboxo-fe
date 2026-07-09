@@ -5,9 +5,25 @@
  * those come from the chain adapter (R13), never the indexer.
  */
 import { MARKETS, TOKENS } from '#/lib/contracts'
-import type { HistoryEvent, ProtocolAggregates } from '../types'
+import type { HistoryEvent, ProtocolAggregates, RatePoint } from '../types'
 
 const PXWHSK = MARKETS[0]
+
+/** A 7-point rate history per market (preview) — the real series comes from the
+ *  indexer. Wobbles around each market's rate-at-optimal. */
+export function rateHistoryFixture(borrowApr: number): RatePoint[] {
+  const base = 1_720_000_000
+  const day = 86_400
+  return Array.from({ length: 7 }, (_, i) => {
+    const drift = ((i % 3) - 1) * 0.4
+    const borrow = Math.max(0, borrowApr + drift)
+    return {
+      timestamp: base + i * day,
+      borrowApr: Number(borrow.toFixed(2)),
+      supplyApy: Number((borrow * 0.55).toFixed(2)),
+    }
+  })
+}
 
 /** Recent activity for the preview user, newest first. */
 export const HISTORY_FIXTURES: HistoryEvent[] = [
