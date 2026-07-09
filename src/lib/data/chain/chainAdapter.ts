@@ -38,6 +38,7 @@ import type {
   MarketTotals,
   PriceData,
   RepayParams,
+  SwapParams,
 } from '../types'
 
 const CHAIN_ID = HASHKEY.id
@@ -361,6 +362,24 @@ export const liveChainAdapter: ChainAdapter = {
       abi: lendingPoolAbi,
       functionName: 'liquidation',
       args: [borrowers[0]],
+    })
+    return confirm(hash)
+  },
+
+  async swapCollateral(pool, params: SwapParams) {
+    const hash = await writeContract(wagmiConfig, {
+      address: pool,
+      abi: lendingPoolAbi,
+      functionName: 'swapTokenByPosition',
+      args: [
+        {
+          tokenIn: params.tokenIn,
+          tokenOut: params.tokenOut,
+          amountIn: params.amountIn,
+          amountOutMinimum: params.amountOutMinimum,
+          fee: params.fee,
+        },
+      ],
     })
     return confirm(hash)
   },

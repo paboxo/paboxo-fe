@@ -11,6 +11,11 @@ const NAV = [
     match: (p: string) => p === '/markets' || p.startsWith('/market/'),
   },
   {
+    to: '/swap' as const,
+    label: 'Swap',
+    match: (p: string) => p.startsWith('/swap'),
+  },
+  {
     to: '/dashboard' as const,
     label: 'Dashboard',
     match: (p: string) => p.startsWith('/dashboard'),

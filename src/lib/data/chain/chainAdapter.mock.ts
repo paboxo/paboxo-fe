@@ -13,6 +13,7 @@ import type {
   MarketTotals,
   PriceData,
   RepayParams,
+  SwapParams,
 } from '../types'
 import {
   BALANCE_FIXTURES,
@@ -122,6 +123,9 @@ export const mockChainAdapter: ChainAdapter = {
     return resolve(MOCK_TX_HASH)
   },
   liquidation(_pool: Address, _borrowers: Address[]) {
+    return resolve(MOCK_TX_HASH)
+  },
+  swapCollateral(_pool: Address, _params: SwapParams) {
     return resolve(MOCK_TX_HASH)
   },
   approveBorrowDelegation(_pool: Address, _delegate: Address, _amount: bigint) {

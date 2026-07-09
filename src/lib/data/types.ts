@@ -70,6 +70,17 @@ export interface CreatePoolParams {
   seedAmount: bigint
 }
 
+/** Swap tokens held inside a position via the DEX (trade collateral). */
+export interface SwapParams {
+  tokenIn: Address
+  tokenOut: Address
+  amountIn: bigint
+  /** Slippage floor — must never be 0 (a 0 floor lets the swap fill at any price). */
+  amountOutMinimum: bigint
+  /** DEX fee tier (e.g. 1000 = 0.1%). */
+  fee: number
+}
+
 /** CCIP supply action selector on the Base sender: 0 = liquidity, 1 = collateral. */
 export type CrossChainAction = 0 | 1
 
@@ -120,6 +131,8 @@ export interface ChainAdapter {
   withdrawCollateral: (pool: Address, amount: bigint, to: Address) => Promise<Hash>
   withdrawLiquidity: (pool: Address, shares: bigint, to: Address) => Promise<Hash>
   liquidation: (pool: Address, borrowers: Address[]) => Promise<Hash>
+  /** Swap tokens held in the caller's position (trade collateral) via the DEX. */
+  swapCollateral: (pool: Address, params: SwapParams) => Promise<Hash>
   approveBorrowDelegation: (
     pool: Address,
     delegate: Address,
