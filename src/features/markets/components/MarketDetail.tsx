@@ -70,6 +70,10 @@ export function MarketDetail({ market }: { market: MarketView }) {
 
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <StatTile
+            label={`${market.collateralSymbol} price`}
+            value={formatUsd(market.priceUsd)}
+          />
+          <StatTile
             label="Utilization"
             value={formatPercent(market.utilization)}
           />

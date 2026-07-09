@@ -30,6 +30,13 @@ export function MarketCard({ market }: { market: MarketView }) {
         supplied
       </div>
 
+      <div className="text-sm text-[var(--sea-ink-soft)]">
+        {market.collateralSymbol} price ·{' '}
+        <span className="num text-[var(--sea-ink)]">
+          {formatUsd(market.priceUsd)}
+        </span>
+      </div>
+
       <a
         href={`/market/${market.id}`}
         className="mt-1 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold no-underline"
