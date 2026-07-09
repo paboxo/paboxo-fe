@@ -94,7 +94,7 @@ export const mockChainAdapter: ChainAdapter = {
   getPositionAddress(pool) {
     return resolve(
       USER_POOL_STATE[key(pool)]?.positionAddr ??
-        ('0x0000000000000000000000000000000000000000'),
+        '0x0000000000000000000000000000000000000000',
     )
   },
   checkLiquidatable(pool) {
@@ -157,6 +157,10 @@ export const mockChainAdapter: ChainAdapter = {
       hash: MOCK_TX_HASH,
       pool: '0x3333333333333333333333333333333333333333',
     })
+  },
+  waitForReceipt(_hash: Hash) {
+    // Mock mines instantly; the real impl awaits waitForTransactionReceipt.
+    return resolve(undefined)
   },
 
   // ---- cross-chain (mock-only until PaboxoCCIPSender ships on Base) ----

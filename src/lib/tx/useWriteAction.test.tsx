@@ -30,9 +30,9 @@ let switchChainAsync: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
   switchChainAsync = vi.fn().mockResolvedValue(undefined)
-  mockUseSwitchChain.mockReturnValue({ switchChainAsync } as unknown as ReturnType<
-    typeof useSwitchChain
-  >)
+  mockUseSwitchChain.mockReturnValue({
+    switchChainAsync,
+  } as unknown as ReturnType<typeof useSwitchChain>)
 })
 
 function renderWrite(requiredChainId?: number) {
@@ -44,9 +44,9 @@ function renderWrite(requiredChainId?: number) {
 // Covers R16, R24, R28, R9; AE2, AE6.
 describe('useWriteAction', () => {
   it('blocks when no wallet is connected', async () => {
-    mockUseAccount.mockReturnValue({ isConnected: false } as unknown as ReturnType<
-      typeof useAccount
-    >)
+    mockUseAccount.mockReturnValue({
+      isConnected: false,
+    } as unknown as ReturnType<typeof useAccount>)
     const send = vi.fn().mockResolvedValue(HASH)
     const { result } = renderWrite()
     await act(async () => {
@@ -88,7 +88,11 @@ describe('useWriteAction', () => {
       })
     })
     // mock allowance is 0 → approval fires with the exact amount, spender = pool.
-    expect(approve).toHaveBeenCalledWith(TOKENS.pxUSDT.address, POOL, 1_000_000n)
+    expect(approve).toHaveBeenCalledWith(
+      TOKENS.pxUSDT.address,
+      POOL,
+      1_000_000n,
+    )
     expect(send).toHaveBeenCalledOnce()
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
@@ -107,9 +111,11 @@ describe('useWriteAction', () => {
 
   it('surfaces a humane message on an on-chain revert', async () => {
     connected(177)
-    const send = vi.fn().mockRejectedValue(
-      Object.assign(new Error('revert'), { name: 'HealthFactorTooLow' }),
-    )
+    const send = vi
+      .fn()
+      .mockRejectedValue(
+        Object.assign(new Error('revert'), { name: 'HealthFactorTooLow' }),
+      )
     const { result } = renderWrite()
     await act(async () => {
       await result.current.run({ send })
@@ -129,5 +135,46 @@ describe('useWriteAction', () => {
     })
     expect(result.current.state).toBe('rejected')
     expect(result.current.revert).toBeNull()
+  })
+
+  it('waits for the send receipt before confirming', async () => {
+    connected(177)
+    const waitSpy = vi.spyOn(mockChainAdapter, 'waitForReceipt')
+    const send = vi.fn().mockResolvedValue(HASH)
+    const { result } = renderWrite()
+    await act(async () => {
+      await result.current.run({ send })
+    })
+    expect(waitSpy).toHaveBeenCalledWith(HASH)
+    expect(result.current.state).toBe('confirmed')
+    waitSpy.mockRestore()
+  })
+
+  it('waits for the approval receipt before the send, and the send receipt after', async () => {
+    connected(177)
+    const order: string[] = []
+    const waitSpy = vi
+      .spyOn(mockChainAdapter, 'waitForReceipt')
+      .mockImplementation(async () => {
+        order.push('wait')
+      })
+    const send = vi.fn().mockImplementation(async () => {
+      order.push('send')
+      return HASH
+    })
+    const { result } = renderWrite()
+    await act(async () => {
+      await result.current.run({
+        approval: {
+          token: TOKENS.pxUSDT.address,
+          spender: POOL,
+          amount: 1_000_000n,
+        },
+        send,
+      })
+    })
+    // approval mined (wait) → send broadcast → send mined (wait), never send-before-approval-receipt.
+    expect(order).toEqual(['wait', 'send', 'wait'])
+    waitSpy.mockRestore()
   })
 })

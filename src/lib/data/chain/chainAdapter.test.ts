@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import {
+  readContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from '@wagmi/core'
 import { zeroAddress } from 'viem'
 import { liveChainAdapter } from './chainAdapter'
 
@@ -60,7 +64,9 @@ function readByFunction(name: string): bigint | string {
 beforeEach(() => {
   vi.clearAllMocks()
   mockRead.mockImplementation((_config, params) =>
-    Promise.resolve(readByFunction((params as { functionName: string }).functionName)),
+    Promise.resolve(
+      readByFunction((params as { functionName: string }).functionName),
+    ),
   )
   mockWrite.mockResolvedValue(HASH)
   mockWait.mockResolvedValue({} as never)
@@ -98,7 +104,9 @@ describe('liveChainAdapter reads', () => {
       ([, p]) =>
         (p as { functionName: string }).functionName === 'lendingPoolMaxRate',
     )
-    expect((irmCall?.[1] as { args: readonly unknown[] }).args).toEqual([ROUTER])
+    expect((irmCall?.[1] as { args: readonly unknown[] }).args).toEqual([
+      ROUTER,
+    ])
     expect(params.baseRateWad).toBe((5n * 10n ** 18n) / 1000n)
     expect(params.rateAtOptimalWad).toBe((7n * 10n ** 18n) / 100n)
     expect(params.maxRateWad).toBe((120n * 10n ** 18n) / 100n)
@@ -125,12 +133,14 @@ describe('liveChainAdapter reads', () => {
     const pool = nextPool()
     expect(await liveChainAdapter.getMaxBorrowAmount(pool, USER)).toBe(0n)
     expect(await liveChainAdapter.getCollateralValue(pool, USER)).toBe(0n)
-    expect(await liveChainAdapter.getPositionAddress(pool, USER)).toBe(zeroAddress)
+    expect(await liveChainAdapter.getPositionAddress(pool, USER)).toBe(
+      zeroAddress,
+    )
   })
 })
 
 describe('liveChainAdapter writes', () => {
-  it('sends supply to the pool and waits for the receipt', async () => {
+  it('broadcasts supply to the pool and returns the hash (receipt waited by the caller)', async () => {
     const pool = nextPool()
     const hash = await liveChainAdapter.supplyLiquidity(pool, USER, 1_000_000n)
 
@@ -140,15 +150,23 @@ describe('liveChainAdapter writes', () => {
     expect((params as { functionName: string }).functionName).toBe(
       'supplyLiquidity',
     )
-    expect(mockWait).toHaveBeenCalledWith(expect.anything(), { hash: HASH })
+    // The write returns on broadcast; the receipt wait is the wrapper's job.
+    expect(mockWait).not.toHaveBeenCalled()
     expect(hash).toBe(HASH)
+  })
+
+  it('waitForReceipt awaits the mined receipt for a hash', async () => {
+    await liveChainAdapter.waitForReceipt(HASH)
+    expect(mockWait).toHaveBeenCalledWith(expect.anything(), { hash: HASH })
   })
 
   it('liquidates a single borrower on the pool', async () => {
     const pool = nextPool()
     await liveChainAdapter.liquidation(pool, [USER])
     const [, params] = mockWrite.mock.calls[0]
-    expect((params as { functionName: string }).functionName).toBe('liquidation')
+    expect((params as { functionName: string }).functionName).toBe(
+      'liquidation',
+    )
     expect((params as { args: readonly unknown[] }).args).toEqual([USER])
   })
 })

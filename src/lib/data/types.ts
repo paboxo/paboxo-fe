@@ -117,8 +117,15 @@ export interface ChainAdapter {
   getCollateralValue: (pool: Address, user: Address) => Promise<bigint>
   /** 0x0 when the user has no Position yet. */
   getPositionAddress: (pool: Address, user: Address) => Promise<Address>
-  checkLiquidatable: (pool: Address, user: Address) => Promise<LiquidatableStatus>
-  getAllowance: (token: Address, owner: Address, spender: Address) => Promise<bigint>
+  checkLiquidatable: (
+    pool: Address,
+    user: Address,
+  ) => Promise<LiquidatableStatus>
+  getAllowance: (
+    token: Address,
+    owner: Address,
+    spender: Address,
+  ) => Promise<bigint>
   getTokenBalance: (token: Address, user: Address) => Promise<bigint>
   getBorrowDelegation: (
     pool: Address,
@@ -133,7 +140,11 @@ export interface ChainAdapter {
 
   // writes — plain awaitable methods; real impl uses @wagmi/core (KTD10)
   approve: (token: Address, spender: Address, amount: bigint) => Promise<Hash>
-  supplyLiquidity: (pool: Address, onBehalf: Address, amount: bigint) => Promise<Hash>
+  supplyLiquidity: (
+    pool: Address,
+    onBehalf: Address,
+    amount: bigint,
+  ) => Promise<Hash>
   supplyCollateral: (
     pool: Address,
     onBehalf: Address,
@@ -145,8 +156,16 @@ export interface ChainAdapter {
     onBehalf: Address,
   ) => Promise<Hash>
   repayWithSelectedToken: (pool: Address, params: RepayParams) => Promise<Hash>
-  withdrawCollateral: (pool: Address, amount: bigint, to: Address) => Promise<Hash>
-  withdrawLiquidity: (pool: Address, shares: bigint, to: Address) => Promise<Hash>
+  withdrawCollateral: (
+    pool: Address,
+    amount: bigint,
+    to: Address,
+  ) => Promise<Hash>
+  withdrawLiquidity: (
+    pool: Address,
+    shares: bigint,
+    to: Address,
+  ) => Promise<Hash>
   liquidation: (pool: Address, borrowers: Address[]) => Promise<Hash>
   /** Swap tokens held in the caller's position (trade collateral) via the DEX. */
   swapCollateral: (pool: Address, params: SwapParams) => Promise<Hash>
@@ -163,6 +182,12 @@ export interface ChainAdapter {
   createLendingPool: (
     params: CreatePoolParams,
   ) => Promise<{ hash: Hash; pool: Address }>
+
+  /** Wait for a submitted tx to be mined before a caller advances to `confirmed`.
+   *  A write returns as soon as the tx is *broadcast* (it yields a hash), not when
+   *  it is confirmed — the mock resolves immediately, the real impl calls
+   *  `waitForTransactionReceipt` (KTD10). */
+  waitForReceipt: (hash: Hash) => Promise<void>
 
   // cross-chain (Base side) — mock-only until PaboxoCCIPSender ships on Base
   quoteCrossChainSupply: (
@@ -185,12 +210,7 @@ export interface ChainAdapter {
 // ------------------------------------------------------------- indexer adapter
 
 export type HistoryAction =
-  | 'supply'
-  | 'withdraw'
-  | 'borrow'
-  | 'repay'
-  | 'liquidation'
-  | 'crosschain'
+  'supply' | 'withdraw' | 'borrow' | 'repay' | 'liquidation' | 'crosschain'
 
 export interface HistoryEvent {
   id: string

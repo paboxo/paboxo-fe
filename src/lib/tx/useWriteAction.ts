@@ -110,17 +110,22 @@ export function useWriteAction(
           )
           if (allowance < input.approval.amount) {
             setState('approving')
-            await chain.approve(
+            const approvalHash = await chain.approve(
               input.approval.token,
               input.approval.spender,
               input.approval.amount,
             )
+            // Approval must be mined before the send, or the send reverts on a
+            // stale allowance.
+            await chain.waitForReceipt(approvalHash)
           }
         }
 
         setState('signing')
-        await input.send()
+        const hash = await input.send()
         setState('pending')
+        // The send returns on broadcast; wait for the receipt before confirming.
+        await chain.waitForReceipt(hash)
         setState('confirmed')
 
         if (input.invalidateKeys) {
@@ -141,7 +146,14 @@ export function useWriteAction(
         return false
       }
     },
-    [address, chainId, isConnected, requiredChainId, switchChainAsync, queryClient],
+    [
+      address,
+      chainId,
+      isConnected,
+      requiredChainId,
+      switchChainAsync,
+      queryClient,
+    ],
   )
 
   return { state, revert, run, reset }
