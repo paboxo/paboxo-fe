@@ -3,7 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { useAccount } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
 import { WAD } from '#/lib/math'
-import { useTokenBalances } from './useTokenBalances'
+import { TOKENS } from '#/lib/contracts'
+import { useTokenBalance, useTokenBalances } from './useTokenBalances'
 
 vi.mock('wagmi', () => ({ useAccount: vi.fn() }))
 const mockUseAccount = vi.mocked(useAccount)
@@ -29,5 +30,25 @@ describe('useTokenBalances', () => {
       wrapper: QueryWrapper,
     })
     expect(result.current.balances).toEqual({})
+  })
+})
+
+describe('useTokenBalance', () => {
+  it('returns the balance for a token address', async () => {
+    mockUseAccount.mockReturnValue({ address: USER } as never)
+    const { result } = renderHook(
+      () => useTokenBalance(TOKENS.pxWETH.address),
+      { wrapper: QueryWrapper },
+    )
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.balance).toBe(5n * WAD)
+  })
+
+  it('is disabled and undefined without a token', () => {
+    mockUseAccount.mockReturnValue({ address: USER } as never)
+    const { result } = renderHook(() => useTokenBalance(undefined), {
+      wrapper: QueryWrapper,
+    })
+    expect(result.current.balance).toBeUndefined()
   })
 })

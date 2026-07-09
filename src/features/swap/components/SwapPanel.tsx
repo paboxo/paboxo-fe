@@ -5,7 +5,10 @@ import type { TokenSymbol } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import { ActionButton } from '#/components/ui/ActionButton'
-import { useTokenBalances } from '#/features/shared/useTokenBalances'
+import {
+  useTokenBalance,
+  useTokenBalances,
+} from '#/features/shared/useTokenBalances'
 import { useSwapCollateral } from '../hooks/useSwapCollateral'
 import { TokenSelectButton } from './TokenSelectButton'
 import { TokenSelectDialog } from './TokenSelectDialog'
@@ -28,7 +31,12 @@ export function SwapPanel() {
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const collateralSymbol = market.collateralSymbol
-  const collateralBalance = balances[collateralSymbol as TokenSymbol]
+  // Read the collateral balance by the market's collateral address — the
+  // cross-chain pxWHSK shares the pxWHSK symbol but has a distinct address, so a
+  // symbol lookup would show the wrong token's balance.
+  const { balance: collateralBalance } = useTokenBalance(
+    market.collateralAddress,
+  )
 
   const onSwap = () => {
     const out = TOKENS[tokenOut]
