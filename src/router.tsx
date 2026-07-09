@@ -1,4 +1,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+// Empty type import only makes '@tanstack/react-start' resolvable for the SSR
+// module augmentation below (no runtime import, no unused binding).
+import type {} from '@tanstack/react-start'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
