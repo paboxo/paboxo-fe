@@ -38,6 +38,13 @@ Catatan konteks sesi brainstorm — menyimpan dialog & alasan di balik keputusan
 - Default fee-tier DODO + UX slippage untuk repay mode B & C.
 - Bentuk data mock indexer — cermin entitas subgraph di `INTEGRATION-INDEXER.md` supaya swap drop-in.
 
+## Update keputusan (2026-07-09)
+
+- **Stack wallet pivot: RainbowKit + wagmi v2** (bukan Reown AppKit + wagmi v3 seperti rencana awal). Config via `getDefaultConfig` di `src/lib/web3/config.ts`; read/write tetap lewat `@wagmi/core`; viem + TanStack Query tak berubah. Seam adapter, guard, dan strategi mock→real tetap.
+- **Receipt-wait dipusatkan di `useWriteAction`.** Adapter write kini return saat broadcast; wrapper menunggu receipt approval sebelum send dan receipt send sebelum `confirmed` — state `pending` jadi nyata, satu sumber kebenaran "mined".
+- **Swap UX ala senja:** halaman swap pakai **dialog pilih token** (`TokenSelectDialog` di atas `Dialog` primitive hand-rolled, tanpa radix) yang menampilkan **balance per token** (`useTokenBalances`), plus select market. Token asal (collateral) di-disable di picker.
+- **Hygiene:** `references/` di-exclude dari tsconfig/eslint/vitest — proyek senja di dalamnya membawa augmentasi `declare module` yang merusak tipe `Link to` router kalau ikut ter-compile.
+
 ## Referensi
 
 - `references/paboxo-sc/docs/INTEGRATION-FRONTEND.md` — aksi user, read, aturan dua-alamat, unit, gotchas.

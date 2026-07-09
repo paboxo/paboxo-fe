@@ -38,7 +38,7 @@ The repository is currently a bare TanStack Start scaffold (React 19, TanStack R
 - **Read every value the target write reverts on, live from the contract; use the indexer only for event-derivable data.** All transaction-critical values (health, max-borrow, current debt, allowances, price freshness, available pool liquidity, mint-≥1-share, swap slippage) are read live from the contract (router RPC) at action time — the indexer may lag and never gates a write. Live pool totals (TVL, utilization) are also RPC-sourced because they are not in events. The indexer serves transaction history, cumulative volume, and market discovery only.
 - **ABIs and addresses are injected configuration, not hardcoded logic.** Contracts may be redeployed (ABIs supplied post-deploy, addresses can change). Logic reads them from config so a redeploy is a config swap, not a code edit.
 - **Markets hardcoded to the four known pools until the indexer lands.** There is no on-chain pool list; dynamic discovery is deferred. A pool a user creates (R25) is reached directly by its creator until discovery exists.
-- **Stack: wagmi v3 + viem, wallet connection via Reown AppKit, indexer fetch via GraphQL + TanStack Query** (mutations, caching, invalidation).
+- **Stack: wagmi + viem, wallet connection via a connect kit, indexer fetch via GraphQL + TanStack Query** (mutations, caching, invalidation). _(Superseded 2026-07-09: implemented as RainbowKit + wagmi v2 — see Implementation Reconciliation.)_
 - **Build sequence: thin technical foundation first.** Providers, wallet connect, and the adapter seam with mock-backed hooks come first; UI builds against those stable hooks; real ABI/indexer wiring slots in behind the hooks last.
 
 ### Actors
@@ -150,11 +150,13 @@ flowchart TB
 ### Scope Boundaries
 
 **Deferred for later**
+
 - Repay modes B (DODO wallet swap) and C (from-position) — deferred to a follow-on delivery after the core loop and DODO fee-tier/slippage UX are settled (R20).
 - Dynamic market discovery — until discovery exists, markets stay hardcoded (R6). A lightweight `getLogs`-on-Factory discovery path (decoupled from the full subgraph) is an option to land this earlier; see Outstanding Questions.
 - Real subgraph wiring for the indexer adapter — mock-backed until deployed (R4).
 
 **Outside this product's identity (not FE work)**
+
 - Backend keepers: oracle cron (price freshness), liquidation bot, AI rebalance agent — external services the FE depends on but does not build.
 - Deploying the subgraph/indexer and deploying `PaboxoCCIPSender` on Base — external infrastructure the FE consumes.
 - AI rebalance delegation (`approveRebalanceDelegation`) — a backend/agent concern, not part of this FE's user actions.
@@ -173,6 +175,7 @@ flowchart TB
 ### Outstanding Questions
 
 **Deferred to planning**
+
 - Confirm Reown AppKit's wagmi v3 adapter version compatibility. (The SSR cookie mechanism is now specified in KTD1/U1 as a spike-first task, not open.)
 - Supply-APY derivation inputs (reserve-factor source) and the precise formula surfaced in R11.
 - DODO fee-tier defaults and slippage UX for the deferred repay modes B and C (R20), ensuring a swap can never be sent with `amountOutMinimum = 0`.
@@ -204,15 +207,15 @@ Reconciled against `references/paboxo-sc/docs/DEPLOYMENT.md` (live on HashKey Ch
 
 **Core singletons**
 
-| Contract | Address |
-|---|---|
+| Contract                   | Address                                      |
+| -------------------------- | -------------------------------------------- |
 | LendingPoolFactory (proxy) | `0xF0D1c69cc148db2437131a5A736d77FD6fa20B47` |
-| TokenDataStream | `0x007F735Fd070DeD4B0B58D430c392Ff0190eC20F` |
-| IsHealthy | `0xb3B458299864487520d3B0cEDf9F5cfF2629a27B` |
-| InterestRateModel | `0x175867CAF278eB0610F216F3E0a6E671f2382E22` |
-| PaboxoEmitter | `0x290CAcb1bc6e35797Db6243a1C10C12F16d93370` |
-| PaboxoCCIPReceiver | `0x3D94E3385FeD1c8ad3f026b9aF3033DbbA3e7282` |
-| Chainlink CCIP Router | `0xf2Fd62c083F3BF324e99ce157D1a42d7EbA77f1d` |
+| TokenDataStream            | `0x007F735Fd070DeD4B0B58D430c392Ff0190eC20F` |
+| IsHealthy                  | `0xb3B458299864487520d3B0cEDf9F5cfF2629a27B` |
+| InterestRateModel          | `0x175867CAF278eB0610F216F3E0a6E671f2382E22` |
+| PaboxoEmitter              | `0x290CAcb1bc6e35797Db6243a1C10C12F16d93370` |
+| PaboxoCCIPReceiver         | `0x3D94E3385FeD1c8ad3f026b9aF3033DbbA3e7282` |
+| Chainlink CCIP Router      | `0xf2Fd62c083F3BF324e99ce157D1a42d7EbA77f1d` |
 
 Per-market `router` (accounting reads) = `LendingPool(pool).router()` resolved at runtime; `HelperUtils` is discovered via factory/broadcast — neither is a fixed address (left runtime-resolved in config, per the two-address rule / R7).
 
@@ -220,12 +223,12 @@ Per-market `router` (accounting reads) = `LendingPool(pool).router()` resolved a
 
 **Markets (collateral / pxUSDT) + IRM tier** — rates are **per-market** (two-slope, keyed by router), not global:
 
-| Market | Pool | LTV | Liq. threshold | opt. util | rate@opt | max rate | reserve | seed |
-|---|---|---|---|---|---|---|---|---|
-| pxWHSK | `0xB456…6406` | 70% | 75% | 75% | 7% | 120% | 15% | $0.05 |
-| pxWBTC | `0xC6FA…7270` | 80% | 85% | 85% | 4% | 75% | 10% | $60,000 |
-| pxWETH | `0xF1a0…942D` | 80% | 85% | 85% | 4% | 75% | 10% | $3,000 |
-| pxWHSK-xchain | `0xE1AC…0DFd` | 65% | 72% | 70% | 8% | 150% | 15% | $0.05 |
+| Market        | Pool          | LTV | Liq. threshold | opt. util | rate@opt | max rate | reserve | seed    |
+| ------------- | ------------- | --- | -------------- | --------- | -------- | -------- | ------- | ------- |
+| pxWHSK        | `0xB456…6406` | 70% | 75%            | 75%       | 7%       | 120%     | 15%     | $0.05   |
+| pxWBTC        | `0xC6FA…7270` | 80% | 85%            | 85%       | 4%       | 75%      | 10%     | $60,000 |
+| pxWETH        | `0xF1a0…942D` | 80% | 85%            | 85%       | 4%       | 75%      | 10%     | $3,000  |
+| pxWHSK-xchain | `0xE1AC…0DFd` | 65% | 72%            | 70%       | 8%       | 150%     | 15%     | $0.05   |
 
 Seed prices are the deploy values; the backend keeper moves Push feeds live (pxWHSK `0x54f6…2Be3`, pxWBTC `0xec32…9c7e`, pxWETH `0x3870…07B8`, pxWHSK-xchain `0x6449…638b`; pxUSDT Constant $1 `0xB9B3…6f6f`).
 
@@ -238,6 +241,15 @@ Seed prices are the deploy values; the backend keeper moves Push feeds live (pxW
 - **HSP settlement:** supply/repay may settle through an HSP `pay()` producing a Receipt (+ optional KYC Attestation) — relevant only if the FE later surfaces settlement receipts. Out of scope now.
 - **`HelperUtils`** is the discovered read contract for `getMaxBorrowAmount` / `getCollateralValue` / `getAddressPosition` / `isLiquidatable` (borrow-token decimals) — resolve its address via the factory, not a constant.
 - **Price staleness** (`TokenDataStream.latestRoundData` reverts `PriceStale` past 1h) is already covered by R9/R10; the keeper keeps feeds fresh.
+
+### Implementation Reconciliation (2026-07-09)
+
+Supersedes the Reown/wagmi-v3 specifics in the Key Decisions above where they conflict; the data seam, guards, and mock→live strategy are unchanged.
+
+- **Wallet stack pivoted to RainbowKit + wagmi v2** (from Reown AppKit + wagmi v3 in KTD1 / R1). The FE builds its wagmi config with `getDefaultConfig` from `@rainbow-me/rainbowkit` (`src/lib/web3/config.ts`), reads/writes via `@wagmi/core` (KTD10 holds), and keeps `viem` + `@tanstack/react-query`. KTD1's Reown-specific wiring (`WagmiAdapter`/`createAppKit`, `cookieToInitialState`) is superseded.
+- **Receipt-wait ownership (KTD8) refined:** the chain adapter's writes return on **broadcast** (no internal receipt wait); `useWriteAction` awaits the new `ChainAdapter.waitForReceipt` — the approval receipt before the send, and the send receipt before `confirmed` — so the tx-state machine shows a real `pending` phase and there is one source of truth for "mined".
+- **Swap surface UX:** swap-collateral (`src/features/swap/`) uses a **token-select dialog** (`TokenSelectDialog` over the hand-rolled `src/components/ui/Dialog` — no radix) listing every token with the user's per-token balance (`useTokenBalances`), alongside a market select — replacing the plain `<select>` target. The swap-from token is disabled in the picker.
+- **Typecheck hygiene:** `references/` is excluded from `tsconfig`, eslint, and vitest — its senja projects carry conflicting `declare module` augmentations that otherwise corrupt the router's `Link to` types.
 - **Repay modes B/C** confirmed to use a DEX (DODO-style) fee tier `fee: 1000` (0.1%) with `amountOutMinimum` — unchanged in scope (R20).
 
 **Product Contract preservation:** unchanged — this reconciliation corrects stale external facts and records the real addresses/ABIs; no R/U/AE scope changed.
@@ -257,7 +269,7 @@ Seed prices are the deploy values; the backend keeper moves Push feeds live (pxW
 - KTD5. **One shared pre-flight gate.** `src/lib/tx/preflight.ts` reads every revert-condition value live from `chainAdapter` and returns `{ enabled, reason }`, consumed by every write hook — encodes R9/R10 (health, max-borrow, debt, allowance, price freshness, available liquidity, mint-≥1-share, swap slippage).
 - KTD6. **Mock mechanism: plain TS mock adapter modules** (fixtures behind the interface), toggled by `VITE_DATA_MODE=mock|live`. No MSW — mocking lives at the adapter boundary, not the network. Mock write failures throw **viem-shaped errors** (`shortMessage` + `cause` chain) so the revert-reason UI path is exercised in mock mode rather than first discovered at U18; both adapters feed a shared `normalizeRevertReason()` boundary.
 - KTD7. **Formulas centralized and unit-tested.** `src/lib/math/` implements the Appendix formulas (debt, supply value, utilization, available liquidity, decimals) once; adapters and hooks reuse them so agents don't re-derive them (addresses the review's formula-explicitness concern).
-- KTD8. **Write wrapper enforces guards, parameterized by target chain.** `src/lib/tx/useWriteAction.ts` takes a `requiredChainId` (default `177`; Base `8453` for the CCIP path), verifies wallet connected + on that chain (prompt switch), runs the pre-flight gate, drives the tx state machine (pending/confirmed/failed/**rejected**) with an **extension point for the R27 post-confirm async destination-event state** ("bridging / pending on HashKey"), and invalidates TanStack Query keys on success (R15, R16, R27, R28). Every write path — including cross-chain — composes this one wrapper; none is bespoke.
+- KTD8. **Write wrapper enforces guards, parameterized by target chain.** `src/lib/tx/useWriteAction.ts` takes a `requiredChainId` (default `177`; Base `8453` for the CCIP path), verifies wallet connected + on that chain (prompt switch), runs the pre-flight gate, drives the tx state machine (pending/confirmed/failed/**rejected**) with an **extension point for the R27 post-confirm async destination-event state** ("bridging / pending on HashKey"), and invalidates TanStack Query keys on success (R15, R16, R27, R28). Every write path — including cross-chain — composes this one wrapper; none is bespoke. _(2026-07-09: the wrapper owns the receipt-wait — adapter writes return on broadcast and expose `waitForReceipt`; the wrapper awaits the approval receipt before the send and the send receipt before `confirmed`.)_
 - KTD9. **Interim window handled at the query layer.** When `chainAdapter` is live but `indexerAdapter` is still mock, indexer-backed surfaces are badged placeholder or optimistically patched with the just-sent tx (R29).
 - KTD10. **Real writes use `@wagmi/core` imperative actions, not React hooks.** `chainAdapter` writes are implemented with `writeContract` / `simulateContract` / `waitForTransactionReceipt` from `@wagmi/core` bound to the `WagmiConfig` — never the `useWriteContract` hook — so every write stays an awaitable adapter method behind the interface. Reads likewise use `@wagmi/core` / viem `readContract`, not `useReadContract`. This is what keeps the mock↔real swap free of hook/UI changes.
 
@@ -265,7 +277,7 @@ Seed prices are the deploy values; the backend keeper moves Push feeds live (pxW
 
 Two upstream deliveries changed this plan's remaining scope:
 
-1. **The UI presentational layer is built** by the app UI/UX plan (`docs/plans/2026-07-08-001-feat-paboxo-app-ui-ux-plan.html`) — the Tide shell, markets/dashboard/market-detail surfaces, the action panel, the health/tx/money-input/wallet/state primitives, and per-feature placeholder hooks (`useMarkets`, `usePosition`) that return mock data behind stable shapes (`src/features/*/mock.ts`). The kit is **data-agnostic** (no adapter imports). So this plan no longer *builds* those UI units — it **wires the existing components to real data**.
+1. **The UI presentational layer is built** by the app UI/UX plan (`docs/plans/2026-07-08-001-feat-paboxo-app-ui-ux-plan.html`) — the Tide shell, markets/dashboard/market-detail surfaces, the action panel, the health/tx/money-input/wallet/state primitives, and per-feature placeholder hooks (`useMarkets`, `usePosition`) that return mock data behind stable shapes (`src/features/*/mock.ts`). The kit is **data-agnostic** (no adapter imports). So this plan no longer _builds_ those UI units — it **wires the existing components to real data**.
 2. **The contracts config + ABIs are built** at `src/lib/contracts/` — real addresses, the 4 markets with IRM tiers, and 12 ABIs from `forge build`. U2's config/ABI work is largely done and the "ABIs are placeholders" assumption is retired.
 
 **Re-sequenced remaining work** (the data / provider / adapter layer + wiring the existing UI):
@@ -277,14 +289,14 @@ Two upstream deliveries changed this plan's remaining scope:
 
 **Unit status at refresh** (no U-IDs renumbered; the unit sections below keep their original text — this note governs the re-scoping):
 
-| Unit(s) | Status | What changed |
-|---|---|---|
-| U2 (config/ABIs) | ~done | Real addresses + 12 ABIs at `src/lib/contracts/`; remaining = `env.ts` + `VITE_DATA_MODE` + domain market map. |
-| U5–U8, U20 (read/display UI) | UI done → wire data | Components + placeholder hooks exist; build the real hooks/adapters behind them. |
-| U9–U17 (write/advanced UI) | UI done → wire data | Action panel + tx primitives exist; build `useWriteAction` + per-action hooks feeding them. |
-| U4 (`revertReason`, health) | partial | `normalizeRevertReason` + the tx state machine + health model exist; the on-chain math + live preflight remain. |
-| U18 (chainAdapter real) | unblocked | ABIs exist; no longer waits on user-supplied ABIs. |
-| U19 (indexer real), Base sender | still blocked | Subgraph + Base `PaboxoCCIPSender` not deployed. |
+| Unit(s)                         | Status              | What changed                                                                                                    |
+| ------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| U2 (config/ABIs)                | ~done               | Real addresses + 12 ABIs at `src/lib/contracts/`; remaining = `env.ts` + `VITE_DATA_MODE` + domain market map.  |
+| U5–U8, U20 (read/display UI)    | UI done → wire data | Components + placeholder hooks exist; build the real hooks/adapters behind them.                                |
+| U9–U17 (write/advanced UI)      | UI done → wire data | Action panel + tx primitives exist; build `useWriteAction` + per-action hooks feeding them.                     |
+| U4 (`revertReason`, health)     | partial             | `normalizeRevertReason` + the tx state machine + health model exist; the on-chain math + live preflight remain. |
+| U18 (chainAdapter real)         | unblocked           | ABIs exist; no longer waits on user-supplied ABIs.                                                              |
+| U19 (indexer real), Base sender | still blocked       | Subgraph + Base `PaboxoCCIPSender` not deployed.                                                                |
 
 ### High-Level Technical Design
 
@@ -366,6 +378,7 @@ src/
 ### Phase 1 — Foundation
 
 #### U1. Web3 provider + wallet connect (SSR)
+
 - **Goal:** Wire wagmi + Reown AppKit + TanStack Query into the app so a user can connect a wallet, on HashKey 177.
 - **Requirements:** R1.
 - **Dependencies:** none.
@@ -377,6 +390,7 @@ src/
 - **Verification:** app boots with providers mounted, no hydration mismatch; connect modal opens and reports the connected chain.
 
 #### U2. Config, contracts & network map
+
 - **Goal:** Hold addresses, ABIs, and env as injected config so a redeploy is a config swap. **Status (2026-07-08): the address maps + 12 ABIs are already built at `src/lib/contracts/`** — this unit now finishes only the env layer and the domain-facing market map.
 - **Requirements:** R3, R6, R7.
 - **Dependencies:** U1.
@@ -387,6 +401,7 @@ src/
 - **Verification:** `env.ts` gates `VITE_DATA_MODE`; `src/lib/contracts` imports with no ABI requirement in mock mode and real ABIs available for live mode; types compile.
 
 #### U3. Data seam: adapter interfaces, registry & hook scaffold
+
 - **Goal:** Establish the swappable seam — interfaces, a mode registry, and empty domain hooks — so UI can build against stable hooks.
 - **Requirements:** R2, R4, R5.
 - **Dependencies:** U2.
@@ -397,6 +412,7 @@ src/
 - **Verification:** hooks resolve data through the registry; mode flag is the only swap point.
 
 #### U4. Math library + pre-flight gate
+
 - **Goal:** Centralize the Appendix formulas and the shared revert-condition gate.
 - **Requirements:** R8, R9, R10.
 - **Dependencies:** U3.
@@ -408,6 +424,7 @@ src/
 ### Phase 2 — Read & display
 
 #### U5. Market view
+
 - **Goal:** List markets with APY, utilization, prices from `useMarkets` (mock).
 - **Requirements:** R11, R13.
 - **Dependencies:** U4.
@@ -417,6 +434,7 @@ src/
 - **Verification:** `/markets` renders 4 markets from mock; swapping to live later needs no component change.
 
 #### U6. User dashboard
+
 - **Goal:** Show the connected user's position via `usePosition` (mock).
 - **Requirements:** R12.
 - **Dependencies:** U4, U5.
@@ -426,6 +444,7 @@ src/
 - **Verification:** dashboard renders position for a mock user; values trace to `src/lib/math`.
 
 #### U7. Display states + wallet gating
+
 - **Goal:** Define loading/empty/error states and the wallet-disconnected experience across surfaces.
 - **Requirements:** R14, R15.
 - **Dependencies:** U5, U6.
@@ -435,6 +454,7 @@ src/
 - **Verification:** toggling mock adapters to throw/empty renders the right state on every surface.
 
 #### U8. History & protocol stats surface
+
 - **Goal:** Transaction history + aggregates from `indexerAdapter` (mock); TVL/utilization from `chainAdapter`.
 - **Requirements:** R13.
 - **Dependencies:** U7.
@@ -444,6 +464,7 @@ src/
 - **Verification:** stats strip TVL traces to chain adapter; history to indexer adapter.
 
 #### U20. App shell, navigation & market-detail route
+
 - **Goal:** Global nav + the route that hosts every action panel, so features are reachable.
 - **Requirements:** R11, R15, R16.
 - **Dependencies:** U1, U5.
@@ -457,6 +478,7 @@ src/
 ### Phase 3 — Write core
 
 #### U9. Write infrastructure (guard + approval + tx state)
+
 - **Goal:** One write wrapper enforcing connect + chain-177 + pre-flight + approval + tx state + cache invalidation.
 - **Requirements:** R16, R24, R28, R9.
 - **Dependencies:** U4.
@@ -466,6 +488,7 @@ src/
 - **Verification:** every downstream write hook reuses this wrapper; guards fire before any send.
 
 #### U10. Supply liquidity + collateral
+
 - **Goal:** Lender supplies liquidity; borrower supplies collateral.
 - **Requirements:** R17, R18.
 - **Dependencies:** U9.
@@ -475,6 +498,7 @@ src/
 - **Verification:** mock write transitions through pending→confirmed and invalidates market + position queries.
 
 #### U11. Borrow (same-chain)
+
 - **Goal:** Borrow pxUSDT against collateral, self and delegated.
 - **Requirements:** R19, R9.
 - **Dependencies:** U9, U10.
@@ -484,6 +508,7 @@ src/
 - **Verification:** blocked cases never reach send; happy path invalidates position.
 
 #### U12. Repay mode A + Withdraw
+
 - **Goal:** Direct repay and both withdrawals, with delegate support.
 - **Requirements:** R20 (mode A), R21.
 - **Dependencies:** U9, U11.
@@ -495,6 +520,7 @@ src/
 ### Phase 4 — Advanced
 
 #### U13. Liquidation
+
 - **Goal:** Liquidate an unhealthy borrower.
 - **Requirements:** R22, R9.
 - **Dependencies:** U9.
@@ -504,6 +530,7 @@ src/
 - **Verification:** only unhealthy borrowers are actionable; approval reset after seize.
 
 #### U14. Delegation + allowance management
+
 - **Goal:** Grant/read borrow & withdraw delegation; view and revoke ERC20 allowances.
 - **Requirements:** R23, R30.
 - **Dependencies:** U9.
@@ -513,6 +540,7 @@ src/
 - **Verification:** allowances visible and revocable per pool.
 
 #### U15. Create lending pool
+
 - **Goal:** Pool creator (A6) creates a market with seed liquidity.
 - **Requirements:** R25, R6.
 - **Dependencies:** U9.
@@ -522,6 +550,7 @@ src/
 - **Verification:** create flow guarded by chain-177 + exact Factory approval.
 
 #### U16. Repay modes B & C
+
 - **Goal:** DODO wallet-swap repay (B) and from-position repay (C).
 - **Requirements:** R20 (B, C).
 - **Dependencies:** U12.
@@ -534,6 +563,7 @@ src/
 ### Phase 5 — Cross-chain (last, mock-first)
 
 #### U17. Cross-chain supply from Base (mock UI)
+
 - **Goal:** Build the Base→HashKey CCIP supply UI with async in-flight state, against a mock.
 - **Requirements:** R26, R27.
 - **Dependencies:** U9.
@@ -546,6 +576,7 @@ src/
 ### Phase 6 — Real wiring (when inputs arrive)
 
 #### U18. Swap chainAdapter mock → real viem
+
 - **Goal:** Replace the mock chain adapter with real viem reads/writes once ABIs are supplied.
 - **Requirements:** R5, R29.
 - **Dependencies:** U10–U17.
@@ -556,6 +587,7 @@ src/
 - **Verification:** flipping to live drives real reads/writes with the UI unchanged.
 
 #### U19. Swap indexerAdapter mock → real subgraph
+
 - **Goal:** Replace the mock indexer with the real GraphQL subgraph; optionally add getLogs discovery.
 - **Requirements:** R4, R6.
 - **Dependencies:** U8, U18.
@@ -569,14 +601,14 @@ src/
 
 ## Verification Contract
 
-| Gate | Command | Applies to | Done signal |
-|---|---|---|---|
-| Unit tests | `bun run test` | U1–U19 feature-bearing units | all scenarios green |
-| Typecheck | `bun run typecheck` (`tsc --noEmit`; add this script to package.json) | all units | no type errors; interfaces satisfied |
-| Lint | `bun run lint` | all units | clean |
-| Format | `bun run check` | all units | clean |
-| Routes | `bun run generate-routes` | U5, U6, U20 (new routes) | `routeTree.gen.ts` regenerated |
-| Manual smoke (mock) | `bun run dev` | Phase 1–5 | connect wallet, browse markets/dashboard, run each action against mocks through pending→confirmed |
+| Gate                | Command                                                               | Applies to                   | Done signal                                                                                       |
+| ------------------- | --------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| Unit tests          | `bun run test`                                                        | U1–U19 feature-bearing units | all scenarios green                                                                               |
+| Typecheck           | `bun run typecheck` (`tsc --noEmit`; add this script to package.json) | all units                    | no type errors; interfaces satisfied                                                              |
+| Lint                | `bun run lint`                                                        | all units                    | clean                                                                                             |
+| Format              | `bun run check`                                                       | all units                    | clean                                                                                             |
+| Routes              | `bun run generate-routes`                                             | U5, U6, U20 (new routes)     | `routeTree.gen.ts` regenerated                                                                    |
+| Manual smoke (mock) | `bun run dev`                                                         | Phase 1–5                    | connect wallet, browse markets/dashboard, run each action against mocks through pending→confirmed |
 
 Mock mode (`VITE_DATA_MODE=mock`) is the default verification environment through Phase 5; live mode is exercised in Phase 6 once ABIs/subgraph land.
 
