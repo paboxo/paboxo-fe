@@ -32,6 +32,21 @@ export interface PriceData {
   updatedAt: number
 }
 
+/** A market's interest-rate-model parameters — the two-slope (kinked) curve.
+ *  All rates and utilizations are WAD (1e18 = 100%). */
+export interface IrmParams {
+  /** Borrow rate at 0% utilization. */
+  baseRateWad: bigint
+  /** Borrow rate at the optimal utilization (the kink). */
+  rateAtOptimalWad: bigint
+  /** Borrow rate at the max utilization (top of the steep slope). */
+  maxRateWad: bigint
+  /** Utilization at the kink (slope1 → slope2). */
+  optimalUtilWad: bigint
+  /** Utilization at which the rate reaches maxRate (flat above it). */
+  maxUtilWad: bigint
+}
+
 /** `IsHealthy.checkLiquidatable` — all USD values are 1e18-scaled. */
 export interface LiquidatableStatus {
   liquidatable: boolean
@@ -91,6 +106,8 @@ export interface ChainAdapter {
   getMarketTotals: (pool: Address) => Promise<MarketTotals>
   /** Per-market borrow rate, WAD (1e18 = 100%). */
   getBorrowRateWad: (pool: Address) => Promise<bigint>
+  /** The market's IRM curve parameters (base/optimal/max rates + utilizations). */
+  getIrmParams: (pool: Address) => Promise<IrmParams>
   /** Feed price for a collateral token; the real impl reverts `PriceStale` > 1h. */
   getPrice: (token: Address) => Promise<PriceData>
   getUserBorrowShares: (pool: Address, user: Address) => Promise<bigint>

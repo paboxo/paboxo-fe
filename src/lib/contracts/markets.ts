@@ -19,6 +19,10 @@ export interface MarketConfig {
   /** Liquidation threshold (%) — where the position becomes liquidatable. */
   liqThreshold: number
   optimalUtil: number
+  /** Utilization (%) at which the borrow rate reaches maxRate (flat above it). */
+  maxUtil: number
+  /** Borrow rate (%) at 0% utilization. */
+  baseRate: number
   rateAtOptimal: number
   maxRate: number
   reserveFactor: number
@@ -39,6 +43,8 @@ export const MARKETS: MarketConfig[] = [
     ltv: 70,
     liqThreshold: 75,
     optimalUtil: 75,
+    maxUtil: 90,
+    baseRate: 0.5,
     rateAtOptimal: 7,
     maxRate: 120,
     reserveFactor: 15,
@@ -56,6 +62,8 @@ export const MARKETS: MarketConfig[] = [
     ltv: 80,
     liqThreshold: 85,
     optimalUtil: 85,
+    maxUtil: 95,
+    baseRate: 0,
     rateAtOptimal: 4,
     maxRate: 75,
     reserveFactor: 10,
@@ -73,6 +81,8 @@ export const MARKETS: MarketConfig[] = [
     ltv: 80,
     liqThreshold: 85,
     optimalUtil: 85,
+    maxUtil: 95,
+    baseRate: 0,
     rateAtOptimal: 4,
     maxRate: 75,
     reserveFactor: 10,
@@ -91,6 +101,8 @@ export const MARKETS: MarketConfig[] = [
     ltv: 65,
     liqThreshold: 72,
     optimalUtil: 70,
+    maxUtil: 90,
+    baseRate: 0.5,
     rateAtOptimal: 8,
     maxRate: 150,
     reserveFactor: 15,
