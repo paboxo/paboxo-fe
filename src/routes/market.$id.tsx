@@ -4,6 +4,7 @@ import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { useMarket } from '#/features/markets/hooks/useMarkets'
 import { MarketDetail } from '#/features/markets/components/MarketDetail'
+import { MarketIrmChart } from '#/features/analytics/components/MarketIrmChart'
 import { MarketRateChart } from '#/features/analytics/components/MarketRateChart'
 
 export const Route = createFileRoute('/market/$id')({
@@ -21,6 +22,7 @@ function MarketDetailPage() {
       ) : data ? (
         <>
           <MarketDetail market={data} />
+          <MarketIrmChart market={data} />
           <MarketRateChart market={data} />
         </>
       ) : (
