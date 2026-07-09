@@ -4,12 +4,22 @@ import { useAccount, useSwitchChain } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
 import { mockChainAdapter } from '#/lib/data/chain/chainAdapter.mock'
 import { MOCK_MARKETS } from '#/features/markets/mock'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
+import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import { SupplyLiquidityPanel } from './SupplyLiquidityPanel'
 
 vi.mock('wagmi', () => ({ useAccount: vi.fn(), useSwitchChain: vi.fn() }))
+vi.mock('#/features/shared/useTokenBalances', () => ({
+  useTokenBalance: vi.fn(),
+}))
+vi.mock('#/features/position/hooks/usePosition', () => ({
+  useMarketPosition: vi.fn(),
+}))
 
 const mockUseAccount = vi.mocked(useAccount)
 const mockUseSwitchChain = vi.mocked(useSwitchChain)
+const mockUseTokenBalance = vi.mocked(useTokenBalance)
+const mockUseMarketPosition = vi.mocked(useMarketPosition)
 const USER = '0x1111111111111111111111111111111111111111' as const
 const market = MOCK_MARKETS[0] // pxwhsk
 
@@ -22,6 +32,29 @@ beforeEach(() => {
   mockUseSwitchChain.mockReturnValue({
     switchChainAsync: vi.fn().mockResolvedValue(undefined),
   } as unknown as ReturnType<typeof useSwitchChain>)
+  // Wallet holds 25,000 pxUSDT (supply cap); the user has supplied 12,500
+  // pxUSDT liquidity in this pool (withdraw cap).
+  mockUseTokenBalance.mockReturnValue({
+    balance: 25_000_000_000n,
+    isLoading: false,
+    isError: false,
+  })
+  mockUseMarketPosition.mockReturnValue({
+    data: {
+      supplies: [
+        {
+          symbol: 'pxUSDT',
+          balance: 12_500_000_000n,
+          decimals: 6,
+          valueUsd: 12_500,
+          apy: 5,
+        },
+      ],
+      borrows: [],
+    },
+    isLoading: false,
+    error: null,
+  })
 })
 
 function renderPanel() {
@@ -45,6 +78,13 @@ describe('SupplyLiquidityPanel', () => {
     expect(screen.queryByText(new RegExp(market.collateralSymbol))).toBeNull()
     expect(screen.getByRole('tab', { name: 'Supply' })).toBeTruthy()
     expect(screen.getByRole('tab', { name: 'Withdraw' })).toBeTruthy()
+  })
+
+  it("shows the user's supplied balance in this pool", () => {
+    renderPanel()
+    expect(screen.getByText('Supplied in this pool')).toBeTruthy()
+    // 12,500 pxUSDT supplied (amount + USD value both surface it).
+    expect(screen.getAllByText(/12,500/).length).toBeGreaterThan(0)
   })
 
   it('blocks a non-positive amount', () => {

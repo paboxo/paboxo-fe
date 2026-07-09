@@ -3,8 +3,11 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import { TOKENS } from '#/lib/contracts'
+import { formatTokenAmount, formatUsd, toNumber } from '#/lib/format'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
+import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import { useSupplyLiquidity } from '../hooks/useSupplyLiquidity'
 
 type LiquidityAction = 'supply' | 'withdraw'
@@ -21,16 +24,26 @@ const positiveAmount = (amountTokens: number): PreflightResult =>
 
 /**
  * Earn-side liquidity action host (U2, R6, AE1). Supplies pxUSDT *liquidity* to
- * the pool and withdraws it — the lender counterpart to the collateral
- * `SupplyPanel`. Reuses `useSupplyLiquidity` and `useWithdraw.withdrawLiquidity`
- * unchanged (no new write logic); the two tabs keep supply and withdraw in one
- * card without ever offering a collateral action.
+ * the pool and withdraws it. The Supply tab caps at the user's wallet pxUSDT
+ * balance; the Withdraw tab caps at what the user has supplied in *this* pool
+ * (read from the pool via `useMarketPosition`), so they can only pull out what
+ * they put in. Reuses the existing hooks unchanged (no new write logic).
  */
 export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
   const [active, setActive] = useState<LiquidityAction>('supply')
   const supplyLiquidity = useSupplyLiquidity(market)
   const withdraw = useWithdraw(market)
   const decimals = TOKENS.pxUSDT.decimals
+
+  // Wallet pxUSDT balance (supply cap) and the user's supplied liquidity in this
+  // isolated pool (withdraw cap).
+  const { balance: walletBalance } = useTokenBalance(TOKENS.pxUSDT.address)
+  const { data: position } = useMarketPosition(market.id)
+  const suppliedRow = position?.supplies.find(
+    (row) => row.symbol === market.borrowSymbol,
+  )
+  const suppliedBalance = suppliedRow?.balance ?? 0n
+  const wallet = walletBalance ?? 0n
 
   const onSupply = (amountTokens: number) => {
     void supplyLiquidity.supply(parseUnits(amountTokens.toString(), decimals))
@@ -44,6 +57,21 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="island-shell flex items-center justify-between rounded-2xl px-4 py-3 text-sm">
+        <span className="text-[var(--sea-ink-soft)]">
+          Supplied in this pool
+        </span>
+        <span className="num font-semibold text-[var(--sea-ink)]">
+          {formatTokenAmount(suppliedBalance, decimals)} {market.borrowSymbol}
+          {suppliedRow ? (
+            <span className="text-[var(--sea-ink-soft)]">
+              {' '}
+              · {formatUsd(suppliedRow.valueUsd)}
+            </span>
+          ) : null}
+        </span>
+      </div>
+
       <div
         role="tablist"
         aria-label="Liquidity actions"
@@ -77,7 +105,9 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           symbol={market.borrowSymbol}
           decimals={decimals}
           priceUsd={1}
-          maxTokens={1000}
+          balance={wallet}
+          maxTokens={toNumber(wallet, decimals)}
+          maxLabel="Wallet balance"
           preflight={positiveAmount}
           reviewApy={market.supplyApy}
           networkFeeUsd={0.42}
@@ -92,7 +122,9 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           symbol={market.borrowSymbol}
           decimals={decimals}
           priceUsd={1}
-          maxTokens={1000}
+          balance={suppliedBalance}
+          maxTokens={toNumber(suppliedBalance, decimals)}
+          maxLabel="Supplied"
           preflight={positiveAmount}
           networkFeeUsd={0.42}
           txState={withdraw.state}
