@@ -1,7 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { useAccount, useSwitchChain } from 'wagmi'
-import { QueryWrapper } from '#/test/utils'
+import { QueryWrapper, createTestQueryClient } from '#/test/utils'
 import { TOKENS } from '#/lib/contracts'
 import { mockChainAdapter } from '#/lib/data/chain/chainAdapter.mock'
 import { useWriteAction } from './useWriteAction'
@@ -176,5 +178,39 @@ describe('useWriteAction', () => {
     // approval mined (wait) → send broadcast → send mined (wait), never send-before-approval-receipt.
     expect(order).toEqual(['wait', 'send', 'wait'])
     waitSpy.mockRestore()
+  })
+
+  it('reverts when the send receipt fails to mine (broadcast != mined)', async () => {
+    connected(177)
+    // The send now returns on broadcast; a mined-but-reverted / timed-out tx
+    // surfaces via waitForReceipt, not send.
+    const waitSpy = vi
+      .spyOn(mockChainAdapter, 'waitForReceipt')
+      .mockRejectedValue(new Error('receipt timeout'))
+    const send = vi.fn().mockResolvedValue(HASH)
+    const { result } = renderWrite()
+    await act(async () => {
+      await result.current.run({ send })
+    })
+    expect(result.current.state).toBe('reverted')
+    waitSpy.mockRestore()
+  })
+
+  it('stays confirmed when post-confirm cache invalidation fails', async () => {
+    connected(177)
+    // A rejected refetch must not flip a mined tx back to a failure state.
+    const client = createTestQueryClient()
+    client.invalidateQueries = vi.fn().mockRejectedValue(new Error('refetch'))
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const send = vi.fn().mockResolvedValue(HASH)
+    const { result } = renderHook(() => useWriteAction(), { wrapper })
+    let ok: boolean | undefined
+    await act(async () => {
+      ok = await result.current.run({ send, invalidateKeys: [['markets']] })
+    })
+    expect(result.current.state).toBe('confirmed')
+    expect(ok).toBe(true)
   })
 })

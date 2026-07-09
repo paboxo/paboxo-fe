@@ -1,11 +1,9 @@
-import { TOKENS } from '#/lib/contracts'
+import { TOKENS, TOKEN_SYMBOLS } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
 import { Dialog } from '#/components/ui/Dialog'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import type { TokenBalances } from '#/features/shared/useTokenBalances'
-
-const SYMBOLS = Object.keys(TOKENS) as TokenSymbol[]
 
 export interface TokenSelectDialogProps {
   open: boolean
@@ -15,7 +13,7 @@ export interface TokenSelectDialogProps {
   balances: TokenBalances
   isLoading?: boolean
   /** A token that can't be picked (e.g. the token you are swapping from). */
-  disabledSymbol?: string
+  disabledSymbol?: TokenSymbol
 }
 
 /** A token picker as a dialog — each row shows the token and the user's balance. */
@@ -41,7 +39,7 @@ export function TokenSelectDialog({
       description="Pick the token to swap into."
     >
       <ul className="flex flex-col gap-1 p-3">
-        {SYMBOLS.map((symbol) => {
+        {TOKEN_SYMBOLS.map((symbol) => {
           const disabled = symbol === disabledSymbol
           const isSelected = symbol === selected
           return (

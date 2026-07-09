@@ -5,17 +5,16 @@
  */
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
-import { TOKENS } from '#/lib/contracts'
+import { TOKENS, TOKEN_SYMBOLS } from '#/lib/contracts'
 import type { Address, TokenSymbol } from '#/lib/contracts'
 import { getAdapters } from '#/lib/data'
 
 export type TokenBalances = Partial<Record<TokenSymbol, bigint>>
 
-const SYMBOLS = Object.keys(TOKENS) as TokenSymbol[]
-
 export function useTokenBalances(): {
   balances: TokenBalances
   isLoading: boolean
+  isError: boolean
 } {
   const { address } = useAccount()
   const query = useQuery({
@@ -23,20 +22,28 @@ export function useTokenBalances(): {
     enabled: Boolean(address),
     queryFn: async (): Promise<TokenBalances> => {
       const { chain } = getAdapters()
-      const owner = address as `0x${string}`
-      const entries = await Promise.all(
-        SYMBOLS.map(
-          async (symbol) =>
-            [
-              symbol,
-              await chain.getTokenBalance(TOKENS[symbol].address, owner),
-            ] as const,
+      const owner = address as Address
+      // allSettled so one failing token read doesn't zero every balance — a
+      // rejected read is simply omitted (rendered as unavailable), not shown as 0.
+      const settled = await Promise.allSettled(
+        TOKEN_SYMBOLS.map((symbol) =>
+          chain.getTokenBalance(TOKENS[symbol].address, owner),
         ),
       )
-      return Object.fromEntries(entries)
+      const balances: TokenBalances = {}
+      settled.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          balances[TOKEN_SYMBOLS[index]] = result.value
+        }
+      })
+      return balances
     },
   })
-  return { balances: query.data ?? {}, isLoading: query.isLoading }
+  return {
+    balances: query.data ?? {},
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
 }
 
 /**
@@ -48,6 +55,7 @@ export function useTokenBalances(): {
 export function useTokenBalance(token: Address | undefined): {
   balance: bigint | undefined
   isLoading: boolean
+  isError: boolean
 } {
   const { address } = useAccount()
   const query = useQuery({
@@ -55,8 +63,12 @@ export function useTokenBalance(token: Address | undefined): {
     enabled: Boolean(address && token),
     queryFn: async (): Promise<bigint> => {
       const { chain } = getAdapters()
-      return chain.getTokenBalance(token as Address, address as `0x${string}`)
+      return chain.getTokenBalance(token as Address, address as Address)
     },
   })
-  return { balance: query.data, isLoading: query.isLoading }
+  return {
+    balance: query.data,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
 }

@@ -465,7 +465,10 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async waitForReceipt(hash) {
-    await waitForTransactionReceipt(wagmiConfig, { hash })
+    // Bound the wait so a dropped/underpriced tx settles the promise instead of
+    // stranding the caller's tx-state machine in 'pending' forever; viem rejects
+    // with a timeout error the wrapper surfaces as a failure the user can retry.
+    await waitForTransactionReceipt(wagmiConfig, { hash, timeout: 120_000 })
   },
 
   // ---- cross-chain: PaboxoCCIPSender is not deployed on Base yet ----

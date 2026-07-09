@@ -30,7 +30,7 @@ export function SwapPanel() {
   const [slippage, setSlippage] = useState('0.5')
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  const collateralSymbol = market.collateralSymbol
+  const collateralSymbol = market.collateralSymbol as TokenSymbol
   // Read the collateral balance by the market's collateral address — the
   // cross-chain pxWHSK shares the pxWHSK symbol but has a distinct address, so a
   // symbol lookup would show the wrong token's balance.

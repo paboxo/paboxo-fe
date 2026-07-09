@@ -155,9 +155,12 @@ describe('liveChainAdapter writes', () => {
     expect(hash).toBe(HASH)
   })
 
-  it('waitForReceipt awaits the mined receipt for a hash', async () => {
+  it('waitForReceipt awaits the mined receipt for a hash, with a timeout', async () => {
     await liveChainAdapter.waitForReceipt(HASH)
-    expect(mockWait).toHaveBeenCalledWith(expect.anything(), { hash: HASH })
+    expect(mockWait).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ hash: HASH, timeout: expect.any(Number) }),
+    )
   })
 
   it('liquidates a single borrower on the pool', async () => {
