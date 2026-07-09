@@ -1,18 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { AppPageHeader } from '#/components/layout/AppPageHeader'
-import { EarnList } from '#/features/earn/components/EarnList'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/earn')({ component: EarnPage })
-
-function EarnPage() {
-  return (
-    <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
-      <AppPageHeader
-        kicker="Earn"
-        title="Earn on your pxUSDT"
-        subtitle="Supply pxUSDT liquidity to an isolated pool and earn its supply APY."
-      />
-      <EarnList />
-    </main>
-  )
-}
+// Layout route for the `/earn` segment. The list lives in `earn.index.tsx`
+// (`/earn`) and the per-pool page in `earn.$id.tsx` (`/earn/$id`); this route
+// only renders the matched child so the per-pool page isn't masked by the list.
+export const Route = createFileRoute('/earn')({ component: () => <Outlet /> })

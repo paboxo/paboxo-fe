@@ -15,6 +15,8 @@ import { Route as EarnRouteImport } from './routes/earn'
 import { Route as BorrowRouteImport } from './routes/borrow'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EarnIndexRouteImport } from './routes/earn.index'
+import { Route as BorrowIndexRouteImport } from './routes/borrow.index'
 import { Route as EarnIdRouteImport } from './routes/earn.$id'
 import { Route as BorrowIdRouteImport } from './routes/borrow.$id'
 
@@ -48,6 +50,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EarnIndexRoute = EarnIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EarnRoute,
+} as any)
+const BorrowIndexRoute = BorrowIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BorrowRoute,
+} as any)
 const EarnIdRoute = EarnIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -68,16 +80,18 @@ export interface FileRoutesByFullPath {
   '/swap': typeof SwapRoute
   '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
+  '/borrow/': typeof BorrowIndexRoute
+  '/earn/': typeof EarnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/borrow': typeof BorrowRouteWithChildren
-  '/earn': typeof EarnRouteWithChildren
   '/portfolio': typeof PortfolioRoute
   '/swap': typeof SwapRoute
   '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
+  '/borrow': typeof BorrowIndexRoute
+  '/earn': typeof EarnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +103,8 @@ export interface FileRoutesById {
   '/swap': typeof SwapRoute
   '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
+  '/borrow/': typeof BorrowIndexRoute
+  '/earn/': typeof EarnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,16 +117,18 @@ export interface FileRouteTypes {
     | '/swap'
     | '/borrow/$id'
     | '/earn/$id'
+    | '/borrow/'
+    | '/earn/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/borrow'
-    | '/earn'
     | '/portfolio'
     | '/swap'
     | '/borrow/$id'
     | '/earn/$id'
+    | '/borrow'
+    | '/earn'
   id:
     | '__root__'
     | '/'
@@ -121,6 +139,8 @@ export interface FileRouteTypes {
     | '/swap'
     | '/borrow/$id'
     | '/earn/$id'
+    | '/borrow/'
+    | '/earn/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +196,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/earn/': {
+      id: '/earn/'
+      path: '/'
+      fullPath: '/earn/'
+      preLoaderRoute: typeof EarnIndexRouteImport
+      parentRoute: typeof EarnRoute
+    }
+    '/borrow/': {
+      id: '/borrow/'
+      path: '/'
+      fullPath: '/borrow/'
+      preLoaderRoute: typeof BorrowIndexRouteImport
+      parentRoute: typeof BorrowRoute
+    }
     '/earn/$id': {
       id: '/earn/$id'
       path: '/$id'
@@ -195,10 +229,12 @@ declare module '@tanstack/react-router' {
 
 interface BorrowRouteChildren {
   BorrowIdRoute: typeof BorrowIdRoute
+  BorrowIndexRoute: typeof BorrowIndexRoute
 }
 
 const BorrowRouteChildren: BorrowRouteChildren = {
   BorrowIdRoute: BorrowIdRoute,
+  BorrowIndexRoute: BorrowIndexRoute,
 }
 
 const BorrowRouteWithChildren =
@@ -206,10 +242,12 @@ const BorrowRouteWithChildren =
 
 interface EarnRouteChildren {
   EarnIdRoute: typeof EarnIdRoute
+  EarnIndexRoute: typeof EarnIndexRoute
 }
 
 const EarnRouteChildren: EarnRouteChildren = {
   EarnIdRoute: EarnIdRoute,
+  EarnIndexRoute: EarnIndexRoute,
 }
 
 const EarnRouteWithChildren = EarnRoute._addFileChildren(EarnRouteChildren)
