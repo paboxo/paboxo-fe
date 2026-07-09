@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SwapRouteImport } from './routes/swap'
 import { Route as MarketsRouteImport } from './routes/markets'
+import { Route as EarnRouteImport } from './routes/earn'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
+import { Route as EarnIdRouteImport } from './routes/earn.$id'
 
 const SwapRoute = SwapRouteImport.update({
   id: '/swap',
@@ -24,6 +26,11 @@ const SwapRoute = SwapRouteImport.update({
 const MarketsRoute = MarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EarnRoute = EarnRouteImport.update({
+  id: '/earn',
+  path: '/earn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -46,21 +53,30 @@ const MarketIdRoute = MarketIdRouteImport.update({
   path: '/market/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EarnIdRoute = EarnIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => EarnRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
+  '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
+  '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
 export interface FileRoutesById {
@@ -68,23 +84,42 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRoute
+  '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/about' | '/dashboard' | '/markets' | '/swap' | '/market/$id'
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/earn'
+    | '/markets'
+    | '/swap'
+    | '/earn/$id'
+    | '/market/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/dashboard' | '/markets' | '/swap' | '/market/$id'
+  to:
+    | '/'
+    | '/about'
+    | '/dashboard'
+    | '/earn'
+    | '/markets'
+    | '/swap'
+    | '/earn/$id'
+    | '/market/$id'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/dashboard'
+    | '/earn'
     | '/markets'
     | '/swap'
+    | '/earn/$id'
     | '/market/$id'
   fileRoutesById: FileRoutesById
 }
@@ -92,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRoute
+  EarnRoute: typeof EarnRouteWithChildren
   MarketsRoute: typeof MarketsRoute
   SwapRoute: typeof SwapRoute
   MarketIdRoute: typeof MarketIdRoute
@@ -111,6 +147,13 @@ declare module '@tanstack/react-router' {
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof MarketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/earn': {
+      id: '/earn'
+      path: '/earn'
+      fullPath: '/earn'
+      preLoaderRoute: typeof EarnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -141,13 +184,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MarketIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/earn/$id': {
+      id: '/earn/$id'
+      path: '/$id'
+      fullPath: '/earn/$id'
+      preLoaderRoute: typeof EarnIdRouteImport
+      parentRoute: typeof EarnRoute
+    }
   }
 }
+
+interface EarnRouteChildren {
+  EarnIdRoute: typeof EarnIdRoute
+}
+
+const EarnRouteChildren: EarnRouteChildren = {
+  EarnIdRoute: EarnIdRoute,
+}
+
+const EarnRouteWithChildren = EarnRoute._addFileChildren(EarnRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRoute,
+  EarnRoute: EarnRouteWithChildren,
   MarketsRoute: MarketsRoute,
   SwapRoute: SwapRoute,
   MarketIdRoute: MarketIdRoute,
