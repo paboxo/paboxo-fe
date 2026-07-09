@@ -12,6 +12,9 @@ const config = defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    // Pin the data source for tests so a local `.env.local` (e.g. live mode
+    // for dev) can never flip the suite onto real RPC reads.
+    env: { VITE_DATA_MODE: 'mock' },
   },
 })
 
