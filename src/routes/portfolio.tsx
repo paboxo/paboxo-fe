@@ -5,9 +5,9 @@ import { PortfolioSummary } from '#/features/portfolio/components/PortfolioSumma
 import { PositionDashboard } from '#/features/position/components/PositionDashboard'
 import { HistoryList } from '#/features/history/components/HistoryList'
 
-export const Route = createFileRoute('/dashboard')({ component: DashboardPage })
+export const Route = createFileRoute('/portfolio')({ component: PortfolioPage })
 
-function DashboardPage() {
+function PortfolioPage() {
   return (
     <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
       <AppPageHeader kicker="Portfolio" title="Your position" />

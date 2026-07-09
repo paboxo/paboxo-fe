@@ -5,10 +5,14 @@ import { DensityToggle } from './DensityToggle'
 
 const NAV = [
   {
-    to: '/markets' as const,
-    label: 'Markets',
-    // A market-detail page (/market/$id) lives under Markets, so keep it active there too.
-    match: (p: string) => p === '/markets' || p.startsWith('/market/'),
+    to: '/earn' as const,
+    label: 'Earn',
+    match: (p: string) => p.startsWith('/earn'),
+  },
+  {
+    to: '/borrow' as const,
+    label: 'Borrow',
+    match: (p: string) => p.startsWith('/borrow'),
   },
   {
     to: '/swap' as const,
@@ -16,9 +20,9 @@ const NAV = [
     match: (p: string) => p.startsWith('/swap'),
   },
   {
-    to: '/dashboard' as const,
-    label: 'Dashboard',
-    match: (p: string) => p.startsWith('/dashboard'),
+    to: '/portfolio' as const,
+    label: 'Portfolio',
+    match: (p: string) => p.startsWith('/portfolio'),
   },
 ]
 

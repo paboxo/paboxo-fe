@@ -38,7 +38,7 @@ export function MarketCard({ market }: { market: MarketView }) {
       </div>
 
       <a
-        href={`/market/${market.id}`}
+        href={`/earn/${market.id}`}
         className="mt-1 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold no-underline"
         style={{ background: 'var(--palm)', color: '#f3faf5' }}
       >
