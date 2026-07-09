@@ -17,3 +17,12 @@ declare module '@tanstack/react-router' {
     router: ReturnType<typeof getRouter>
   }
 }
+
+// SSR router registration. Kept here (not in the generated routeTree) because
+// `tsr generate` does not emit it and would otherwise strip it on every run.
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
