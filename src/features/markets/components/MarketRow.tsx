@@ -15,6 +15,9 @@ export function MarketRow({ market }: { market: MarketView }) {
           {market.collateralSymbol}
         </a>
       </td>
+      <td className="num px-4 py-3 text-right">
+        {formatUsd(market.priceUsd)}
+      </td>
       <td
         className="num px-4 py-3 text-right font-semibold"
         style={{ color: 'var(--palm)' }}

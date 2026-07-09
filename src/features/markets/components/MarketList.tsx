@@ -40,6 +40,7 @@ export function MarketList() {
             <thead>
               <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
                 <th className="px-4 py-3 text-left font-bold">Market</th>
+                <th className="px-4 py-3 text-right font-bold">Price</th>
                 <th className="px-4 py-3 text-right font-bold">Supply APY</th>
                 <th className="px-4 py-3 text-right font-bold">Borrow APR</th>
                 <th className="px-4 py-3 text-right font-bold">Utilization</th>
