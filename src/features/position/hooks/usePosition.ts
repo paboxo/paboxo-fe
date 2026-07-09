@@ -5,7 +5,8 @@
  * Mock mode serves fixtures; live (U18) passes the real wallet address unchanged.
  */
 import { useQuery } from '@tanstack/react-query'
-import { MARKETS, TOKENS } from '#/lib/contracts'
+import { useAccount } from 'wagmi'
+import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { Address, MarketConfig } from '#/lib/contracts'
 import { getAdapters } from '#/lib/data'
 import type { ChainAdapter } from '#/lib/data'
@@ -24,7 +25,7 @@ import type { BorrowRow, PositionView, SupplyRow } from '../types'
 
 const BORROW_DECIMALS = TOKENS.pxUSDT.decimals
 
-interface MarketPosition {
+export interface MarketPosition {
   supplies: SupplyRow[]
   borrows: BorrowRow[]
   healthFactor?: number
@@ -42,16 +43,23 @@ async function loadMarketPosition(
   address: Address,
   chain: ChainAdapter,
 ): Promise<MarketPosition> {
-  const [supplyShares, totals, collateralValue, borrowShares, price, liq, rate] =
-    await Promise.all([
-      chain.getUserSupplyShares(config.pool, address),
-      chain.getMarketTotals(config.pool),
-      chain.getCollateralValue(config.pool, address),
-      chain.getUserBorrowShares(config.pool, address),
-      chain.getPrice(config.collateralAddress),
-      chain.checkLiquidatable(config.pool, address),
-      chain.getBorrowRateWad(config.pool),
-    ])
+  const [
+    supplyShares,
+    totals,
+    collateralValue,
+    borrowShares,
+    price,
+    liq,
+    rate,
+  ] = await Promise.all([
+    chain.getUserSupplyShares(config.pool, address),
+    chain.getMarketTotals(config.pool),
+    chain.getCollateralValue(config.pool, address),
+    chain.getUserBorrowShares(config.pool, address),
+    chain.getPrice(config.collateralAddress),
+    chain.checkLiquidatable(config.pool, address),
+    chain.getBorrowRateWad(config.pool),
+  ])
 
   const priceUsd = toWholeNumber(price.price, 8)
   const utilWad = utilizationWad(
@@ -184,7 +192,48 @@ export function usePosition(
   const query = useQuery({
     queryKey: ['position', address, empty],
     queryFn: () =>
-      empty ? Promise.resolve(null) : loadPosition(address, getAdapters().chain),
+      empty
+        ? Promise.resolve(null)
+        : loadPosition(address, getAdapters().chain),
+  })
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error,
+  }
+}
+
+export interface UseMarketPositionOptions {
+  /** Override the read address (defaults to the connected wallet, else preview). */
+  address?: Address
+  /** Force enable/disable; defaults to reading only once a wallet is connected. */
+  enabled?: boolean
+}
+
+/**
+ * Per-pool position read hook (U6). Exposes a single isolated pool's position
+ * (supplied liquidity, collateral, debt, health) by market id, wrapping the
+ * existing `loadMarketPosition` — read-only, no contract or write-path logic.
+ * The list/per-pool views (R5, R7) and the Borrow-variant PoolInfo health need
+ * one pool's position, not the cross-pool aggregate `usePosition` builds. The
+ * query is disabled until a wallet is connected; an unknown id resolves to
+ * `null` instead of throwing.
+ */
+export function useMarketPosition(
+  id: string,
+  options: UseMarketPositionOptions = {},
+): QueryResult<MarketPosition | null> {
+  const { address: connected, isConnected } = useAccount()
+  const address = options.address ?? connected ?? PREVIEW_ADDRESS
+  const config = getMarketConfig(id)
+  const enabled = (options.enabled ?? isConnected) && config !== undefined
+  const query = useQuery({
+    queryKey: ['market-position', id, address],
+    enabled,
+    queryFn: () =>
+      config
+        ? loadMarketPosition(config, address, getAdapters().chain)
+        : Promise.resolve(null),
   })
   return {
     data: query.data ?? null,
