@@ -1,16 +1,18 @@
 /**
  * The single swap point (U3). Domain hooks call `getAdapters()` and never import
  * a concrete adapter, so flipping `VITE_DATA_MODE` between `mock` and `live` is
- * the only change needed to go on-chain (KTD2, KTD6). Live impls are stubbed
- * until U18 (chain) and U19 (indexer) land the real viem/GraphQL adapters.
+ * the only change needed to go on-chain (KTD2, KTD6). Live chain reads/writes go
+ * through the real viem adapter (U18); the live indexer is the real GraphQL
+ * adapter (U4) when `VITE_INDEXER_URL` is set, otherwise it falls back to the
+ * mock (the subgraph is not deployed yet).
  */
 import type { DataMode } from '#/lib/config/env'
-import { DATA_MODE } from '#/lib/config/env'
+import { DATA_MODE, INDEXER_URL } from '#/lib/config/env'
 import type { ChainAdapter, IndexerAdapter } from './types'
 import { mockChainAdapter } from './chain/chainAdapter.mock'
 import { liveChainAdapter } from './chain/chainAdapter'
 import { mockIndexerAdapter } from './indexer/indexerAdapter.mock'
-import { notImplemented } from './notImplemented'
+import { createLiveIndexerAdapter } from './indexer/indexerAdapter'
 
 export interface Adapters {
   chain: ChainAdapter
@@ -24,7 +26,10 @@ const mockAdapters: Adapters = {
 
 const liveAdapters: Adapters = {
   chain: liveChainAdapter,
-  indexer: notImplemented<IndexerAdapter>('live indexerAdapter (U19)'),
+  // Real GraphQL indexer when an endpoint is configured; mock until it deploys.
+  indexer: INDEXER_URL
+    ? createLiveIndexerAdapter(INDEXER_URL)
+    : mockIndexerAdapter,
 }
 
 /** Pure resolver — takes the mode explicitly so it is trivially testable. */

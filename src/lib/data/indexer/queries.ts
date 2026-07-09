@@ -85,3 +85,14 @@ export const CROSS_CHAIN_STATUS_QUERY = /* GraphQL */ `
     }
   }
 `
+
+/** A market's borrow/supply rate history for charts (rates are WAD strings). */
+export const RATE_HISTORY_QUERY = /* GraphQL */ `
+  query RateHistory($pool: Bytes!, $first: Int = 60) {
+    lendingPoolRates(where: { pool: $pool }, first: $first, orderBy: timestamp, orderDirection: asc) {
+      timestamp
+      borrowRate
+      supplyRate
+    }
+  }
+`

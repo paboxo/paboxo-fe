@@ -15,22 +15,23 @@ describe('data registry', () => {
     expect(adapters.indexer).toBe(mockIndexerAdapter)
   })
 
-  it('returns a different impl when the mode flag flips to live', () => {
+  it('swaps chain to live but falls back to the mock indexer with no endpoint', () => {
     const mock = resolveAdapters('mock')
     const live = resolveAdapters('live')
     expect(live.chain).not.toBe(mock.chain)
-    expect(live.indexer).not.toBe(mock.indexer)
+    // No VITE_INDEXER_URL in the test env → the live indexer is the mock (AE4).
+    expect(live.indexer).toBe(mock.indexer)
   })
 
   it('resolves the real viem chain adapter in live mode (U18)', () => {
     expect(resolveAdapters('live').chain).toBe(liveChainAdapter)
   })
 
-  it('indexer is still a notImplemented stub in live mode (U19 pending)', async () => {
-    const live = resolveAdapters('live')
-    await expect(live.indexer.getUserHistory(MOCK_USER)).rejects.toThrow(
-      /not wired yet/,
+  it('the fallback indexer serves history without an endpoint (AE4)', async () => {
+    const history = await resolveAdapters('live').indexer.getUserHistory(
+      MOCK_USER,
     )
+    expect(Array.isArray(history)).toBe(true)
   })
 
   it('defaults to mock in the test environment (VITE_DATA_MODE unset)', () => {

@@ -30,6 +30,7 @@
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "recharts": "^3.9.2",
     "tailwindcss": "^4.1.18",
     "viem": "^2.54.6",
     "wagmi": "^2.19.5"

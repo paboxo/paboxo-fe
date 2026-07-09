@@ -7,10 +7,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
 import { wagmiConfig } from './config'
 
-// Coastal-glass accent so the wallet modal matches the app (palm green).
+// Coastal-glass accent so the wallet modal matches the app (azure blue).
 const rainbowTheme = lightTheme({
-  accentColor: '#2f6a4a',
-  accentColorForeground: '#f3faf5',
+  accentColor: '#0690d4',
+  accentColorForeground: '#f2f8fd',
   borderRadius: 'large',
   overlayBlur: 'small',
 })

@@ -4,6 +4,7 @@ import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { useMarket } from '#/features/markets/hooks/useMarkets'
 import { MarketDetail } from '#/features/markets/components/MarketDetail'
+import { MarketRateChart } from '#/features/analytics/components/MarketRateChart'
 
 export const Route = createFileRoute('/market/$id')({
   component: MarketDetailPage,
@@ -13,12 +14,15 @@ function MarketDetailPage() {
   const { id } = Route.useParams()
   const { data, isLoading } = useMarket(id)
   return (
-    <main className="page-wrap px-4 pb-12 pt-8">
+    <main className="page-wrap flex flex-col gap-5 px-4 pb-12 pt-8">
       <AppPageHeader kicker="Market" title="Market detail" />
       {isLoading ? (
         <LoadingCard />
       ) : data ? (
-        <MarketDetail market={data} />
+        <>
+          <MarketDetail market={data} />
+          <MarketRateChart market={data} />
+        </>
       ) : (
         <ErrorState
           title="Market not found"

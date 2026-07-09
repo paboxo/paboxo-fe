@@ -14,7 +14,7 @@ export function TokenGlyph({
         width: size,
         height: size,
         fontSize: size * 0.34,
-        background: 'linear-gradient(140deg,#7ed3bf,#4fb8b2)',
+        background: 'linear-gradient(140deg,#6cc6f0,#0690d4)',
         border: '1.5px solid var(--surface-strong)',
       }}
       aria-hidden="true"
