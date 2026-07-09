@@ -12,5 +12,8 @@ dist-ssr
 __unconfig*
 todos.json
 
+# Playwright MCP scratch (screenshots, console logs)
+.playwright-mcp/
+
 # Reference material (smart contracts, integration docs) — not part of the frontend
 references/

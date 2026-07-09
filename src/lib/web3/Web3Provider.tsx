@@ -26,7 +26,9 @@ export function Web3Provider({
   return (
     <WagmiProvider config={wagmiConfig} initialState={initialState}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rainbowTheme}>{children}</RainbowKitProvider>
+        <RainbowKitProvider theme={rainbowTheme} initialChain={177}>
+          {children}
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   )
