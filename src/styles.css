@@ -9,70 +9,70 @@
 }
 
 :root {
-  --sea-ink: #173a40;
-  --sea-ink-soft: #416166;
-  --lagoon: #4fb8b2;
-  --lagoon-deep: #328f97;
-  --palm: #2f6a4a;
-  --sand: #e7f0e8;
-  --foam: #f3faf5;
+  --sea-ink: #0e2a44;
+  --sea-ink-soft: #3f5b74;
+  --lagoon: #38a8e0;
+  --lagoon-deep: #0a72b0;
+  --palm: #0690d4;
+  --sand: #e6eff8;
+  --foam: #f2f8fd;
   --surface: rgba(255, 255, 255, 0.74);
   --surface-strong: rgba(255, 255, 255, 0.9);
-  --line: rgba(23, 58, 64, 0.14);
+  --line: rgba(14, 42, 68, 0.14);
   --inset-glint: rgba(255, 255, 255, 0.82);
-  --kicker: rgba(47, 106, 74, 0.9);
-  --bg-base: #e7f3ec;
-  --header-bg: rgba(251, 255, 248, 0.84);
+  --kicker: rgba(6, 144, 212, 0.9);
+  --bg-base: #e9f1f8;
+  --header-bg: rgba(244, 249, 254, 0.84);
   --chip-bg: rgba(255, 255, 255, 0.8);
-  --chip-line: rgba(47, 106, 74, 0.18);
+  --chip-line: rgba(6, 144, 212, 0.18);
   --link-bg-hover: rgba(255, 255, 255, 0.9);
-  --hero-a: rgba(79, 184, 178, 0.36);
-  --hero-b: rgba(47, 106, 74, 0.2);
+  --hero-a: rgba(56, 168, 224, 0.36);
+  --hero-b: rgba(6, 144, 212, 0.2);
 }
 
 :root[data-theme='dark'] {
-  --sea-ink: #d7ece8;
-  --sea-ink-soft: #afcdc8;
-  --lagoon: #60d7cf;
-  --lagoon-deep: #8de5db;
-  --palm: #6ec89a;
-  --sand: #0f1a1e;
-  --foam: #101d22;
-  --surface: rgba(16, 30, 34, 0.8);
-  --surface-strong: rgba(15, 27, 31, 0.92);
-  --line: rgba(141, 229, 219, 0.18);
-  --inset-glint: rgba(194, 247, 238, 0.14);
-  --kicker: #b8efe5;
-  --bg-base: #0a1418;
-  --header-bg: rgba(10, 20, 24, 0.8);
-  --chip-bg: rgba(13, 28, 32, 0.9);
-  --chip-line: rgba(141, 229, 219, 0.24);
-  --link-bg-hover: rgba(24, 44, 49, 0.8);
-  --hero-a: rgba(96, 215, 207, 0.18);
-  --hero-b: rgba(110, 200, 154, 0.12);
+  --sea-ink: #d5e6f5;
+  --sea-ink-soft: #a7c1dc;
+  --lagoon: #58c0f0;
+  --lagoon-deep: #86ccf2;
+  --palm: #4ab6ef;
+  --sand: #0c1826;
+  --foam: #0f1a28;
+  --surface: rgba(16, 28, 42, 0.8);
+  --surface-strong: rgba(15, 25, 38, 0.92);
+  --line: rgba(88, 192, 240, 0.18);
+  --inset-glint: rgba(194, 224, 247, 0.14);
+  --kicker: #b3ddf5;
+  --bg-base: #08111c;
+  --header-bg: rgba(9, 18, 28, 0.8);
+  --chip-bg: rgba(13, 26, 38, 0.9);
+  --chip-line: rgba(88, 192, 240, 0.24);
+  --link-bg-hover: rgba(20, 40, 58, 0.8);
+  --hero-a: rgba(88, 192, 240, 0.18);
+  --hero-b: rgba(74, 182, 239, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --sea-ink: #d7ece8;
-    --sea-ink-soft: #afcdc8;
-    --lagoon: #60d7cf;
-    --lagoon-deep: #8de5db;
-    --palm: #6ec89a;
-    --sand: #0f1a1e;
-    --foam: #101d22;
-    --surface: rgba(16, 30, 34, 0.8);
-    --surface-strong: rgba(15, 27, 31, 0.92);
-    --line: rgba(141, 229, 219, 0.18);
-    --inset-glint: rgba(194, 247, 238, 0.14);
-    --kicker: #b8efe5;
-    --bg-base: #0a1418;
-    --header-bg: rgba(10, 20, 24, 0.8);
-    --chip-bg: rgba(13, 28, 32, 0.9);
-    --chip-line: rgba(141, 229, 219, 0.24);
-    --link-bg-hover: rgba(24, 44, 49, 0.8);
-    --hero-a: rgba(96, 215, 207, 0.18);
-    --hero-b: rgba(110, 200, 154, 0.12);
+    --sea-ink: #d5e6f5;
+    --sea-ink-soft: #a7c1dc;
+    --lagoon: #58c0f0;
+    --lagoon-deep: #86ccf2;
+    --palm: #4ab6ef;
+    --sand: #0c1826;
+    --foam: #0f1a28;
+    --surface: rgba(16, 28, 42, 0.8);
+    --surface-strong: rgba(15, 25, 38, 0.92);
+    --line: rgba(88, 192, 240, 0.18);
+    --inset-glint: rgba(194, 224, 247, 0.14);
+    --kicker: #b3ddf5;
+    --bg-base: #08111c;
+    --header-bg: rgba(9, 18, 28, 0.8);
+    --chip-bg: rgba(13, 26, 38, 0.9);
+    --chip-line: rgba(88, 192, 240, 0.24);
+    --link-bg-hover: rgba(20, 40, 58, 0.8);
+    --hero-a: rgba(88, 192, 240, 0.18);
+    --hero-b: rgba(74, 182, 239, 0.12);
   }
 }
 
@@ -115,33 +115,33 @@
 :root {
   --surface: #ffffff;
   --surface-strong: #ffffff;
-  --line: rgba(23, 58, 64, 0.22);
+  --line: rgba(14, 42, 68, 0.22);
   --inset-glint: transparent;
-  --bg-base: #eef3f0;
-  --header-bg: rgba(247, 251, 248, 0.96);
+  --bg-base: #edf3fa;
+  --header-bg: rgba(244, 249, 254, 0.96);
   --chip-bg: #ffffff;
-  --chip-line: rgba(47, 106, 74, 0.26);
+  --chip-line: rgba(6, 144, 212, 0.26);
 }
 :root[data-theme='dark'] {
-  --surface: #122226;
-  --surface-strong: #16282c;
-  --line: rgba(141, 229, 219, 0.24);
+  --surface: #10202e;
+  --surface-strong: #14263a;
+  --line: rgba(88, 192, 240, 0.24);
   --inset-glint: transparent;
-  --bg-base: #091317;
-  --header-bg: rgba(10, 20, 24, 0.96);
-  --chip-bg: #14262a;
-  --chip-line: rgba(141, 229, 219, 0.3);
+  --bg-base: #08121c;
+  --header-bg: rgba(9, 18, 28, 0.96);
+  --chip-bg: #122232;
+  --chip-line: rgba(88, 192, 240, 0.3);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --surface: #122226;
-    --surface-strong: #16282c;
-    --line: rgba(141, 229, 219, 0.24);
+    --surface: #10202e;
+    --surface-strong: #14263a;
+    --line: rgba(88, 192, 240, 0.24);
     --inset-glint: transparent;
-    --bg-base: #091317;
-    --header-bg: rgba(10, 20, 24, 0.96);
-    --chip-bg: #14262a;
-    --chip-line: rgba(141, 229, 219, 0.3);
+    --bg-base: #08121c;
+    --header-bg: rgba(9, 18, 28, 0.96);
+    --chip-bg: #122232;
+    --chip-line: rgba(88, 192, 240, 0.3);
   }
 }
 
@@ -170,13 +170,13 @@ body {
 
 a {
   color: var(--lagoon-deep);
-  text-decoration-color: rgba(50, 143, 151, 0.4);
+  text-decoration-color: rgba(10, 114, 176, 0.4);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
 a:hover {
-  color: #246f76;
+  color: #0a6cae;
 }
 
 code {
@@ -208,18 +208,18 @@ pre code {
 .island-shell {
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  box-shadow: 0 1px 2px rgba(23, 58, 64, 0.05);
+  box-shadow: 0 1px 2px rgba(14, 42, 68, 0.05);
 }
 
 .feature-card {
   background: var(--surface-strong);
-  box-shadow: 0 1px 2px rgba(23, 58, 64, 0.05);
+  box-shadow: 0 1px 2px rgba(14, 42, 68, 0.05);
 }
 
 .feature-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in oklab, var(--lagoon-deep) 45%, var(--line));
-  box-shadow: 0 4px 12px rgba(23, 58, 64, 0.08);
+  box-shadow: 0 4px 12px rgba(14, 42, 68, 0.08);
 }
 
 .demo-page {
@@ -244,7 +244,7 @@ pre code {
 .demo-card {
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  box-shadow: 0 1px 2px rgba(23, 58, 64, 0.05);
+  box-shadow: 0 1px 2px rgba(14, 42, 68, 0.05);
 }
 
 .demo-panel {
