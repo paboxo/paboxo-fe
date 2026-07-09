@@ -13,10 +13,12 @@ import { Route as SwapRouteImport } from './routes/swap'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as EarnRouteImport } from './routes/earn'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BorrowRouteImport } from './routes/borrow'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MarketIdRouteImport } from './routes/market.$id'
 import { Route as EarnIdRouteImport } from './routes/earn.$id'
+import { Route as BorrowIdRouteImport } from './routes/borrow.$id'
 
 const SwapRoute = SwapRouteImport.update({
   id: '/swap',
@@ -36,6 +38,11 @@ const EarnRoute = EarnRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BorrowRoute = BorrowRouteImport.update({
+  id: '/borrow',
+  path: '/borrow',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -58,24 +65,33 @@ const EarnIdRoute = EarnIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => EarnRoute,
 } as any)
+const BorrowIdRoute = BorrowIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BorrowRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/borrow': typeof BorrowRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/borrow': typeof BorrowRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
@@ -83,10 +99,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/borrow': typeof BorrowRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/earn': typeof EarnRouteWithChildren
   '/markets': typeof MarketsRoute
   '/swap': typeof SwapRoute
+  '/borrow/$id': typeof BorrowIdRoute
   '/earn/$id': typeof EarnIdRoute
   '/market/$id': typeof MarketIdRoute
 }
@@ -95,30 +113,36 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/borrow'
     | '/dashboard'
     | '/earn'
     | '/markets'
     | '/swap'
+    | '/borrow/$id'
     | '/earn/$id'
     | '/market/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/borrow'
     | '/dashboard'
     | '/earn'
     | '/markets'
     | '/swap'
+    | '/borrow/$id'
     | '/earn/$id'
     | '/market/$id'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/borrow'
     | '/dashboard'
     | '/earn'
     | '/markets'
     | '/swap'
+    | '/borrow/$id'
     | '/earn/$id'
     | '/market/$id'
   fileRoutesById: FileRoutesById
@@ -126,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  BorrowRoute: typeof BorrowRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EarnRoute: typeof EarnRouteWithChildren
   MarketsRoute: typeof MarketsRoute
@@ -163,6 +188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/borrow': {
+      id: '/borrow'
+      path: '/borrow'
+      fullPath: '/borrow'
+      preLoaderRoute: typeof BorrowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -191,8 +223,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EarnIdRouteImport
       parentRoute: typeof EarnRoute
     }
+    '/borrow/$id': {
+      id: '/borrow/$id'
+      path: '/$id'
+      fullPath: '/borrow/$id'
+      preLoaderRoute: typeof BorrowIdRouteImport
+      parentRoute: typeof BorrowRoute
+    }
   }
 }
+
+interface BorrowRouteChildren {
+  BorrowIdRoute: typeof BorrowIdRoute
+}
+
+const BorrowRouteChildren: BorrowRouteChildren = {
+  BorrowIdRoute: BorrowIdRoute,
+}
+
+const BorrowRouteWithChildren =
+  BorrowRoute._addFileChildren(BorrowRouteChildren)
 
 interface EarnRouteChildren {
   EarnIdRoute: typeof EarnIdRoute
@@ -207,6 +257,7 @@ const EarnRouteWithChildren = EarnRoute._addFileChildren(EarnRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  BorrowRoute: BorrowRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EarnRoute: EarnRouteWithChildren,
   MarketsRoute: MarketsRoute,
