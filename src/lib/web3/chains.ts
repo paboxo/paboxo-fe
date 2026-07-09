@@ -1,5 +1,4 @@
 import { defineChain } from 'viem'
-import { base } from 'wagmi/chains'
 import { HASHKEY } from '#/lib/contracts'
 import { HASHKEY_RPC_OVERRIDE } from '#/lib/config/env'
 
@@ -20,7 +19,7 @@ export const hashkey = defineChain({
   },
 })
 
-export { base }
-
-/** All chains the app knows — HashKey (home) + Base (cross-chain source). */
-export const chains = [hashkey, base] as const
+/** All chains the wallet offers. HashKey 177 is the only active chain — the
+ *  whole money market lives there. Base was the cross-chain (CCIP) supply
+ *  source; re-add it here once PaboxoCCIPSender ships on Base. */
+export const chains = [hashkey] as const
