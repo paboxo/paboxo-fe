@@ -62,6 +62,9 @@ export const TOKENS: Record<TokenSymbol, TokenInfo> = {
   },
 }
 
+/** The canonical token symbol list — the one place to iterate every known token. */
+export const TOKEN_SYMBOLS = Object.keys(TOKENS) as TokenSymbol[]
+
 export interface FeedInfo {
   address: Address
   type: 'constant' | 'push'

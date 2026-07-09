@@ -19,6 +19,7 @@ export default [
       'eslint.config.js',
       'prettier.config.js',
       'src/lib/contracts/abis/**',
+      'references/**',
     ],
   },
 ]

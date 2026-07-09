@@ -1,8 +1,9 @@
 /**
  * Live chain adapter (U18). Implements the `ChainAdapter` interface against the
  * real Paboxo contracts on HashKey 177 via `@wagmi/core` — reads with
- * `readContract`, writes with `writeContract` + `waitForTransactionReceipt` so a
- * resolved write means "mined". Enabled by `VITE_DATA_MODE=live`; the hooks and
+ * `readContract`; writes broadcast with `writeContract` and return the hash, and
+ * the caller (`useWriteAction`) awaits `waitForReceipt` so the tx-state machine can
+ * show a distinct pending phase. Enabled by `VITE_DATA_MODE=live`; the hooks and
  * UI are unchanged from mock mode (KTD10).
  *
  * Two-address rule (R7): writes target the LendingPool; accounting reads resolve
@@ -14,7 +15,11 @@
  * reads (max-borrow, collateral value, position address) degrade to 0/zero until
  * its address is supplied — the on-chain contracts still enforce health on write.
  */
-import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
+import {
+  readContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from '@wagmi/core'
 import { zeroAddress } from 'viem'
 import { CORE, HASHKEY, HELPER_UTILS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
@@ -77,41 +82,37 @@ async function resolveSharesToken(router: Address): Promise<Address> {
   return sharesToken
 }
 
-// ---- writes: await the receipt so state 'confirmed' means mined ----
-
-/** Wait for the mined receipt, then return the hash. */
-async function confirm(hash: Hash): Promise<Hash> {
-  await waitForTransactionReceipt(wagmiConfig, { hash })
-  return hash
-}
-
 export const liveChainAdapter: ChainAdapter = {
   // ---------------------------------------------------------------- reads ----
 
   async getMarketTotals(pool): Promise<MarketTotals> {
     const router = await resolveRouter(pool)
-    const [totalSupplyAssets, totalBorrowAssets, totalBorrowShares, sharesToken] =
-      await Promise.all([
-        readContract(wagmiConfig, {
-          chainId: CHAIN_ID,
-          address: router,
-          abi: lendingPoolRouterAbi,
-          functionName: 'totalSupplyAssets',
-        }),
-        readContract(wagmiConfig, {
-          chainId: CHAIN_ID,
-          address: router,
-          abi: lendingPoolRouterAbi,
-          functionName: 'totalBorrowAssets',
-        }),
-        readContract(wagmiConfig, {
-          chainId: CHAIN_ID,
-          address: router,
-          abi: lendingPoolRouterAbi,
-          functionName: 'totalBorrowShares',
-        }),
-        resolveSharesToken(router),
-      ])
+    const [
+      totalSupplyAssets,
+      totalBorrowAssets,
+      totalBorrowShares,
+      sharesToken,
+    ] = await Promise.all([
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'totalSupplyAssets',
+      }),
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'totalBorrowAssets',
+      }),
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'totalBorrowShares',
+      }),
+      resolveSharesToken(router),
+    ])
     // No direct totalSupplyShares getter — read the shares token's total supply
     // (raw 18dp; pairs with balanceOf in getUserSupplyShares for supplyValue).
     const totalSupplyShares = await readContract(wagmiConfig, {
@@ -141,7 +142,11 @@ export const liveChainAdapter: ChainAdapter = {
 
   async getIrmParams(pool): Promise<IrmParams> {
     const router = await resolveRouter(pool)
-    const irm = { chainId: CHAIN_ID, address: CORE.interestRateModel, abi: interestRateModelAbi } as const
+    const irm = {
+      chainId: CHAIN_ID,
+      address: CORE.interestRateModel,
+      abi: interestRateModelAbi,
+    } as const
     const [
       baseRateWad,
       rateAtOptimalWad,
@@ -319,7 +324,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'approve',
       args: [spender, amount],
     })
-    return confirm(hash)
+    return hash
   },
 
   async supplyLiquidity(pool, onBehalf, amount) {
@@ -329,7 +334,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'supplyLiquidity',
       args: [onBehalf, amount],
     })
-    return confirm(hash)
+    return hash
   },
 
   async supplyCollateral(pool, onBehalf, amount) {
@@ -339,7 +344,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'supplyCollateral',
       args: [onBehalf, amount],
     })
-    return confirm(hash)
+    return hash
   },
 
   async borrowDebt(pool, params: BorrowParams, onBehalf) {
@@ -356,7 +361,7 @@ export const liveChainAdapter: ChainAdapter = {
         onBehalf,
       ],
     })
-    return confirm(hash)
+    return hash
   },
 
   async repayWithSelectedToken(pool, params: RepayParams) {
@@ -375,7 +380,7 @@ export const liveChainAdapter: ChainAdapter = {
         },
       ],
     })
-    return confirm(hash)
+    return hash
   },
 
   async withdrawCollateral(pool, amount, to) {
@@ -385,7 +390,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'withdrawCollateral',
       args: [amount, to],
     })
-    return confirm(hash)
+    return hash
   },
 
   async withdrawLiquidity(pool, shares, to) {
@@ -395,7 +400,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'withdrawLiquidity',
       args: [shares, to],
     })
-    return confirm(hash)
+    return hash
   },
 
   async liquidation(pool, borrowers) {
@@ -409,7 +414,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'liquidation',
       args: [borrowers[0]],
     })
-    return confirm(hash)
+    return hash
   },
 
   async swapCollateral(pool, params: SwapParams) {
@@ -427,7 +432,7 @@ export const liveChainAdapter: ChainAdapter = {
         },
       ],
     })
-    return confirm(hash)
+    return hash
   },
 
   async approveBorrowDelegation(pool, delegate, amount) {
@@ -437,7 +442,7 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'approveBorrowDelegation',
       args: [delegate, amount],
     })
-    return confirm(hash)
+    return hash
   },
 
   async approveWithdrawDelegation(pool, delegate, allowed) {
@@ -447,14 +452,23 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'approveWithdrawDelegation',
       args: [delegate, allowed],
     })
-    return confirm(hash)
+    return hash
   },
 
-  createLendingPool(_params: CreatePoolParams): Promise<{ hash: Hash; pool: Address }> {
+  createLendingPool(
+    _params: CreatePoolParams,
+  ): Promise<{ hash: Hash; pool: Address }> {
     // Excluded from this delivery — use mock mode for pool creation.
     return Promise.reject(
       new Error('createLendingPool is not enabled in the live chain adapter'),
     )
+  },
+
+  async waitForReceipt(hash) {
+    // Bound the wait so a dropped/underpriced tx settles the promise instead of
+    // stranding the caller's tx-state machine in 'pending' forever; viem rejects
+    // with a timeout error the wrapper surfaces as a failure the user can retry.
+    await waitForTransactionReceipt(wagmiConfig, { hash, timeout: 120_000 })
   },
 
   // ---- cross-chain: PaboxoCCIPSender is not deployed on Base yet ----

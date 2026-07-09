@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryWrapper } from '#/test/utils'
 import { SwapPanel } from './SwapPanel'
 
@@ -21,13 +21,26 @@ function renderPanel() {
 }
 
 describe('SwapPanel', () => {
-  it('renders the market, amount, target, and slippage controls', () => {
+  it('renders the market, amount, target token, and slippage controls', () => {
     renderPanel()
-    expect(screen.getByRole('button', { name: /Swap/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Swap' })).toBeTruthy()
     expect(screen.getByLabelText('Slippage tolerance')).toBeTruthy()
-    // Default target (pxUSDT) differs from the pxWHSK collateral, so it's enabled.
+    // The target token trigger shows the default (pxUSDT).
+    expect(screen.getByRole('button', { name: /pxUSDT/ })).toBeTruthy()
+    // Amount empty -> the swap stays disabled until an amount is entered.
     expect(
-      screen.getByRole('button', { name: /Swap/ }).hasAttribute('disabled'),
-    ).toBe(true) // amount empty -> disabled until an amount is entered
+      screen.getByRole('button', { name: 'Swap' }).hasAttribute('disabled'),
+    ).toBe(true)
+  })
+
+  it('opens the token dialog and switches the target token', async () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('button', { name: /pxUSDT/ }))
+    expect(screen.getByRole('dialog', { name: 'Select a token' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: /pxWETH/ }))
+    // Selecting closes the dialog and the trigger reflects the new token.
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('button', { name: /pxWETH/ })).toBeTruthy()
   })
 })

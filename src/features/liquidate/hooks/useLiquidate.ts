@@ -51,9 +51,17 @@ export function useLiquidate(market: MarketView) {
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
 
-      // Reset the residual over-approval only on a successful seize.
+      // Reset the residual over-approval only on a successful seize. Wait for
+      // the reset to mine — the adapter's approve returns on broadcast, so
+      // without this the residual pxUSDT allowance to the pool isn't verified
+      // cleared (R30/AE4).
       if (confirmed) {
-        await chain.approve(TOKENS.pxUSDT.address, market.poolAddress, 0n)
+        const resetHash = await chain.approve(
+          TOKENS.pxUSDT.address,
+          market.poolAddress,
+          0n,
+        )
+        await chain.waitForReceipt(resetHash)
       }
     },
     [market.poolAddress, market.collateralAddress, write],

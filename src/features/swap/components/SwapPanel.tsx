@@ -2,25 +2,41 @@ import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
+import { formatTokenAmount } from '#/lib/format'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import { ActionButton } from '#/components/ui/ActionButton'
+import {
+  useTokenBalance,
+  useTokenBalances,
+} from '#/features/shared/useTokenBalances'
 import { useSwapCollateral } from '../hooks/useSwapCollateral'
-
-const TOKEN_SYMBOLS = Object.keys(TOKENS) as TokenSymbol[]
+import { TokenSelectButton } from './TokenSelectButton'
+import { TokenSelectDialog } from './TokenSelectDialog'
 
 /**
  * Swap collateral (trade the tokens held in a position). Pick the market whose
- * position holds the collateral, the token to swap into, an amount, and a
- * slippage tolerance; the hook derives amountOutMinimum from oracle prices.
+ * position holds the collateral, an amount, and the token to swap into — chosen
+ * from a dialog that lists every token with the user's balance. The hook derives
+ * amountOutMinimum from oracle prices.
  */
 export function SwapPanel() {
   const [marketId, setMarketId] = useState(MARKETS[0].id)
   const market = getMarketConfig(marketId) ?? MARKETS[0]
   const { state, swap } = useSwapCollateral(market.pool)
+  const { balances, isLoading: balancesLoading } = useTokenBalances()
 
   const [tokenOut, setTokenOut] = useState<TokenSymbol>('pxUSDT')
   const [amount, setAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5')
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const collateralSymbol = market.collateralSymbol as TokenSymbol
+  // Read the collateral balance by the market's collateral address — the
+  // cross-chain pxWHSK shares the pxWHSK symbol but has a distinct address, so a
+  // symbol lookup would show the wrong token's balance.
+  const { balance: collateralBalance } = useTokenBalance(
+    market.collateralAddress,
+  )
 
   const onSwap = () => {
     const out = TOKENS[tokenOut]
@@ -35,8 +51,8 @@ export function SwapPanel() {
     })
   }
 
-  const disabled =
-    amount === '' || Number(amount) <= 0 || tokenOut === market.collateralSymbol
+  const sameToken = tokenOut === collateralSymbol
+  const disabled = amount === '' || Number(amount) <= 0 || sameToken
 
   return (
     <div className="island-shell flex flex-col gap-4 rounded-2xl p-5">
@@ -70,22 +86,30 @@ export function SwapPanel() {
         decimals={market.collateralDecimals}
         value={amount}
         onChange={setAmount}
+        balance={collateralBalance}
       />
 
-      <label className="flex flex-col gap-1 text-[0.78rem] text-[var(--sea-ink-soft)]">
-        Swap into
-        <select
-          value={tokenOut}
-          onChange={(event) => setTokenOut(event.target.value as TokenSymbol)}
-          className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-2 text-sm text-[var(--sea-ink)]"
-        >
-          {TOKEN_SYMBOLS.map((symbol) => (
-            <option key={symbol} value={symbol}>
-              {symbol}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col">
+          <span className="text-[0.78rem] text-[var(--sea-ink-soft)]">
+            Swap into
+          </span>
+          <span className="num text-[0.72rem] text-[var(--sea-ink-soft)]">
+            Balance:{' '}
+            {balancesLoading
+              ? '…'
+              : formatTokenAmount(
+                  balances[tokenOut] ?? 0n,
+                  TOKENS[tokenOut].decimals,
+                )}{' '}
+            {tokenOut}
+          </span>
+        </div>
+        <TokenSelectButton
+          symbol={tokenOut}
+          onClick={() => setPickerOpen(true)}
+        />
+      </div>
 
       <label className="flex items-center justify-between gap-2 text-[0.78rem] text-[var(--sea-ink-soft)]">
         Slippage tolerance
@@ -101,7 +125,7 @@ export function SwapPanel() {
         </span>
       </label>
 
-      {tokenOut === market.collateralSymbol ? (
+      {sameToken ? (
         <p className="m-0 text-[0.78rem]" style={{ color: 'var(--danger)' }}>
           Pick a different token to swap into.
         </p>
@@ -112,6 +136,16 @@ export function SwapPanel() {
         idleLabel="Swap"
         disabled={disabled}
         onClick={onSwap}
+      />
+
+      <TokenSelectDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selected={tokenOut}
+        onSelect={setTokenOut}
+        balances={balances}
+        isLoading={balancesLoading}
+        disabledSymbol={collateralSymbol}
       />
     </div>
   )
