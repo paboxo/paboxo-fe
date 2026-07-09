@@ -1,103 +1,52 @@
-import { useAccount } from 'wagmi'
-import { useConnectModal } from '@rainbow-me/rainbowkit'
-import { formatUsd } from '#/lib/format'
+import { formatPercent, formatUsd } from '#/lib/format'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
-import { ConnectPrompt } from '#/components/ui/wallet/ConnectPrompt'
 import { useMarkets } from '#/features/markets/hooks/useMarkets'
 import type { MarketView } from '#/features/markets/types'
-import { useMarketPosition } from '#/features/position/hooks/usePosition'
 
-function Stat({ label, value }: { label: string; value: string }) {
+/** One Borrow pool row — pool-level metrics only; the user's position lives on
+ *  the per-pool page, so the list needs no wallet connection. */
+function BorrowRow({ market }: { market: MarketView }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--sea-ink-soft)]">
-        {label}
-      </span>
-      <span className="num text-[0.95rem] font-semibold text-[var(--sea-ink)]">
-        {value}
-      </span>
-    </div>
-  )
-}
-
-/**
- * One Borrow pool row. For a connected wallet it shows the user's isolated
- * collateral, debt, and health in this pool; disconnected, the position slot
- * invites a connect instead of showing zeroes.
- */
-function BorrowRow({
-  market,
-  isConnected,
-  onConnect,
-}: {
-  market: MarketView
-  isConnected: boolean
-  onConnect?: () => void
-}) {
-  const { data } = useMarketPosition(market.id)
-  const collateral = data?.supplies.find(
-    (row) => row.symbol === market.collateralSymbol,
-  )
-  const debt = data?.borrows.find((row) => row.symbol === market.borrowSymbol)
-  const health = data?.healthFactor
-
-  return (
-    <article className="island-shell feature-card flex flex-col gap-3 rounded-2xl p-5">
-      <div className="flex items-center gap-2.5">
-        <TokenGlyph symbol={market.collateralSymbol} />
-        <div>
-          <div className="font-semibold text-[var(--sea-ink)]">
-            {market.collateralSymbol}
-          </div>
-          <div className="text-sm text-[var(--sea-ink-soft)]">
-            Borrow {market.borrowSymbol} against {market.collateralSymbol}
-            {market.crossChain ? ' · cross-chain' : ''}
-          </div>
-        </div>
-      </div>
-
-      {isConnected ? (
-        <div className="flex flex-wrap gap-x-8 gap-y-2">
-          <Stat
-            label="Your collateral"
-            value={collateral ? formatUsd(collateral.valueUsd) : '$0.00'}
-          />
-          <Stat
-            label="Your debt"
-            value={debt ? formatUsd(debt.valueUsd) : '$0.00'}
-          />
-          <Stat
-            label="Health"
-            value={health !== undefined ? health.toFixed(2) : '—'}
-          />
-        </div>
-      ) : (
-        <ConnectPrompt action="see your position" onConnect={onConnect} />
-      )}
-
-      <a
-        href={`/borrow/${market.id}`}
-        className="mt-1 inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold no-underline"
-        style={{ background: 'var(--palm)', color: '#f3faf5' }}
+    <tr className="border-b border-[var(--line)] last:border-0 hover:bg-[color-mix(in_oklab,var(--lagoon)_8%,transparent)]">
+      <td className="px-4 py-3">
+        <a
+          href={`/borrow/${market.id}`}
+          className="inline-flex items-center gap-2 font-semibold text-[var(--sea-ink)] no-underline"
+        >
+          <TokenGlyph symbol={market.collateralSymbol} size={20} />
+          {market.collateralSymbol}
+        </a>
+      </td>
+      <td className="num px-4 py-3 text-right">
+        {formatUsd(market.tvlUsd, { compact: true })}
+      </td>
+      <td
+        className="num px-4 py-3 text-right font-semibold"
+        style={{ color: 'var(--danger)' }}
       >
-        Manage position
-      </a>
-    </article>
+        {formatPercent(market.borrowApr)}
+      </td>
+      <td className="num px-4 py-3 text-right">{formatPercent(market.lltv)}</td>
+      <td className="num px-4 py-3 text-right">
+        {formatPercent(market.liqThreshold)}
+      </td>
+      <td className="num px-4 py-3 text-right">
+        {formatUsd(market.availableLiquidityUsd, { compact: true })}
+      </td>
+    </tr>
   )
 }
 
 /**
- * The Borrow plane list (U4, R7, R12, R15). Lists every isolated pool with the
- * connected user's collateral, debt, and health, each row drilling into
- * `/borrow/:id`. Loading, error, and empty states mirror MarketList.
+ * The Borrow plane list (U4, R7). A table of every isolated pool with its
+ * pool-level metrics — total supply, borrow APR, LTV, liquidation threshold,
+ * liquidity — each row drilling into `/borrow/:id`. No wallet needed to browse.
  */
 export function BorrowList() {
   const { data, isLoading, error } = useMarkets()
-  const { isConnected } = useAccount()
-  const { openConnectModal } = useConnectModal()
 
   if (isLoading) {
     return (
@@ -120,15 +69,24 @@ export function BorrowList() {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {data.map((market) => (
-        <BorrowRow
-          key={market.id}
-          market={market}
-          isConnected={isConnected}
-          onConnect={openConnectModal}
-        />
-      ))}
+    <div className="island-shell overflow-x-auto rounded-2xl">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
+            <th className="px-4 py-3 text-left font-bold">Pool</th>
+            <th className="px-4 py-3 text-right font-bold">Total supply</th>
+            <th className="px-4 py-3 text-right font-bold">Borrow APR</th>
+            <th className="px-4 py-3 text-right font-bold">LTV</th>
+            <th className="px-4 py-3 text-right font-bold">Liq. threshold</th>
+            <th className="px-4 py-3 text-right font-bold">Liquidity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((market) => (
+            <BorrowRow key={market.id} market={market} />
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

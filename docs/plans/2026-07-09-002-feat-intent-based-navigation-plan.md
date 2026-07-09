@@ -26,14 +26,14 @@ Split the money-market surface by user intent. **Earn** is the lender world (sup
 
 ### Problem Frame
 
-The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSDT pair; liquidity, collateral, and risk are ring-fenced per pool). The protocol exposes two supplies and two withdraws that serve completely different users: supply *liquidity* is a lender depositing pxUSDT for yield, supply *collateral* is a borrower enabling a loan. Presenting them together (or under a neutral "Markets" surface) forces the user to disambiguate "which supply?" every time. The current nav (`Markets · Swap · Dashboard`) is entity-first and leaves the action panels without a clear home. Grouping by intent removes the ambiguity and gives each action a natural page.
+The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSDT pair; liquidity, collateral, and risk are ring-fenced per pool). The protocol exposes two supplies and two withdraws that serve completely different users: supply _liquidity_ is a lender depositing pxUSDT for yield, supply _collateral_ is a borrower enabling a loan. Presenting them together (or under a neutral "Markets" surface) forces the user to disambiguate "which supply?" every time. The current nav (`Markets · Swap · Dashboard`) is entity-first and leaves the action panels without a clear home. Grouping by intent removes the ambiguity and gives each action a natural page.
 
 ### Key Decisions
 
 - **Navigation is intent-based, four items: Earn, Borrow, Swap, Portfolio.** The standalone Markets page is removed.
 - **Earn owns the liquidity side; Borrow owns the collateral side.** Earn = supply liquidity + withdraw liquidity. Borrow = supply collateral + borrow + repay + withdraw collateral (integrated position). This is the split that resolves the two-supply / two-withdraw ambiguity.
 - **Per-pool routing keyed by the market id (slug).** `/earn` and `/borrow` list all pools; `/earn/:id` and `/borrow/:id` act on one isolated pool, resolved by the existing slug id (e.g. `pxwhsk`). Every action targets exactly one pool.
-- **Isolated-pool model is honored in copy and scope.** Supplying liquidity means supplying pxUSDT *to that specific pool* for *that pool's* supply APY; nothing is cross-pool except the Portfolio aggregate.
+- **Isolated-pool model is honored in copy and scope.** Supplying liquidity means supplying pxUSDT _to that specific pool_ for _that pool's_ supply APY; nothing is cross-pool except the Portfolio aggregate.
 - **Per-pool page is a two-card layout.** Left card = shared pool info + charts; right card = the actions. When no wallet is connected, the action card is gated with a connect-wallet overlay (Aave-style); the info card stays visible.
 - **Shared pool-info + charts component, context-aware.** The pool detail/IRM/rate visuals that lived on the removed `market.$id` move into the per-pool pages via one shared component. The **Earn** variant leads with Supply APY (interest/borrow rate still shown); the **Borrow** variant leads with borrow APR, LTV, liquidation threshold, and health.
 - **Portfolio replaces "Dashboard"** as the cross-pool positions view (the existing PortfolioSummary already aggregates deposits, collateral, and loans).
@@ -56,12 +56,12 @@ The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSD
 
 **Earn surface**
 
-- R5. `/earn` lists all pools with each pool's Supply APY and the connected user's supplied-liquidity balance (isolated per pool).
+- R5. `/earn` lists all pools as a **table** of pool-level metrics — total supply, Supply APY, interest rate, utilization, liquidity — each row linking to `/earn/:id`. Browsing needs no wallet; the user's supplied-liquidity balance lives on the per-pool page.
 - R6. `/earn/:id` lets the user supply pxUSDT liquidity to that pool and withdraw it, and shows the pool's shared info card in the **Earn** variant — Supply APY leading, interest/borrow rate still visible.
 
 **Borrow surface**
 
-- R7. `/borrow` lists all pools with the user's collateral, debt, and health per pool (isolated).
+- R7. `/borrow` lists all pools as a **table** of pool-level metrics — total supply, borrow APR, LTV, liquidation threshold, liquidity — each row linking to `/borrow/:id`. Browsing needs no wallet; the user's collateral/debt/health position lives on the per-pool page.
 - R8. `/borrow/:id` manages that pool's borrow position — supply collateral, borrow, repay, withdraw collateral — and shows the shared info card in the **Borrow** variant — borrow APR, LTV, liquidation threshold, and health leading.
 
 **Shared component & positions**
@@ -71,7 +71,8 @@ The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSD
 
 **Per-pool page states & flow**
 
-- R12. Each per-pool page uses a two-card layout: an info card (shared PoolInfo) and an action card. When no wallet is connected, the action card is gated with a connect-wallet overlay; on the Earn/Borrow lists, user-scoped columns (your balance / your position) show a connect prompt instead of a zero value.
+- R12. Each per-pool page uses a two-card layout: an info card (shared PoolInfo) and an action card. When no wallet is connected, the per-pool action card is gated with a connect-wallet overlay while the info card stays visible. The Earn/Borrow lists show only pool-level metrics, so they need no wallet and render no connect prompt.
+- R16. The footer is pinned to the bottom of the viewport (sticky footer): the layout is a flex column so the footer sits at the bottom on short pages and after the content on long ones.
 - R13. On the Borrow action card, when the user has no collateral yet, the primary CTA reads "Supply collateral first" (instead of "Borrow") and activating it switches the card to the supply-collateral action; borrow / repay / withdraw are disabled until collateral exists.
 - R14. Each per-pool page carries a breadcrumb / back affordance returning to its list (e.g. `Earn / pxWHSK`).
 - R15. The Earn and Borrow lists and both per-pool pages specify loading and empty states, matching the error / not-found coverage.
@@ -89,7 +90,7 @@ The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSD
 
 ### Acceptance Examples
 
-- AE1. **Liquidity lands on Earn, collateral on Borrow.** **Given** a user on `/earn/:id`, **then** the only supply/withdraw actions offered are for pxUSDT *liquidity*; collateral actions appear only under `/borrow/:id`. **Covers R6, R8.**
+- AE1. **Liquidity lands on Earn, collateral on Borrow.** **Given** a user on `/earn/:id`, **then** the only supply/withdraw actions offered are for pxUSDT _liquidity_; collateral actions appear only under `/borrow/:id`. **Covers R6, R8.**
 - AE2. **Isolated-pool scope.** **Given** a user supplies liquidity on `/earn/:idA`, **then** the balance and APY shown are pool A's only, never aggregated with other pools (except on Portfolio). **Covers R5, R6.**
 - AE3. **Context-aware info panel.** **Given** the same pool viewed under Earn vs Borrow, **then** Earn leads with Supply APY and Borrow leads with borrow APR / LTV / liq-threshold / health, from one shared component. **Covers R9.**
 - AE4. **No orphaned charts after Markets removal.** **Given** Markets is gone, **when** a user opens a per-pool page, **then** the pool's info + IRM + rate charts are present. **Covers R4.**
@@ -100,9 +101,11 @@ The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSD
 ### Scope Boundaries
 
 **Deferred for later**
+
 - Repay modes B & C (swap / from-position) and cross-chain live wiring — separate work, not part of this IA reshaping.
 
 **Outside this change**
+
 - Contract calls and all write hooks — reused unchanged. The only non-UI addition is exposing a per-pool position **read** hook around existing internal logic; no contract or write-path logic changes.
 
 ### Dependencies / Assumptions
@@ -121,7 +124,7 @@ The four Paboxo markets are **isolated pools** (each a distinct collateral/pxUSD
 
 - KTD1. **Reuse every action hook as-is; expose one read hook.** `useSupplyLiquidity`, `useSupplyCollateral`, `useBorrow`, `useRepay`, `useWithdraw` (both `withdrawCollateral` and `withdrawLiquidity`) and the market read hooks are reused unchanged. The one addition is a per-pool position **read** hook (KTD6); no write/contract logic changes.
 - KTD6. **Expose `useMarketPosition(id)` around the existing `loadMarketPosition`.** `usePosition` today returns only a cross-pool aggregate (`healthFactor = Math.min(...)`, rows without pool identity), and `loadMarketPosition(config, …)` is internal. R5/R7 (per-pool balance/collateral/debt/health) and the Borrow-variant PoolInfo health need a single pool's position — expose a thin read hook wrapping the existing function; no new on-chain logic.
-- KTD2. **The missing UI is the supply-*liquidity* panel.** `SupplyPanel` today wires only `useSupplyCollateral`. Earn needs a liquidity panel (pxUSDT, `useSupplyLiquidity`) + a withdraw-liquidity control (`useWithdraw.withdrawLiquidity`). Borrow reuses the existing collateral/borrow/repay/withdraw-collateral panels.
+- KTD2. **The missing UI is the supply-_liquidity_ panel.** `SupplyPanel` today wires only `useSupplyCollateral`. Earn needs a liquidity panel (pxUSDT, `useSupplyLiquidity`) + a withdraw-liquidity control (`useWithdraw.withdrawLiquidity`). Borrow reuses the existing collateral/borrow/repay/withdraw-collateral panels.
 - KTD3. **Extract one context-aware PoolInfo component.** The pool's StatTiles live in `MarketDetail`; the IRM and rate charts are rendered as siblings by the `market.$id` route (not inside MarketDetail). PoolInfo absorbs both the MarketDetail StatTiles and the route-level charts, taking `context: 'earn' | 'borrow'` (reorders/emphasizes metrics) plus the pool's position/health for the Borrow variant.
 - KTD4. **File-based routes keyed on the slug `id`, resolved via `getMarketConfig`.** New TanStack Start routes `earn.tsx`, `earn.$id.tsx`, `borrow.tsx`, `borrow.$id.tsx`; look the pool up with the existing `getMarketConfig(id)`; unknown id → the existing `ErrorState` not-found with a back-to-list link. Run `bun run generate-routes` after adding/removing route files.
 - KTD5. **Route lifecycle:** delete `src/routes/market.$id.tsx` and `src/routes/markets.tsx`; rename `src/routes/dashboard.tsx` → `src/routes/portfolio.tsx` (path `/portfolio`); retarget the existing `src/routes/index.tsx` redirect from `/markets` to `/earn`. Nav in `AppHeader` becomes Earn · Borrow · Swap · Portfolio.
@@ -156,6 +159,7 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 ## Implementation Units
 
 ### U6. Expose per-pool position read hook
+
 - **Goal:** Make a single pool's position (supplied balance, collateral, debt, health) readable by id, without changing on-chain logic.
 - **Requirements:** R5, R7, R9.
 - **Dependencies:** none.
@@ -166,6 +170,7 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 - **Verification:** per-pool pages read one pool's position by id; no aggregate `Math.min` health leaks into a single-pool view.
 
 ### U1. Shared context-aware PoolInfo component
+
 - **Goal:** One component that renders the pool info + charts leading with Earn or Borrow metrics by a `context` prop.
 - **Requirements:** R4, R9.
 - **Dependencies:** U6 (for the borrow-variant health).
@@ -176,16 +181,18 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 - **Verification:** the same pool renders two metric orderings by context; charts present in both.
 
 ### U2. Supply-liquidity + withdraw-liquidity panel
+
 - **Goal:** Add the Earn-side action panel — supply pxUSDT liquidity and withdraw it — mirroring the collateral `SupplyPanel`.
 - **Requirements:** R6.
 - **Dependencies:** none.
 - **Files:** `src/features/supply/components/SupplyLiquidityPanel.tsx`, `src/features/supply/components/SupplyLiquidityPanel.test.tsx`; reuse `src/features/supply/hooks/useSupplyLiquidity.ts`, `src/features/withdraw/hooks/useWithdraw.ts` (`withdrawLiquidity`), `src/components/action/ActionPanel.tsx`.
 - **Approach:** Compose `ActionPanel` with pxUSDT symbol/decimals for supply-liquidity (via `useSupplyLiquidity`) and a withdraw-liquidity action (via `useWithdraw.withdrawLiquidity`). Mirror `SupplyPanel` (collateral); no new hook logic.
 - **Patterns to follow:** `src/features/supply/components/SupplyPanel.tsx`, `src/features/swap/components/SwapPanel.tsx`.
-- **Test scenarios:** `Covers AE1.` the panel offers only pxUSDT *liquidity* supply/withdraw (no collateral action); a non-positive amount is blocked; submit routes through the write wrapper; the withdraw-liquidity path submits.
+- **Test scenarios:** `Covers AE1.` the panel offers only pxUSDT _liquidity_ supply/withdraw (no collateral action); a non-positive amount is blocked; submit routes through the write wrapper; the withdraw-liquidity path submits.
 - **Verification:** Earn page supplies and withdraws pxUSDT liquidity via the mock adapter.
 
 ### U3. Earn routes (list + per-pool, two-card)
+
 - **Goal:** Build `/earn` (pool list, Supply APY + your supplied balance) and `/earn/:id` (two cards: PoolInfo earn-variant + supply/withdraw-liquidity, connect-gated).
 - **Requirements:** R2, R3, R5, R6, R12, R14, R15.
 - **Dependencies:** U1, U2, U6.
@@ -196,6 +203,7 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 - **Verification:** `/earn` lists pools; a row lands on its lend page with two cards; unknown id → clean not-found; disconnected → gated action card.
 
 ### U4. Borrow routes (list + per-pool, two-card)
+
 - **Goal:** Build `/borrow` (pool list with your collateral/debt/health) and `/borrow/:id` (two cards: PoolInfo borrow-variant + collateral/borrow/repay/withdraw-collateral, connect-gated, first-time CTA).
 - **Requirements:** R2, R3, R7, R8, R12, R13, R14, R15.
 - **Dependencies:** U1, U6.
@@ -206,6 +214,7 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 - **Verification:** `/borrow` lists positions; per-pool page manages the full borrow position; first-time and disconnected states behave.
 
 ### U5. Navigation + route cleanup
+
 - **Goal:** Switch nav to Earn · Borrow · Swap · Portfolio; delete Markets + market-detail; rename dashboard → portfolio; redirect `/` → `/earn`; regenerate routes.
 - **Requirements:** R1, R2, R4, R10, R11.
 - **Dependencies:** U3, U4.
@@ -219,14 +228,14 @@ Removed: `/markets`, `/market/$id`. Nav: `Earn · Borrow · Swap · Portfolio`.
 
 ## Verification Contract
 
-| Gate | Command | Applies to | Done signal |
-|---|---|---|---|
-| Unit tests | `bun run test` | U1–U6 | all scenarios green |
-| Routes | `bun run generate-routes` | U3, U4, U5 | `routeTree.gen.ts` regenerated, no stale routes |
-| Typecheck | `bun run typecheck` | all units | no type errors; no dangling `Link to` |
-| Lint | `bun run lint` | all units | clean |
-| Format | `bun run check` | all units | clean |
-| Manual smoke (mock) | `bun run dev` | all | `/` → `/earn`; browse Earn/Borrow lists (connect prompt when disconnected) → per-pool two-card pages; supply/withdraw liquidity on Earn; collateral/borrow/repay/withdraw-collateral on Borrow with "Supply collateral first" for a new borrower; charts present on both; disconnected gates the action card; unknown id → not-found with back link |
+| Gate                | Command                   | Applies to | Done signal                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit tests          | `bun run test`            | U1–U6      | all scenarios green                                                                                                                                                                                                                                                                                                                                 |
+| Routes              | `bun run generate-routes` | U3, U4, U5 | `routeTree.gen.ts` regenerated, no stale routes                                                                                                                                                                                                                                                                                                     |
+| Typecheck           | `bun run typecheck`       | all units  | no type errors; no dangling `Link to`                                                                                                                                                                                                                                                                                                               |
+| Lint                | `bun run lint`            | all units  | clean                                                                                                                                                                                                                                                                                                                                               |
+| Format              | `bun run check`           | all units  | clean                                                                                                                                                                                                                                                                                                                                               |
+| Manual smoke (mock) | `bun run dev`             | all        | `/` → `/earn`; browse Earn/Borrow lists (connect prompt when disconnected) → per-pool two-card pages; supply/withdraw liquidity on Earn; collateral/borrow/repay/withdraw-collateral on Borrow with "Supply collateral first" for a new borrower; charts present on both; disconnected gates the action card; unknown id → not-found with back link |
 
 ## Definition of Done
 
