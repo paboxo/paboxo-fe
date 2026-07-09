@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AppPageHeader } from '#/components/layout/AppPageHeader'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
+import { PortfolioSummary } from '#/features/portfolio/components/PortfolioSummary'
 import { PositionDashboard } from '#/features/position/components/PositionDashboard'
 import { HistoryList } from '#/features/history/components/HistoryList'
 
@@ -12,6 +13,7 @@ function DashboardPage() {
       <AppPageHeader kicker="Portfolio" title="Your position" />
       <NetworkGuard description="Connect a wallet to view your supplies, borrows, and health.">
         <div className="flex flex-col gap-6">
+          <PortfolioSummary />
           <PositionDashboard />
           <section className="flex flex-col gap-2">
             <h2 className="display-title m-0 text-lg font-semibold">
