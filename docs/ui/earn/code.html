@@ -1,0 +1,282 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#dae2fd",
+                      "tertiary-fixed-dim": "#c4c7c9",
+                      "secondary-fixed-dim": "#b9c7df",
+                      "on-tertiary-fixed-variant": "#444749",
+                      "on-primary-fixed-variant": "#004b71",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#d5e3fc",
+                      "surface-tint": "#0690d4",
+                      "primary-fixed": "#cbe6ff",
+                      "tertiary-container": "#727577",
+                      "surface": "#faf8ff",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#001e30",
+                      "background": "#faf8ff",
+                      "primary-fixed-dim": "#90cdff",
+                      "on-primary-container": "#fcfcff",
+                      "on-tertiary-container": "#fbfdff",
+                      "on-surface": "#131b2e",
+                      "surface-variant": "#dae2fd",
+                      "on-tertiary-fixed": "#191c1e",
+                      "secondary": "#515f74",
+                      "outline": "#6f7881",
+                      "on-secondary-container": "#57657a",
+                      "outline-variant": "#bec7d2",
+                      "secondary-fixed": "#d5e3fc",
+                      "tertiary": "#595c5e",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed-variant": "#3a485b",
+                      "surface-container-lowest": "#ffffff",
+                      "inverse-primary": "#90cdff",
+                      "inverse-on-surface": "#eef0ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#e0e3e5",
+                      "on-secondary-fixed": "#0d1c2e",
+                      "on-error-container": "#93000a",
+                      "inverse-surface": "#283044",
+                      "on-background": "#131b2e",
+                      "surface-container-high": "#e2e7ff",
+                      "surface-container-low": "#f2f3ff",
+                      "primary-container": "#007bb6",
+                      "surface-dim": "#d2d9f4",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#3f4850",
+                      "on-secondary": "#ffffff",
+                      "primary": "#0690d4",
+                      "surface-container": "#eaedff",
+                      "surface-bright": "#faf8ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "base": "4px",
+                      "margin-desktop": "64px",
+                      "gutter": "24px",
+                      "max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Manrope"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Manrope"
+                      ],
+                      "label-md": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Manrope"
+                      ],
+                      "label-sm": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      }catch(_e){}}catch(_e){}</script></head><body class="bg-[#faf8ff] text-on-background min-h-screen flex flex-col font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container m-0 overflow-hidden p-4 md:p-6">
+<div class="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-3rem)] rounded-3xl overflow-hidden border-x-[8px] border-x-[#0690d4] border-t-[12px] border-t-[#0690d4] border-b-[12px] border-b-[#0690d4] bg-surface relative shadow-xl">
+<!-- TopNavBar -->
+<header class="w-full bg-surface dark:bg-surface-dim flat no shadows font-body-md text-body-md flex-none z-10">
+<div class="flex justify-between items-center h-16 px-margin-mobile md:px-margin-desktop max-w-max-width mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed" style="font-variation-settings: &quot;FILL&quot; 1;">widgets</span>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed tracking-tight">Paboxo</span>
+</div>
+<!-- Navigation Links (Desktop) -->
+<nav class="hidden md:flex gap-gutter h-full">
+<a class="relative flex items-center h-full text-primary dark:text-primary-fixed font-bold" href="#"><span class="material-symbols-outlined mr-2" style="font-variation-settings: &quot;FILL&quot; 1;">database</span><span class="">Earn</span><div class="absolute bottom-[-1px] left-0 w-full h-[3px] bg-[#0690d4]"></div></a>
+<a class="flex items-center h-full text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#"><span class="material-symbols-outlined mr-2">logout</span>Borrow</a>
+<a class="flex items-center h-full text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#"><span class="material-symbols-outlined mr-2">swap_horiz</span>Swap</a>
+<a class="flex items-center h-full text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="#"><span class="material-symbols-outlined mr-2">pie_chart</span>Portfolio</a>
+</nav>
+<!-- Trailing Action -->
+<div class="flex items-center gap-4">
+<button class="bg-primary text-on-primary px-6 py-2 rounded-DEFAULT font-label-md text-label-md font-medium hover:bg-surface-tint transition-colors shadow-sm">
+                    Connect Wallet
+                </button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow overflow-y-auto px-margin-mobile md:px-margin-desktop py-12 w-full flex flex-col gap-12 items-center">
+<div class="w-full max-w-max-width flex flex-col gap-12">
+<!-- Hero Section -->
+<section class="flex flex-col gap-4 max-w-2xl">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Earn on your pxUSDT</h1>
+<p class="font-body-lg text-body-lg text-secondary">Supply pxUSDT liquidity to an isolated pool and earn its supply APY.</p>
+</section>
+<!-- Data Table (Bento / Glassmorphism approach - clean surface) -->
+<section class="w-full bg-surface-container-lowest border border-surface-subtle rounded-xl overflow-hidden shadow-sm">
+<!-- Search & Filter Controls inside table -->
+<div class="flex flex-col md:flex-row justify-between items-center gap-4 p-4 border-b border-surface-subtle bg-surface-container-lowest">
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-lg">search</span>
+<input class="pl-10 pr-4 py-2 w-full bg-surface hover:bg-surface-container-low border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface font-body-md outline-none text-sm placeholder:text-outline" placeholder="Search pools..." type="text">
+</div>
+<div class="flex p-1 bg-surface-container-low rounded-lg w-full md:w-auto overflow-x-auto border border-outline-variant/50 hide-scrollbar">
+<button class="whitespace-nowrap px-4 py-1.5 bg-surface-container-lowest text-on-surface shadow-sm rounded-md font-label-md text-sm font-medium transition-colors">All Pools</button>
+<button class="whitespace-nowrap px-4 py-1.5 text-on-surface-variant hover:text-on-surface rounded-md font-label-md text-sm font-medium transition-colors">High APY</button>
+<button class="whitespace-nowrap px-4 py-1.5 text-on-surface-variant hover:text-on-surface rounded-md font-label-md text-sm font-medium transition-colors">Stablecoins</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-surface-subtle bg-surface-container-lowest">
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium">POOL</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium text-right">TOTAL SUPPLY</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium text-right">SUPPLY APY</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium text-right">INTEREST RATE</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium text-right">UTILIZATION</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-medium text-right">LIQUIDITY</th>
+</tr>
+</thead>
+<tbody class="bg-surface-container-lowest divide-y divide-surface-subtle">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-offwhite transition-colors group cursor-pointer">
+<td class="py-5 px-6 font-body-md font-medium text-on-surface flex items-center gap-4">
+<div class="flex -space-x-3 items-center">
+<img alt="pxWBTC" class="w-8 h-8 rounded-full object-cover z-10 ring-2 ring-surface-container-lowest bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOKHrxHRu3kGCieNYMWfNGpIGpbFcLxIrKVjCxNUzrG0X65dOqJv8uwigP-tLAZiN6X4rjlZwkcvLoX3mg6Af7iDDHlmG6vXbWX6-pWiizjQwZ2mftzZqTQ-Cxptp1M5PVz8R38k0xzcRoedN4i63SwTP-kczjWgFCiMEpOegZSnBaUIi3P2jYZJ5S5Gc3uJYc6aq5RN_cAZ8aiGiyZYQ_PixpgBgUqTv8g75oN75g81neqLAQLnvS0jTiUqNonInQPg">
+<img alt="pxUSDT" class="w-8 h-8 rounded-full object-cover z-0 ring-2 ring-surface-container-lowest bg-surface-container-lowest" data-stitch-orig-opacity="0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB561i34DlJb5-_OJaVy0fwHby6j1Ugn00DNFRrCKLv6U5YrnCM5uWfwOJhBinhEu_IpHHTSNUOXuOBIsJtnPaBwr-9rCUiECLV1F3FWqADtKdOpyv3l6iYCf2QktXgf-Rxx7kpr1EOndjkj4gKgoZQXSe1XXVTK7lCHbd-u4FeTW5V8eoJW97cnFY9Ss2LZJ9k8ySI3B0FEj7zd14mh5JjRDVFnQll1wZb8cfduLVQsutgvvbuxLzm9uwAXmMJwWeY5Q">
+</div>
+<span class="font-semibold">pxWBTC/pxUSDT</span>
+</td>
+<td class="py-5 px-6 font-label-md text-label-md text-on-surface-variant text-right">$100K</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.33%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">1.32%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">28.09%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">$71,910.9</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-offwhite transition-colors group cursor-pointer">
+<td class="py-5 px-6 font-body-md font-medium text-on-surface flex items-center gap-4">
+<div class="flex -space-x-3 items-center">
+<img alt="pxWETH" class="w-8 h-8 rounded-full object-cover z-10 ring-2 ring-surface-container-lowest bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSShOAzhHzBssY9u-zLSu0Rij9GPY01M6fAm3n5-mfn2J_FJPX4oT3WCM5NwF9j7iydr0sRz0RxJUnziqAJq1zpns0wZX02nJOLbUSIDHYmxRGn8K1bnYx4eF2-6xggxCJdg9i5XSnvbeAEm2spq7995brK0Ngemd6JnPs-nvTD0wYlW-C_LoaeDKqRbQL500t9XI53pCxdreMVU64J-uhflwij-1u7nPUKQRGXJJ5R7DgQzWSg_i3jqPG6-_61VeD9A">
+<img alt="pxUSDT" class="w-8 h-8 rounded-full object-cover z-0 ring-2 ring-surface-container-lowest bg-surface-container-lowest" data-stitch-orig-opacity="0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1-XjRRH8lsSvFMn_J4RsxBpwCEJMuqopK-Q79a8ZF2pE8nY_Oc4I-HCIo3vo2YDn-x9GNL1Q0dT-boMhyZ3M5SuV7TT__Z8yj-NmKcIVigrFZdpQStVi_RKrkkwOUShvUdfzwWjMec9Zz1etP1v-GQSYCC0l52jJtk7or95irCfmZH_4rG8m8j6dpzyLLIxOBWT-5fyjLhdWeGqspNjHKK-4j6fivCsBrMXtr5-58gHLgMK6YBxg1c_zEfL9PYaMImg">
+</div>
+<span class="font-semibold">pxWETH/pxUSDT</span>
+</td>
+<td class="py-5 px-6 font-label-md text-label-md text-on-surface-variant text-right">$100K</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">$100K</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-offwhite transition-colors group cursor-pointer">
+<td class="py-5 px-6 font-body-md font-medium text-on-surface flex items-center gap-4">
+<div class="flex -space-x-3 items-center">
+<img alt="pxWHSK" class="w-8 h-8 rounded-full object-cover z-10 ring-2 ring-surface-container-lowest bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0oB_fclDKAJhel8LvegEzl_E8L9Qfn_SReYIOdc8XZF1HGAkjDxWX5DytkXKpltMCsg7fiHwbQvYrGwg7-RSjIqy-DAo4h97pm1vnOU8bDXbTdHqvecp2wg20CGsgSyna3MoA06x-ajQFwYwJG8MndBdlLBIhyQdiidu6v3i4mzDfllnEvn00evcOMBsn_P7pGpmRnBBAD1MYaz5CnOxW8Su9myGXWnIst7T-gOQP6bk4Xi-Xc0jaual-7N0U9l0G0g">
+<img alt="pxUSDT" class="w-8 h-8 rounded-full object-cover z-0 ring-2 ring-surface-container-lowest bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgoc6pwVWoid77JRg8-WXz2pUvIxFOyuD3vBfbxgladGw6z8j7h5datzBnXsVOh55TudQKe0gRMvv5jRblspOQsCzmWpwAKzNQMrWhXbDnpaOzDlogQBn5Z1KSXrvRtW6Xrasrs2P48TQbn4t_ZT-fht_yPTGjD2ZnWa60Kz7tEWTL-rWkzOZa0ySeNw3xaS2aBD5L2dnsVNeRHvlBe4JX1zSbLMd1MDerUSnie1QWAI5330LAuHWG2B2cs-M8gbid1g">
+</div>
+<span class="font-semibold">pxWHSK/pxUSDT</span>
+</td>
+<td class="py-5 px-6 font-label-md text-label-md text-on-surface-variant text-right">$0.00</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.50%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">$0.00</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-offwhite transition-colors group cursor-pointer">
+<td class="py-5 px-6 font-body-md font-medium text-on-surface flex flex-col gap-1">
+<div class="flex items-center gap-4">
+<div class="flex -space-x-3 items-center">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary z-10 ring-2 ring-surface-container-lowest">
+<span class="material-symbols-outlined text-sm">token</span>
+</div>
+<img alt="pxUSDT" class="w-8 h-8 rounded-full object-cover z-0 ring-2 ring-surface-container-lowest bg-surface-container-lowest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrlguhq0upbhw3e3_OaJomlvVbOXdPn3b5dEJAzseCXzEZd2ohn9b30hB7G8nbEQJlFZ9RAqNlgc60QekLXvdYshTDWyRjRcSuEp4T9P2um3fTjV8_9ydgmU-VuS3ZbyM5X1u9_zgB6yNan0BbhwvTWj6fXQSDPlC4RRjngBhlnGN50M2HGp_qD4mahb2nKtfC__qPyKzgbp40YefN2TVPymiCTE-uPsypdDBiqrq5KlB9JeChiJzRzWchqiP5Qvo_Ug">
+</div>
+<span class="font-semibold">pxWHSK-xc/pxUSDT</span>
+</div>
+<div class="flex items-center gap-1 ml-[4.5rem] text-error bg-error-container/30 w-fit px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider mt-1">
+<span class="material-symbols-outlined text-[12px]">warning</span> Price stale
+                                </div>
+</td>
+<td class="py-5 px-6 font-label-md text-label-md text-on-surface-variant text-right">$0.00</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.50%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">0.00%</td>
+<td class="py-5 px-6 font-label-md text-label-md text-primary text-right font-medium">$0.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</main>
+</div></body></html>
