@@ -6,6 +6,7 @@ import {
   toNumber,
 } from '#/lib/format'
 import { AmountSlider } from './AmountSlider'
+import { NetworkBadge } from './NetworkBadge'
 
 export type Denomination = 'token' | 'usd'
 
@@ -108,6 +109,8 @@ export function MoneyInput({
         ) : null}
       </div>
 
+      <NetworkBadge />
+
       <div
         className="flex items-center gap-2 rounded-xl border px-3 py-2.5"
         style={{
@@ -126,25 +129,24 @@ export function MoneyInput({
           onChange={(event) => onChange(event.target.value)}
           className="num min-w-0 flex-1 bg-transparent text-lg font-semibold text-[var(--sea-ink)] outline-none"
         />
-      </div>
-
-      {onQuickFill && onMax ? (
-        <div className="flex items-end gap-3">
-          <AmountSlider
-            value={fillFraction}
-            onChange={onQuickFill}
-            disabled={!canFill}
-          />
+        {onMax && (maxTokens ?? 0) > 0 ? (
           <button
             type="button"
             onClick={onMax}
-            disabled={(maxTokens ?? 0) <= 0}
-            className="shrink-0 rounded-full px-3 py-1 text-[0.72rem] font-bold disabled:opacity-50"
+            className="shrink-0 rounded-full px-3 py-1 text-[0.72rem] font-bold"
             style={{ background: 'var(--safe-soft)', color: 'var(--palm)' }}
           >
             {maxLabel}
           </button>
-        </div>
+        ) : null}
+      </div>
+
+      {onQuickFill ? (
+        <AmountSlider
+          value={fillFraction}
+          onChange={onQuickFill}
+          disabled={!canFill}
+        />
       ) : null}
 
       <div className="flex items-center justify-between text-[0.75rem]">

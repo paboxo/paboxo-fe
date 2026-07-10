@@ -91,7 +91,6 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           priceUsd={1}
           balance={wallet}
           maxTokens={toNumber(wallet, decimals)}
-          maxLabel="Wallet balance"
           preflight={positiveAmount}
           blockReason={staleBlockReason(market)}
           reviewApy={market.supplyApy}
@@ -110,7 +109,6 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           priceUsd={1}
           balance={suppliedBalance}
           maxTokens={toNumber(suppliedBalance, decimals)}
-          maxLabel="Supplied"
           preflight={positiveAmount}
           networkFeeUsd={0.42}
           txState={withdraw.state}

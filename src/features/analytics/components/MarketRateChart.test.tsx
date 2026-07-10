@@ -21,20 +21,20 @@ describe('MarketRateChart', () => {
     })
     render(<MarketRateChart market={market} />)
     expect(screen.getByText(/Couldn't load rate history/)).toBeTruthy()
-    expect(screen.queryByText(/No rate history yet/)).toBeNull()
+    expect(screen.queryByText(/Current on-chain rate/)).toBeNull()
   })
 
-  it('shows the empty state when there is no data (not an error)', () => {
+  it('shows the current on-chain rate when there is no history series', () => {
     mockHook.mockReturnValue({ data: [], isLoading: false, error: null })
     render(<MarketRateChart market={market} />)
-    expect(screen.getByText(/No rate history yet/)).toBeTruthy()
+    expect(screen.getByText(/Current on-chain rate/)).toBeTruthy()
     expect(screen.queryByText(/Couldn't load/)).toBeNull()
   })
 
   it('renders neither empty nor error while loading', () => {
     mockHook.mockReturnValue({ data: [], isLoading: true, error: null })
     render(<MarketRateChart market={market} />)
-    expect(screen.queryByText(/No rate history yet/)).toBeNull()
+    expect(screen.queryByText(/Current on-chain rate/)).toBeNull()
     expect(screen.queryByText(/Couldn't load/)).toBeNull()
   })
 
@@ -46,7 +46,7 @@ describe('MarketRateChart', () => {
     })
     render(<MarketRateChart market={market} />)
     expect(screen.getByText('Rate history')).toBeTruthy()
-    expect(screen.queryByText(/No rate history yet/)).toBeNull()
+    expect(screen.queryByText(/Current on-chain rate/)).toBeNull()
     expect(screen.queryByText(/Couldn't load/)).toBeNull()
   })
 })

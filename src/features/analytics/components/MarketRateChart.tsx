@@ -21,10 +21,34 @@ export function MarketRateChart({ market }: { market: MarketView }) {
           description="The indexer request failed. It'll retry shortly."
         />
       ) : data.length === 0 ? (
-        <EmptyState
-          title="No rate history yet"
-          description="Rate history appears once the indexer has data for this market."
-        />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-6">
+            <div className="flex flex-col">
+              <span className="text-[0.72rem] text-[var(--sea-ink-soft)]">
+                Borrow APR
+              </span>
+              <span className="num text-xl font-semibold text-[var(--sea-ink)]">
+                {market.borrowApr !== undefined
+                  ? `${market.borrowApr.toFixed(2)}%`
+                  : '—'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[0.72rem] text-[var(--sea-ink-soft)]">
+                Supply APY
+              </span>
+              <span className="num text-xl font-semibold text-[var(--sea-ink)]">
+                {market.supplyApy !== undefined
+                  ? `${market.supplyApy.toFixed(2)}%`
+                  : '—'}
+              </span>
+            </div>
+          </div>
+          <span className="text-[0.78rem] text-[var(--sea-ink-soft)]">
+            Current on-chain rate. The history trend appears once the indexer
+            records snapshots.
+          </span>
+        </div>
       ) : (
         <RateChart data={data} />
       )}
