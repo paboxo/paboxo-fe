@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { MARKETS } from '#/lib/contracts'
 import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import { getAdapters, resolveAdapters } from './registry'
@@ -16,12 +16,40 @@ describe('data registry', () => {
     expect(adapters.indexer).toBe(mockIndexerAdapter)
   })
 
-  it('swaps chain to live but falls back to the mock indexer with no endpoint', () => {
-    const mock = resolveAdapters('mock')
-    const live = resolveAdapters('live')
-    expect(live.chain).not.toBe(mock.chain)
-    // No VITE_INDEXER_URL in the test env → the live indexer is the mock (AE4).
-    expect(live.indexer).toBe(mock.indexer)
+  it('swaps the chain adapter to live', () => {
+    expect(resolveAdapters('live').chain).not.toBe(
+      resolveAdapters('mock').chain,
+    )
+  })
+
+  // `liveAdapters` binds INDEXER_URL at module load, so these drive the env and
+  // re-import rather than assuming what the ambient env happens to hold. The old
+  // version asserted "no VITE_INDEXER_URL in the test env" — true on CI, false
+  // for any developer with a local .env, who then saw a red suite for no reason.
+  it('falls back to the mock indexer when no endpoint is configured (AE4)', async () => {
+    vi.stubEnv('VITE_INDEXER_URL', '')
+    vi.resetModules()
+    const [{ resolveAdapters: resolve }, { mockIndexerAdapter: mockIdx }] =
+      await Promise.all([
+        import('./registry'),
+        import('./indexer/indexerAdapter.mock'),
+      ])
+
+    expect(resolve('live').indexer).toBe(mockIdx)
+    vi.unstubAllEnvs()
+  })
+
+  it('uses the real GraphQL indexer once an endpoint is configured', async () => {
+    vi.stubEnv('VITE_INDEXER_URL', 'https://indexer.test/graphql')
+    vi.resetModules()
+    const [{ resolveAdapters: resolve }, { mockIndexerAdapter: mockIdx }] =
+      await Promise.all([
+        import('./registry'),
+        import('./indexer/indexerAdapter.mock'),
+      ])
+
+    expect(resolve('live').indexer).not.toBe(mockIdx)
+    vi.unstubAllEnvs()
   })
 
   it('resolves the real viem chain adapter in live mode (U18)', () => {

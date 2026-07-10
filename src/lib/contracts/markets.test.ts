@@ -64,4 +64,25 @@ describe('markets config', () => {
       getMarketConfig('0x000000000000000000000000000000000000dead'),
     ).toBeUndefined()
   })
+
+  // Verified against HashKey 177 on 2026-07-10: `router().ltv()` returns 7e17 on
+  // all four routers, and the indexer's LendingPoolCreated event carries
+  // liquidationThreshold 75% for all four. DEPLOYMENT.md lists risk-tiered
+  // values (80/85, 65/72) that were never deployed. `usePosition` derives the
+  // liquidation price from liqThreshold, so a config that overstates it tells a
+  // borrower they are safer than they are.
+  it('carries the LTV and liquidation threshold the pools actually deployed with', () => {
+    for (const market of MARKETS) {
+      expect(market.ltv, `${market.id} ltv`).toBe(70)
+      expect(market.liqThreshold, `${market.id} liqThreshold`).toBe(75)
+    }
+  })
+
+  it('never lets the liquidation threshold sit below the LTV', () => {
+    // A threshold at or under the LTV means a position is liquidatable the
+    // instant it is opened at max borrow.
+    for (const market of MARKETS) {
+      expect(market.liqThreshold, market.id).toBeGreaterThan(market.ltv)
+    }
+  })
 })
