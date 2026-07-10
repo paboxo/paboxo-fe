@@ -12,13 +12,15 @@ export function AppPageHeader({
   subtitle?: ReactNode
 }) {
   return (
-    <div className="mb-6">
+    <div className="mb-8">
       {kicker ? <p className="island-kicker mb-1">{kicker}</p> : null}
-      <h1 className="display-title text-3xl font-semibold text-[var(--sea-ink)]">
+      <h1 className="display-title text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl">
         {title}
       </h1>
       {subtitle ? (
-        <p className="m-0 mt-1 text-[var(--sea-ink-soft)]">{subtitle}</p>
+        <p className="m-0 mt-2 text-base text-[var(--sea-ink-soft)] sm:text-lg">
+          {subtitle}
+        </p>
       ) : null}
     </div>
   )
