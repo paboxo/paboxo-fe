@@ -1,11 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
+/* Luminous Professional type system: Inter for body/UI, Manrope for display
+   headlines, JetBrains Mono for financial data + metadata. */
 @theme {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --font-mono:
-    'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 :root {
@@ -16,12 +19,12 @@
   --palm: #0690d4;
   --sand: #e6eff8;
   --foam: #f2f8fd;
-  --surface: rgba(255, 255, 255, 0.74);
-  --surface-strong: rgba(255, 255, 255, 0.9);
-  --line: rgba(14, 42, 68, 0.14);
+  --surface: #ffffff;
+  --surface-strong: #f8fafc;
+  --line: #e2e8f0;
   --inset-glint: rgba(255, 255, 255, 0.82);
   --kicker: rgba(6, 144, 212, 0.9);
-  --bg-base: #e9f1f8;
+  --bg-base: #ffffff;
   --header-bg: rgba(244, 249, 254, 0.84);
   --chip-bg: rgba(255, 255, 255, 0.8);
   --chip-line: rgba(6, 144, 212, 0.18);
@@ -201,18 +204,19 @@ pre code {
 }
 
 .display-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
 }
 
+/* Flat outline containment (no heavy shadows) per the Luminous Professional spec. */
 .island-shell {
   border: 1px solid var(--line);
   background: var(--surface-strong);
-  box-shadow: 0 1px 2px rgba(14, 42, 68, 0.05);
 }
 
 .feature-card {
   background: var(--surface-strong);
-  box-shadow: 0 1px 2px rgba(14, 42, 68, 0.05);
+  border: 1px solid var(--line);
 }
 
 .feature-card:hover {
