@@ -145,10 +145,12 @@ describe('AppHeader wallet controls', () => {
     return container.querySelector('.num')?.closest('button') ?? null
   }
 
-  it('shows the chain name exactly once when connected to HashKey', () => {
+  it('shows the chain name in the pill plus the wallet chip when connected to HashKey', () => {
     connectHashkey()
     renderHeader('/earn')
-    expect(screen.getAllByText(new RegExp(HASHKEY.name, 'i'))).toHaveLength(1)
+    // The always-on NetworkPill plus the wallet chain chip — the wallet chip
+    // still shows the chain exactly once (no internal duplication).
+    expect(screen.getAllByText(new RegExp(HASHKEY.name, 'i'))).toHaveLength(2)
   })
 
   it('shows a danger-toned wrong-network indication off HashKey', () => {
@@ -177,7 +179,8 @@ describe('AppHeader wallet controls', () => {
     const { container } = renderHeader('/earn')
     expect(chainControl(container)).toBeNull()
     expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy()
-    expect(screen.queryByText(new RegExp(HASHKEY.name, 'i'))).toBeNull()
+    // The static NetworkPill still shows the chain even when disconnected.
+    expect(screen.getByText(new RegExp(HASHKEY.name, 'i'))).toBeTruthy()
   })
 
   it('collapses only the chain control below sm, never the address control', () => {

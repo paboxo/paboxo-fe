@@ -8,6 +8,7 @@ import {
 } from '#/components/icons'
 import type { IconProps } from '#/components/icons'
 import { WalletControls } from '#/components/wallet/WalletControls'
+import { NetworkPill } from '#/components/wallet/NetworkPill'
 import { DensityToggle } from './DensityToggle'
 
 const NAV: Array<{
@@ -86,6 +87,7 @@ export function AppHeader() {
           <span className="sm:hidden">
             <DensityToggle />
           </span>
+          <NetworkPill />
           <WalletControls />
         </div>
       </nav>
