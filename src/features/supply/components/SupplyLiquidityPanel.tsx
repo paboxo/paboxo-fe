@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
-import { formatTokenAmount, formatUsd, toNumber } from '#/lib/format'
+import { toNumber } from '#/lib/format'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
@@ -56,21 +56,6 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="island-shell flex items-center justify-between rounded-2xl px-4 py-3 text-sm">
-        <span className="text-[var(--sea-ink-soft)]">
-          Supplied in this pool
-        </span>
-        <span className="num font-semibold text-[var(--sea-ink)]">
-          {formatTokenAmount(suppliedBalance, decimals)} {market.borrowSymbol}
-          {suppliedRow ? (
-            <span className="text-[var(--sea-ink-soft)]">
-              {' '}
-              · {formatUsd(suppliedRow.valueUsd)}
-            </span>
-          ) : null}
-        </span>
-      </div>
-
       <div
         role="tablist"
         aria-label="Liquidity actions"

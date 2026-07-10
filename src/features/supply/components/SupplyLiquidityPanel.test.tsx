@@ -80,10 +80,17 @@ describe('SupplyLiquidityPanel', () => {
     expect(screen.getByRole('tab', { name: 'Withdraw' })).toBeTruthy()
   })
 
-  it("shows the user's supplied balance in this pool", () => {
+  it('no longer renders a standalone supplied-balance row', () => {
     renderPanel()
-    expect(screen.getByText('Supplied in this pool')).toBeTruthy()
-    // 12,500 pxUSDT supplied (amount + USD value both surface it).
+    // The row duplicated what the Withdraw tab already shows; the supplied
+    // balance still caps the withdraw amount, it just has no island of its own.
+    expect(screen.queryByText('Supplied in this pool')).toBeNull()
+  })
+
+  it('still caps the withdraw amount at what the user supplied', () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('tab', { name: 'Withdraw' }))
+    // 12,500 pxUSDT supplied in this pool.
     expect(screen.getAllByText(/12,500/).length).toBeGreaterThan(0)
   })
 

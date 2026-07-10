@@ -5,6 +5,7 @@ import { EmptyState } from '#/components/ui/states/EmptyState'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
 import type { Address } from '#/lib/contracts'
 import { usePool } from '#/features/markets/hooks/usePools'
+import { PoolBreadcrumb } from '#/components/layout/PoolBreadcrumb'
 import { PoolInfo } from '#/features/markets/components/PoolInfo'
 import { SupplyLiquidityPanel } from '#/features/supply/components/SupplyLiquidityPanel'
 
@@ -19,20 +20,15 @@ function EarnPoolPage() {
 
   return (
     <main className="page-wrap flex flex-col gap-5 px-4 pb-12 pt-8">
-      <nav
-        aria-label="Breadcrumb"
-        className="text-sm text-[var(--sea-ink-soft)]"
-      >
-        <Link
-          to="/earn"
-          className="font-semibold text-[var(--sea-ink)] no-underline"
-        >
-          Earn
-        </Link>
-        {pool.status === 'ready' ? (
-          <span> / {pool.market.collateralSymbol}</span>
-        ) : null}
-      </nav>
+      <PoolBreadcrumb
+        to="/earn"
+        label="Earn"
+        current={
+          pool.status === 'ready'
+            ? `${pool.market.collateralSymbol} · ${pool.market.borrowSymbol}`
+            : undefined
+        }
+      />
 
       {pool.status === 'pending' ? (
         <LoadingCard />

@@ -6,6 +6,7 @@ import { NetworkGuard } from '#/components/wallet/NetworkGuard'
 import type { Address } from '#/lib/contracts'
 import { usePool } from '#/features/markets/hooks/usePools'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
+import { PoolBreadcrumb } from '#/components/layout/PoolBreadcrumb'
 import { PoolInfo } from '#/features/markets/components/PoolInfo'
 import { BorrowActions } from '#/features/borrow/components/BorrowActions'
 
@@ -29,20 +30,15 @@ function BorrowPoolPage() {
 
   return (
     <main className="page-wrap flex flex-col gap-5 px-4 pb-12 pt-8">
-      <nav
-        aria-label="Breadcrumb"
-        className="text-sm text-[var(--sea-ink-soft)]"
-      >
-        <Link
-          to="/borrow"
-          className="font-semibold text-[var(--sea-ink)] no-underline"
-        >
-          Borrow
-        </Link>
-        {pool.status === 'ready' ? (
-          <span> / {pool.market.collateralSymbol}</span>
-        ) : null}
-      </nav>
+      <PoolBreadcrumb
+        to="/borrow"
+        label="Borrow"
+        current={
+          pool.status === 'ready'
+            ? `${pool.market.collateralSymbol} · ${pool.market.borrowSymbol}`
+            : undefined
+        }
+      />
 
       {pool.status === 'pending' ? (
         <LoadingCard />
