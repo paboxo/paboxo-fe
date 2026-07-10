@@ -22,8 +22,12 @@ export function PoolBreadcrumb({
 }) {
   return (
     <nav aria-label="Breadcrumb" className="text-sm text-[var(--sea-ink-soft)]">
+      {/* `activeOptions.exact` matters here: `/earn` is a prefix of `/earn/$id`,
+          so a non-exact Link would set `aria-current="page"` on itself and two
+          elements would claim to be the current page — the back link loudest. */}
       <Link
         to={to}
+        activeOptions={{ exact: true }}
         className="inline-flex items-center gap-1 font-semibold text-[var(--sea-ink)] no-underline"
       >
         <span aria-hidden="true">‹</span>

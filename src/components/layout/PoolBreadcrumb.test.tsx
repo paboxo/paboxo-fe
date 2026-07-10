@@ -2,20 +2,32 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { PoolBreadcrumb } from './PoolBreadcrumb'
 
-// The router's <Link> renders an <a>; that is all this component needs from it.
+/**
+ * The router's `<Link>` renders an `<a>` — and, when it considers itself active,
+ * stamps `aria-current="page"` on it. `/earn` is a prefix of `/earn/$id`, so
+ * without `activeOptions.exact` the back link would claim to be the current
+ * page. This mock records the prop so a test can hold that line; it does not
+ * simulate the stamping (that is the router's job, exercised in the browser).
+ */
+const linkProps: Array<Record<string, unknown>> = []
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     to,
     children,
+    activeOptions,
     ...rest
   }: {
     to: string
     children: React.ReactNode
-  }) => (
-    <a href={to} {...rest}>
-      {children}
-    </a>
-  ),
+    activeOptions?: { exact?: boolean }
+  }) => {
+    linkProps.push({ to, activeOptions })
+    return (
+      <a href={to} {...rest}>
+        {children}
+      </a>
+    )
+  },
 }))
 
 describe('PoolBreadcrumb', () => {
@@ -49,5 +61,22 @@ describe('PoolBreadcrumb', () => {
   it('labels the nav landmark', () => {
     render(<PoolBreadcrumb to="/earn" label="Earn" current="pxWETH" />)
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeTruthy()
+  })
+
+  it('exactly one element claims to be the current page', () => {
+    const { container } = render(
+      <PoolBreadcrumb to="/earn" label="Earn" current="pxWETH" />,
+    )
+    const claims = container.querySelectorAll('[aria-current]')
+    expect(claims).toHaveLength(1)
+    expect(claims[0].textContent).toBe('pxWETH')
+  })
+
+  it('matches the back link exactly, so /earn does not light up on /earn/$id', () => {
+    linkProps.length = 0
+    render(<PoolBreadcrumb to="/earn" label="Earn" current="pxWETH" />)
+    // Without this, the router stamps aria-current="page" on the back link,
+    // because /earn is a prefix of the detail route.
+    expect(linkProps[0].activeOptions).toEqual({ exact: true })
   })
 })
