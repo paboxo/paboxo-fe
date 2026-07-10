@@ -1,12 +1,17 @@
 /**
- * Repay mode A (U12, R20). Pay the borrow token (pxUSDT) directly from the
- * wallet. The user enters an asset amount; it is converted to live debt shares
- * (Appendix) so interest accrued since the last read is covered, then an exact
- * approval to the pool precedes repayWithSelectedToken in mode A (fee 0).
+ * Repay (U12, R20). Three sources, all through `repayWithSelectedToken`:
+ *  - the borrow token (pxUSDT) directly from the wallet — mode A, no swap;
+ *  - the user's position collateral — the pool swaps it (fromPosition);
+ *  - another wallet token (e.g. WETH) — approved, then swapped on-chain.
+ *
+ * The entered amount is converted to live debt shares so accrued interest is
+ * covered (senja `useBorrowActions.ts:444-470`). Swap paths carry the Uniswap
+ * 0.3% fee tier and a non-zero `amountOutMinimum` so the swap can't be
+ * sandwiched to ~0.
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
-import { TOKENS } from '#/lib/contracts'
+import { formatUnits, parseUnits } from 'viem'
 import type { Address } from '#/lib/contracts'
 import { getAdapters } from '#/lib/data'
 import { debtSharesForAssets } from '#/lib/math'
@@ -15,41 +20,117 @@ import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
 import type { MarketView } from '#/features/markets/types'
 
+/** Oracle price decimals (matches the chain adapter / position hooks). */
+const PRICE_DECIMALS = 8
+/** DEX fee tier for swap-repay paths (Uniswap 0.3%), matching senja. */
+const SWAP_FEE_TIER = 3000
+/** Slippage floor for swap-repay: reject worse than 0.5% adverse execution. */
+const SWAP_SLIPPAGE_BPS = 50n
+
+export interface RepayToken {
+  address: Address
+  decimals: number
+  /** Pay by selling the user's position collateral rather than a wallet token. */
+  isCollateral: boolean
+}
+
 export function useRepay(market: MarketView) {
   const write = useWriteAction()
   const { address } = useAccount()
 
   const repay = useCallback(
-    async (assets: bigint, user?: Address) => {
+    async (assets: bigint, token?: RepayToken, user?: Address) => {
       const target = user ?? address
       if (!target) return
       const { chain } = getAdapters()
       const totals = await chain.getMarketTotals(market.poolAddress)
+
+      const repayToken: RepayToken = token ?? {
+        address: market.borrowAddress,
+        decimals: market.borrowDecimals,
+        isCollateral: false,
+      }
+      const isBorrowToken =
+        repayToken.address.toLowerCase() === market.borrowAddress.toLowerCase()
+
+      if (isBorrowToken) {
+        // Mode A: pay the borrow token directly — no swap, exact-amount approval.
+        const shares = debtSharesForAssets(
+          assets,
+          totals.totalBorrowAssets,
+          totals.totalBorrowShares,
+        )
+        await write.run({
+          approval: {
+            token: market.borrowAddress,
+            spender: market.poolAddress,
+            amount: assets,
+          },
+          preflight: preflightRepay({ amount: assets, shares }),
+          send: () =>
+            chain.repayWithSelectedToken(market.poolAddress, {
+              user: target,
+              token: market.borrowAddress,
+              shares,
+              amountOutMinimum: 0n,
+              fromPosition: false,
+              fee: 0,
+            }),
+          invalidateKeys: WRITE_INVALIDATE_KEYS,
+        })
+        return
+      }
+
+      // Swap path (collateral or another wallet token): USD-normalize the entered
+      // amount to a borrow-token amount, then to live debt shares (senja parity).
+      const [tokenPrice, borrowPrice] = await Promise.all([
+        chain.getPrice(repayToken.address),
+        chain.getPrice(market.borrowAddress),
+      ])
+      const inputUsd =
+        Number(formatUnits(assets, repayToken.decimals)) *
+        Number(formatUnits(tokenPrice.price, PRICE_DECIMALS))
+      const borrowPriceUsd = Number(
+        formatUnits(borrowPrice.price, PRICE_DECIMALS),
+      )
+      const borrowTokens = borrowPriceUsd > 0 ? inputUsd / borrowPriceUsd : 0
+      const borrowAmount = parseUnits(
+        borrowTokens.toFixed(market.borrowDecimals),
+        market.borrowDecimals,
+      )
       const shares = debtSharesForAssets(
-        assets,
+        borrowAmount,
         totals.totalBorrowAssets,
         totals.totalBorrowShares,
       )
+      // Non-zero slippage floor so the on-chain swap can't be sandwiched to ~0.
+      const amountOutMinimum =
+        (borrowAmount * (10_000n - SWAP_SLIPPAGE_BPS)) / 10_000n
+
       await write.run({
-        approval: {
-          token: TOKENS.pxUSDT.address,
-          spender: market.poolAddress,
-          amount: assets,
-        },
-        preflight: preflightRepay({ amount: assets, shares }),
+        // Collateral is pulled from the position (no wallet approval); another
+        // wallet token needs an exact-amount approval in its own decimals.
+        approval: repayToken.isCollateral
+          ? undefined
+          : {
+              token: repayToken.address,
+              spender: market.poolAddress,
+              amount: assets,
+            },
+        preflight: preflightRepay({ amount: borrowAmount, shares }),
         send: () =>
           chain.repayWithSelectedToken(market.poolAddress, {
             user: target,
-            token: TOKENS.pxUSDT.address,
+            token: repayToken.address,
             shares,
-            amountOutMinimum: 0n,
-            fromPosition: false,
-            fee: 0,
+            amountOutMinimum,
+            fromPosition: repayToken.isCollateral,
+            fee: SWAP_FEE_TIER,
           }),
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
     },
-    [address, market.poolAddress, write],
+    [address, market, write],
   )
 
   return { ...write, repay }

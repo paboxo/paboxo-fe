@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { formatUnits, parseUnits } from 'viem'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
 import { TOKENS } from '#/lib/contracts'
@@ -60,6 +61,102 @@ describe('useRepay', () => {
       fromPosition: false,
       fee: 0,
     })
+    expect(result.current.state).toBe('confirmed')
+    approve.mockRestore()
+    repay.mockRestore()
+  })
+
+  // Covers R5, AE3: swap paths carry fee 3000 + a non-zero slippage floor.
+  async function expectedSwap(tokenAddress: `0x${string}`, decimals: number, assets: bigint) {
+    const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
+    const tokenPrice = (await mockChainAdapter.getPrice(tokenAddress)).price
+    const borrowPrice = (await mockChainAdapter.getPrice(market.borrowAddress)).price
+    const inputUsd =
+      Number(formatUnits(assets, decimals)) *
+      Number(formatUnits(tokenPrice, 8))
+    const borrowTokens = inputUsd / Number(formatUnits(borrowPrice, 8))
+    const borrowAmount = parseUnits(
+      borrowTokens.toFixed(market.borrowDecimals),
+      market.borrowDecimals,
+    )
+    return {
+      shares: debtSharesForAssets(
+        borrowAmount,
+        totals.totalBorrowAssets,
+        totals.totalBorrowShares,
+      ),
+      amountOutMinimum: (borrowAmount * 9_950n) / 10_000n,
+    }
+  }
+
+  it('repays from collateral via swap: no approval, fromPosition, fee 3000, min-out floor', async () => {
+    const approve = vi.spyOn(mockChainAdapter, 'approve')
+    const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
+    const assets = 1_000n * 10n ** 18n // 1000 pxWHSK
+    const { shares, amountOutMinimum } = await expectedSwap(
+      market.collateralAddress,
+      market.collateralDecimals,
+      assets,
+    )
+
+    const { result } = renderHook(() => useRepay(market), {
+      wrapper: QueryWrapper,
+    })
+    await act(async () => {
+      await result.current.repay(assets, {
+        address: market.collateralAddress,
+        decimals: market.collateralDecimals,
+        isCollateral: true,
+      })
+    })
+
+    expect(approve).not.toHaveBeenCalled()
+    expect(repay).toHaveBeenCalledWith(market.poolAddress, {
+      user: USER,
+      token: market.collateralAddress,
+      shares,
+      amountOutMinimum,
+      fromPosition: true,
+      fee: 3000,
+    })
+    expect(amountOutMinimum).toBeGreaterThan(0n)
+    expect(result.current.state).toBe('confirmed')
+    approve.mockRestore()
+    repay.mockRestore()
+  })
+
+  it('repays with another wallet token (WETH): approves that token, fee 3000, min-out floor', async () => {
+    const approve = vi.spyOn(mockChainAdapter, 'approve')
+    const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
+    const weth = TOKENS.pxWETH
+    const assets = 1n * 10n ** 18n // 1 WETH
+    const { shares, amountOutMinimum } = await expectedSwap(
+      weth.address,
+      weth.decimals,
+      assets,
+    )
+
+    const { result } = renderHook(() => useRepay(market), {
+      wrapper: QueryWrapper,
+    })
+    await act(async () => {
+      await result.current.repay(assets, {
+        address: weth.address,
+        decimals: weth.decimals,
+        isCollateral: false,
+      })
+    })
+
+    expect(approve).toHaveBeenCalledWith(weth.address, market.poolAddress, assets)
+    expect(repay).toHaveBeenCalledWith(market.poolAddress, {
+      user: USER,
+      token: weth.address,
+      shares,
+      amountOutMinimum,
+      fromPosition: false,
+      fee: 3000,
+    })
+    expect(amountOutMinimum).toBeGreaterThan(0n)
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
     repay.mockRestore()
