@@ -37,6 +37,14 @@ export interface ActionButtonProps {
   disabled?: boolean
   onClick?: () => void
   variant?: 'primary' | 'secondary'
+  /**
+   * Id of the element explaining why the button is disabled.
+   *
+   * A native `disabled` button takes no hover and no focus, so a tooltip never
+   * reaches a keyboard or screen-reader user. The reason must be a sibling that
+   * this button points at.
+   */
+  'aria-describedby'?: string
 }
 
 /**
@@ -51,6 +59,7 @@ export function ActionButton({
   disabled = false,
   onClick,
   variant = 'primary',
+  'aria-describedby': describedBy,
 }: ActionButtonProps) {
   const busy = isTxBusy(state)
   const isDisabled = disabled || busy || state === 'confirmed'
@@ -60,6 +69,7 @@ export function ActionButton({
       type="button"
       onClick={onClick}
       disabled={isDisabled}
+      aria-describedby={describedBy}
       data-state={state}
       className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
       style={

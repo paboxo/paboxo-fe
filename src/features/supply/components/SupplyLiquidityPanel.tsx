@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
-import { TOKENS } from '#/lib/contracts'
 import { formatTokenAmount, formatUsd, toNumber } from '#/lib/format'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
@@ -33,11 +32,11 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
   const [active, setActive] = useState<LiquidityAction>('supply')
   const supplyLiquidity = useSupplyLiquidity(market)
   const withdraw = useWithdraw(market)
-  const decimals = TOKENS.pxUSDT.decimals
+  const decimals = market.borrowDecimals
 
   // Wallet pxUSDT balance (supply cap) and the user's supplied liquidity in this
   // isolated pool (withdraw cap).
-  const { balance: walletBalance } = useTokenBalance(TOKENS.pxUSDT.address)
+  const { balance: walletBalance } = useTokenBalance(market.borrowAddress)
   const { data: position } = useMarketPosition(market.id)
   const suppliedRow = position?.supplies.find(
     (row) => row.symbol === market.borrowSymbol,

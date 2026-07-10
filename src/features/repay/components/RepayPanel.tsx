@@ -1,7 +1,6 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
-import { TOKENS } from '#/lib/contracts'
 import type { MarketView } from '#/features/markets/types'
 import { useRepay } from '../hooks/useRepay'
 
@@ -18,7 +17,7 @@ export function RepayPanel({ market }: { market: MarketView }) {
       : { enabled: false, reason: 'Enter an amount greater than zero.' }
 
   const onSubmit = (amountTokens: number) => {
-    void repay(parseUnits(amountTokens.toString(), TOKENS.pxUSDT.decimals))
+    void repay(parseUnits(amountTokens.toString(), market.borrowDecimals))
   }
 
   return (
@@ -26,7 +25,7 @@ export function RepayPanel({ market }: { market: MarketView }) {
       title={`Repay ${market.borrowSymbol}`}
       idleLabel="Repay"
       symbol={market.borrowSymbol}
-      decimals={TOKENS.pxUSDT.decimals}
+      decimals={market.borrowDecimals}
       priceUsd={1}
       maxTokens={1000}
       preflight={preflight}
