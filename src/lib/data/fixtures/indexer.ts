@@ -7,6 +7,7 @@
 import { MARKETS, TOKENS } from '#/lib/contracts'
 import type {
   HistoryEvent,
+  LiquidityPoint,
   ProtocolAggregates,
   RatePoint,
   RawPool,
@@ -96,6 +97,21 @@ export function rateHistoryFixture(borrowApr: number): RatePoint[] {
       timestamp: base + i * day,
       borrowApr: Number(borrow.toFixed(2)),
       supplyApy: Number((borrow * 0.55).toFixed(2)),
+    }
+  })
+}
+
+/** A representative 7-day liquidity series (USD), so the chart renders in dev
+ *  even though the live indexer has no liquidity snapshots yet. */
+export function liquidityHistoryFixture(baseUsd: number): LiquidityPoint[] {
+  const base = 1_720_000_000
+  const day = 86_400
+  return Array.from({ length: 7 }, (_, i) => {
+    const drift = ((i % 4) - 1.5) * 0.05
+    const liquidity = Math.max(0, baseUsd * (1 + i * 0.03 + drift))
+    return {
+      timestamp: base + i * day,
+      liquidityUsd: Number(liquidity.toFixed(2)),
     }
   })
 }

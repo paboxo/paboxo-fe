@@ -8,6 +8,7 @@ import type {
   CrossChainStatus,
   Hash,
   IndexerAdapter,
+  LiquidityPoint,
   ProtocolAggregates,
   RatePoint,
   RawPool,
@@ -16,6 +17,7 @@ import {
   HISTORY_FIXTURES,
   POOL_FIXTURES,
   PROTOCOL_AGGREGATES,
+  liquidityHistoryFixture,
   rateHistoryFixture,
 } from '../fixtures/indexer'
 import { IndexerError } from './indexerAdapter'
@@ -51,6 +53,9 @@ export function createMockIndexerAdapter(
         MARKETS.find((m) => m.pool.toLowerCase() === pool.toLowerCase()) ??
         getMarketConfig('pxwhsk')
       return Promise.resolve(rateHistoryFixture(market?.rateAtOptimal ?? 7))
+    },
+    getLiquidityHistory(): Promise<LiquidityPoint[]> {
+      return Promise.resolve(liquidityHistoryFixture(1_000_000))
     },
   }
 }

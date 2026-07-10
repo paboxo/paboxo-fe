@@ -321,6 +321,11 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
         supplyApy: wadToPercent(BigInt(r.supplyApy || '0')),
       }))
     },
+    // The indexer does not persist a liquidity time-series yet (rate snapshots
+    // carry no totals), so this is empty in live mode and the chart falls back
+    // to a current-value indicator (KTD4). Wire a query here once the backend
+    // adds a liquidity-snapshot entity.
+    getLiquidityHistory: () => Promise.resolve([]),
   }
 }
 

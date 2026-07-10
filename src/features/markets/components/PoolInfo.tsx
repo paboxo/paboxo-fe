@@ -5,6 +5,7 @@ import { StatTile } from '#/components/ui/StatTile'
 import { HealthMeter } from '#/components/ui/HealthMeter'
 import { MarketIrmChart } from '#/features/analytics/components/MarketIrmChart'
 import { MarketRateChart } from '#/features/analytics/components/MarketRateChart'
+import { MarketLiquidityChart } from '#/features/analytics/components/MarketLiquidityChart'
 import type { MarketView } from '../types'
 import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
@@ -129,6 +130,7 @@ export function PoolInfo({ market, context, health }: PoolInfoProps) {
 
       <MarketIrmChart market={market} />
       <MarketRateChart market={market} />
+      <MarketLiquidityChart market={market} />
     </div>
   )
 }
