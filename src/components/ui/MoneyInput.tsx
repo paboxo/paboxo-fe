@@ -5,7 +5,7 @@ import {
   formatUsd,
   toNumber,
 } from '#/lib/format'
-import { AmountChips } from './AmountChips'
+import { AmountSlider } from './AmountSlider'
 
 export type Denomination = 'token' | 'usd'
 
@@ -17,10 +17,11 @@ export interface MoneyInputProps {
   onChange: (value: string) => void
   /** Wallet balance in base units — drives the balance line and insufficient check. */
   balance?: bigint
-  /** Price for the USD equivalent and the token⟷USD flip. */
+  /** Price for the USD equivalent line. */
   priceUsd?: number
   denomination?: Denomination
-  onToggleDenomination?: () => void
+  /** Fill basis for the slider and MAX (gas-reserved / risk-bounded), token units. */
+  maxTokens?: number
   /** Injected context-aware MAX (gas-reserved for native, risk-bounded for borrow/withdraw). */
   onMax?: () => void
   onQuickFill?: (fraction: number) => void
@@ -31,9 +32,10 @@ export interface MoneyInputProps {
 }
 
 /**
- * Money amount input (U6, R19–R21). Token+USD with a flip, a balance line,
- * quick-fill chips, and an injected MAX so the component stays data-agnostic.
- * Blocks obviously-invalid input before any submit.
+ * Money amount input (U6, R19–R21). A token amount with a balance line, a
+ * drag slider that fills by fraction of the max, and a separate MAX button —
+ * kept data-agnostic via injected callbacks. Blocks obviously-invalid input
+ * before any submit.
  */
 export function MoneyInput({
   symbol,
@@ -43,7 +45,7 @@ export function MoneyInput({
   balance,
   priceUsd,
   denomination = 'token',
-  onToggleDenomination,
+  maxTokens,
   onMax,
   onQuickFill,
   maxLabel = 'Max',
@@ -79,29 +81,23 @@ export function MoneyInput({
         : undefined)
 
   const equiv =
-    denomination === 'token'
-      ? priceUsd !== undefined
-        ? `≈ ${formatUsd(usdAmount)}`
-        : null
-      : priceUsd
+    priceUsd !== undefined
+      ? `≈ ${formatUsd(usdAmount)}`
+      : denomination === 'usd'
         ? `≈ ${formatNumber(tokenAmount, { maxFractionDigits: 6 })} ${symbol}`
         : null
 
-  const prefix = denomination === 'usd' ? '$' : symbol
+  // The slider thumb reflects the current input as a fraction of the fill basis.
+  const fillFraction =
+    maxTokens && maxTokens > 0
+      ? Math.max(0, Math.min(1, tokenAmount / maxTokens))
+      : 0
+  const canFill = onQuickFill !== undefined && (maxTokens ?? 0) > 0
 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-[0.75rem] text-[var(--sea-ink-soft)]">
-        <button
-          type="button"
-          onClick={onToggleDenomination}
-          disabled={!onToggleDenomination || priceUsd === undefined}
-          className="font-bold text-[var(--sea-ink)] disabled:cursor-default"
-          aria-label="Switch denomination"
-        >
-          {prefix}
-          {onToggleDenomination && priceUsd !== undefined ? ' ⇄' : ''}
-        </button>
+        <span className="font-bold text-[var(--sea-ink)]">{symbol}</span>
         {balanceTokens !== undefined ? (
           <span>
             Balance:{' '}
@@ -130,14 +126,26 @@ export function MoneyInput({
           onChange={(event) => onChange(event.target.value)}
           className="num min-w-0 flex-1 bg-transparent text-lg font-semibold text-[var(--sea-ink)] outline-none"
         />
-        {onQuickFill && onMax ? (
-          <AmountChips
-            onQuickFill={onQuickFill}
-            onMax={onMax}
-            maxLabel={maxLabel}
-          />
-        ) : null}
       </div>
+
+      {onQuickFill && onMax ? (
+        <div className="flex items-end gap-3">
+          <AmountSlider
+            value={fillFraction}
+            onChange={onQuickFill}
+            disabled={!canFill}
+          />
+          <button
+            type="button"
+            onClick={onMax}
+            disabled={(maxTokens ?? 0) <= 0}
+            className="shrink-0 rounded-full px-3 py-1 text-[0.72rem] font-bold disabled:opacity-50"
+            style={{ background: 'var(--safe-soft)', color: 'var(--palm)' }}
+          >
+            {maxLabel}
+          </button>
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between text-[0.75rem]">
         {equiv ? (

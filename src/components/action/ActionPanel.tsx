@@ -140,14 +140,7 @@ export function ActionPanel(props: ActionPanelProps) {
         balance={balance}
         priceUsd={priceUsd}
         denomination={denomination}
-        onToggleDenomination={
-          priceUsd
-            ? () =>
-                setDenomination((current) =>
-                  current === 'token' ? 'usd' : 'token',
-                )
-            : undefined
-        }
+        maxTokens={maxTokens}
         onQuickFill={
           maxTokens ? (fraction) => fillWith(maxTokens * fraction) : undefined
         }

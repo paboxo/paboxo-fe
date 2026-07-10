@@ -10,15 +10,14 @@ const base = {
 }
 
 describe('MoneyInput', () => {
-  it('shows the balance line and denomination', () => {
+  it('shows the balance line and token symbol without a denomination toggle', () => {
     render(<MoneyInput {...base} value="" onChange={() => {}} />)
     expect(screen.getByText(/1,900 pxUSDT/)).toBeTruthy()
-    expect(screen.getByLabelText('Switch denomination').textContent).toContain(
-      'pxUSDT',
-    )
+    // The ⇄ denomination toggle was removed (U5).
+    expect(screen.queryByLabelText('Switch denomination')).toBeNull()
   })
 
-  it('signals quick-fill fractions and MAX rather than computing them itself', () => {
+  it('signals quick-fill fractions via the slider and MAX via its button', () => {
     const onQuickFill = vi.fn()
     const onMax = vi.fn()
     render(
@@ -26,12 +25,16 @@ describe('MoneyInput', () => {
         {...base}
         value=""
         onChange={() => {}}
+        maxTokens={1900}
         onQuickFill={onQuickFill}
         onMax={onMax}
         maxLabel="Max (safe)"
       />,
     )
-    fireEvent.click(screen.getByText('50%'))
+    fireEvent.change(
+      screen.getByLabelText('Fill amount by percentage of balance'),
+      { target: { value: '50' } },
+    )
     fireEvent.click(screen.getByText('Max (safe)'))
     expect(onQuickFill).toHaveBeenCalledWith(0.5)
     expect(onMax).toHaveBeenCalledOnce()

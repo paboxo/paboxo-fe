@@ -576,3 +576,15 @@ a {
 :root[data-reduce-transparency='true'] .demo-card {
   backdrop-filter: none;
 }
+
+/* Amount fill slider (U5). Accent-colored track/thumb; a 24px row keeps the
+   thumb inside a WCAG-friendly touch target. */
+.amount-slider {
+  accent-color: var(--palm);
+  height: 24px;
+  cursor: pointer;
+}
+.amount-slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
