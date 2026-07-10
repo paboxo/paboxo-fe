@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import ThemeToggle from '#/components/ThemeToggle'
 import {
   BorrowIcon,
   EarnIcon,
@@ -88,7 +87,6 @@ export function AppHeader() {
             <DensityToggle />
           </span>
           <WalletControls />
-          <ThemeToggle />
         </div>
       </nav>
     </header>
