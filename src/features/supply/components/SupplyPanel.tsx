@@ -1,6 +1,6 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import type { PreflightResult } from '#/components/action/ActionPanel'
+import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
 
@@ -11,11 +11,6 @@ import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
  */
 export function SupplyPanel({ market }: { market: MarketView }) {
   const { state, revert, supply } = useSupplyCollateral(market)
-
-  const preflight = (amountTokens: number): PreflightResult =>
-    amountTokens > 0
-      ? { enabled: true }
-      : { enabled: false, reason: 'Enter an amount greater than zero.' }
 
   const onSubmit = (amountTokens: number) => {
     void supply(parseUnits(amountTokens.toString(), market.collateralDecimals))
@@ -29,7 +24,8 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
       maxTokens={1000}
-      preflight={preflight}
+      preflight={positiveAmount}
+      blockReason={staleBlockReason(market)}
       reviewApy={market.supplyApy}
       networkFeeUsd={0.42}
       txState={state}

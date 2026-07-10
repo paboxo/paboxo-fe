@@ -1,10 +1,12 @@
 import { formatPercent, formatUsd } from '#/lib/format'
+import { TOKENS } from '#/lib/contracts'
 import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { HealthMeter } from '#/components/ui/HealthMeter'
 import { MarketIrmChart } from '#/features/analytics/components/MarketIrmChart'
 import { MarketRateChart } from '#/features/analytics/components/MarketRateChart'
 import type { MarketView } from '../types'
+import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
 export type PoolInfoContext = 'earn' | 'borrow'
 
@@ -32,6 +34,9 @@ export function PoolInfo({ market, context, health }: PoolInfoProps) {
           <TokenPairGlyph
             collateralSymbol={market.collateralSymbol}
             borrowSymbol={market.borrowSymbol}
+            collateralAddress={market.collateralAddress}
+            // Every pool borrows pxUSDT today.
+            borrowAddress={TOKENS.pxUSDT.address}
             size={38}
           />
           <div>
@@ -49,6 +54,12 @@ export function PoolInfo({ market, context, health }: PoolInfoProps) {
               {market.crossChain ? ' · cross-chain' : ''}
             </p>
           </div>
+          {market.priceStale || !market.sizeKnown ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {market.priceStale ? <StaleBadge /> : null}
+              {!market.sizeKnown ? <SizeUnavailableChip /> : null}
+            </div>
+          ) : null}
         </div>
 
         {context === 'earn' ? (

@@ -1,45 +1,55 @@
-import type { ReactNode } from 'react'
+import type { ComponentType } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import ThemeToggle from '#/components/ThemeToggle'
+import {
+  BorrowIcon,
+  EarnIcon,
+  PortfolioIcon,
+  SwapIcon,
+} from '#/components/icons'
+import type { IconProps } from '#/components/icons'
+import { WalletControls } from '#/components/wallet/WalletControls'
 import { DensityToggle } from './DensityToggle'
 
-const NAV = [
+const NAV: Array<{
+  to: '/earn' | '/borrow' | '/swap' | '/portfolio'
+  label: string
+  Icon: ComponentType<IconProps>
+  match: (p: string) => boolean
+}> = [
   {
-    to: '/earn' as const,
+    to: '/earn',
     label: 'Earn',
-    match: (p: string) => p.startsWith('/earn'),
+    Icon: EarnIcon,
+    match: (p) => p.startsWith('/earn'),
   },
   {
-    to: '/borrow' as const,
+    to: '/borrow',
     label: 'Borrow',
-    match: (p: string) => p.startsWith('/borrow'),
+    Icon: BorrowIcon,
+    match: (p) => p.startsWith('/borrow'),
   },
   {
-    to: '/swap' as const,
+    to: '/swap',
     label: 'Swap',
-    match: (p: string) => p.startsWith('/swap'),
+    Icon: SwapIcon,
+    match: (p) => p.startsWith('/swap'),
   },
   {
-    to: '/portfolio' as const,
+    to: '/portfolio',
     label: 'Portfolio',
-    match: (p: string) => p.startsWith('/portfolio'),
+    Icon: PortfolioIcon,
+    match: (p) => p.startsWith('/portfolio'),
   },
 ]
 
 /**
- * The app shell header (U9, R6, R7). Two-plane nav with an active indicator, and
- * slots the integration plan fills with the real connect button / network
- * status / account pill. The Simple/Pro density toggle lives in the page header.
+ * The app shell header (U9, U11, R6, R7). Two-plane nav with an active
+ * indicator and hand-drawn inline icons, and the wallet controls (one chain
+ * chip + one account chip) rendered through RainbowKit. The Simple/Pro density
+ * toggle lives in the page header.
  */
-export function AppHeader({
-  networkStatus,
-  account,
-  connect,
-}: {
-  networkStatus?: ReactNode
-  account?: ReactNode
-  connect?: ReactNode
-}) {
+export function AppHeader() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--line)] bg-[var(--header-bg)] px-4 backdrop-blur-lg">
@@ -56,15 +66,18 @@ export function AppHeader({
         </Link>
 
         <div className="order-3 flex w-full items-center gap-4 text-sm font-semibold sm:order-none sm:w-auto">
-          {NAV.map((item) => (
+          {NAV.map(({ to, label, Icon, match }) => (
             <Link
-              key={item.to}
-              to={item.to}
+              key={to}
+              to={to}
               className={
-                item.match(pathname) ? 'nav-link is-active' : 'nav-link'
+                match(pathname)
+                  ? 'nav-link is-active gap-1.5'
+                  : 'nav-link gap-1.5'
               }
             >
-              {item.label}
+              <Icon />
+              {label}
             </Link>
           ))}
         </div>
@@ -74,8 +87,7 @@ export function AppHeader({
           <span className="sm:hidden">
             <DensityToggle />
           </span>
-          {networkStatus}
-          {account ?? connect}
+          <WalletControls />
           <ThemeToggle />
         </div>
       </nav>

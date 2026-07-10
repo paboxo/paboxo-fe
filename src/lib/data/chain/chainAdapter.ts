@@ -17,12 +17,14 @@
  */
 import {
   readContract,
+  readContracts,
   waitForTransactionReceipt,
   writeContract,
 } from '@wagmi/core'
 import { zeroAddress } from 'viem'
 import { CORE, HASHKEY, HELPER_UTILS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
+import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import {
   erc20Abi,
   helperUtilsAbi,
@@ -42,9 +44,14 @@ import type {
   IrmParams,
   LiquidatableStatus,
   MarketTotals,
+  PoolEnrichment,
+  PoolsEnrichment,
   PriceData,
+  RawPool,
   RepayParams,
   SwapParams,
+  TokenEnrichment,
+  VerifiedDecimals,
 } from '../types'
 
 const CHAIN_ID = HASHKEY.id
@@ -80,6 +87,71 @@ async function resolveSharesToken(router: Address): Promise<Address> {
   })
   sharesTokenCache.set(key, sharesToken)
   return sharesToken
+}
+
+// ---- batched enrichment (two phases; see enrichPools) ----
+
+/** One entry of a batched read. Kept shaped so a call site cannot omit a field. */
+interface BatchCall {
+  chainId: number
+  address: Address
+  abi: readonly unknown[]
+  functionName: string
+  args?: readonly unknown[]
+}
+
+/** `readContracts` with `allowFailure` yields this per call. */
+type BatchResult =
+  { status: 'success'; result: unknown } | { status: 'failure'; error: unknown }
+
+/**
+ * One multicall. `allowFailure` stays at its default `true`, so a *reverting
+ * call* lands as `status: 'failure'` instead of collapsing the batch.
+ *
+ * `allowFailure` says nothing about a *dead transport*: an unreachable RPC makes
+ * `readContracts` itself reject. `enrichPools` promises never to reject, so the
+ * whole batch degrades to per-call failures here — every field then reads as
+ * unavailable, which is exactly what an unreadable chain means.
+ *
+ * The same catch also swallows an *encoding* error — a mistyped `functionName`
+ * or a wrong arg tuple — which is a bug, not an outage, and would otherwise be
+ * indistinguishable from one. Log it in DEV so it surfaces at authoring time.
+ */
+async function batch(contracts: BatchCall[]): Promise<BatchResult[]> {
+  try {
+    return await readContracts(wagmiConfig, {
+      contracts: contracts as never,
+    })
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[chain] batched read rejected; degrading to unavailable', {
+        error,
+        functionNames: contracts.map((c) => c.functionName),
+      })
+    }
+    return contracts.map(() => ({ status: 'failure' as const, error }))
+  }
+}
+
+const isAddress = (v: unknown): v is Address =>
+  typeof v === 'string' && v.startsWith('0x')
+
+const asBigInt = (r: BatchResult | undefined): bigint | undefined =>
+  r?.status === 'success' && typeof r.result === 'bigint' ? r.result : undefined
+
+/** Compare the on-chain decimals against the registry. Both invalid arms drop
+ *  the token — an unreadable value is no more trustworthy than a wrong one. */
+function verifyDecimals(
+  registry: number,
+  r: BatchResult | undefined,
+): VerifiedDecimals {
+  if (r?.status !== 'success' || typeof r.result !== 'number') {
+    return { valid: false, reason: 'unreadable', registry }
+  }
+  if (r.result !== registry) {
+    return { valid: false, reason: 'mismatch', registry, onChain: r.result }
+  }
+  return { valid: true, decimals: registry }
 }
 
 export const liveChainAdapter: ChainAdapter = {
@@ -204,6 +276,158 @@ export const liveChainAdapter: ChainAdapter = {
       // Feed reverts PriceStale past 1h — surface as stale so pre-flight blocks.
       return { price: 0n, updatedAt: 0 }
     }
+  },
+
+  /**
+   * Two batched phases, because `totalSupplyAssets()` is read from a pool's
+   * *router* and the router address is itself an on-chain read.
+   *
+   *   phase 1 — `router()` for every pool missing from `routerCache`
+   *   phase 2 — balances + rate per routed pool, then decimals + price per token
+   *
+   * Never rejects. A reverting call marks one field unavailable; the rest of the
+   * list still renders. `getPrice`'s catch-all-to-zero cannot express that, which
+   * is why this method exists rather than a loop over it.
+   */
+  async enrichPools(pools: RawPool[]): Promise<PoolsEnrichment> {
+    const registryTokens = Object.keys(TOKEN_REGISTRY)
+
+    // ---- phase 1: resolve routers we do not already hold ----
+    const uncached = pools.filter(
+      (p) => !routerCache.has(p.lendingPool.toLowerCase()),
+    )
+    if (uncached.length > 0) {
+      const routers = await batch(
+        uncached.map((p) => ({
+          chainId: CHAIN_ID,
+          address: p.lendingPool,
+          abi: lendingPoolAbi,
+          functionName: 'router',
+        })),
+      )
+      uncached.forEach((p, i) => {
+        // `.at()` (not `[i]`) so a short result array is typed, not assumed.
+        const r = routers.at(i)
+        if (r?.status === 'success' && isAddress(r.result)) {
+          routerCache.set(p.lendingPool.toLowerCase(), r.result)
+          // The indexer also reports a router. The chain is the source of truth
+          // for the address we read balances from; a disagreement is worth
+          // knowing about, and comparing costs nothing here.
+          if (
+            import.meta.env.DEV &&
+            r.result.toLowerCase() !== p.router.toLowerCase()
+          ) {
+            console.warn(
+              `[chain] router mismatch for pool ${p.lendingPool}: chain says ${r.result}, indexer says ${p.router}`,
+            )
+          }
+        }
+      })
+    }
+
+    const routed = pools.filter((p) =>
+      routerCache.has(p.lendingPool.toLowerCase()),
+    )
+
+    // ---- phase 2: everything else, in one batch ----
+    const contracts: BatchCall[] = []
+    for (const p of routed) {
+      const router = routerCache.get(p.lendingPool.toLowerCase()) as Address
+      contracts.push(
+        {
+          chainId: CHAIN_ID,
+          address: router,
+          abi: lendingPoolRouterAbi,
+          functionName: 'totalSupplyAssets',
+        },
+        {
+          chainId: CHAIN_ID,
+          address: router,
+          abi: lendingPoolRouterAbi,
+          functionName: 'totalBorrowAssets',
+        },
+        {
+          chainId: CHAIN_ID,
+          address: CORE.interestRateModel,
+          abi: interestRateModelAbi,
+          functionName: 'calculateBorrowRate',
+          args: [router],
+        },
+      )
+    }
+    for (const token of registryTokens) {
+      contracts.push(
+        {
+          chainId: CHAIN_ID,
+          address: token as Address,
+          abi: erc20Abi,
+          functionName: 'decimals',
+        },
+        {
+          chainId: CHAIN_ID,
+          address: CORE.tokenDataStream,
+          abi: tokenDataStreamAbi,
+          functionName: 'latestRoundData',
+          args: [token],
+        },
+      )
+    }
+    const results = await batch(contracts)
+
+    // ---- assemble ----
+    const poolMap: Record<string, PoolEnrichment> = {}
+    for (const p of pools) {
+      poolMap[p.lendingPool.toLowerCase()] = {
+        pool: p.lendingPool,
+        size: { known: false },
+      }
+    }
+    routed.forEach((p, i) => {
+      const supply = asBigInt(results.at(i * 3))
+      const borrow = asBigInt(results.at(i * 3 + 1))
+      const rate = asBigInt(results.at(i * 3 + 2))
+      if (supply === undefined || borrow === undefined || rate === undefined) {
+        return // stays `{ known: false }` — a transport problem, not a hidden pool
+      }
+      poolMap[p.lendingPool.toLowerCase()] = {
+        pool: p.lendingPool,
+        size: {
+          known: true,
+          totalSupplyAssets: supply,
+          totalBorrowAssets: borrow,
+          borrowRateWad: rate,
+        },
+      }
+    })
+
+    const tokenMap: Record<string, TokenEnrichment> = {}
+    const tokenBase = routed.length * 3
+    registryTokens.forEach((token, i) => {
+      const decimalsResult = results.at(tokenBase + i * 2)
+      const priceResult = results.at(tokenBase + i * 2 + 1)
+
+      const decimals = verifyDecimals(
+        TOKEN_REGISTRY[token].decimals,
+        decimalsResult,
+      )
+
+      // (roundId, price, startedAt, updatedAt, answeredInRound)
+      let price: TokenEnrichment['price'] = { available: false }
+      if (
+        priceResult?.status === 'success' &&
+        Array.isArray(priceResult.result)
+      ) {
+        const tuple = priceResult.result as ReadonlyArray<bigint>
+        price = {
+          available: true,
+          data: { price: tuple[1], updatedAt: Number(tuple[3]) },
+        }
+      }
+
+      tokenMap[token] = { decimals, price }
+    })
+
+    return { pools: poolMap, tokens: tokenMap }
   },
 
   async getUserBorrowShares(pool, user) {

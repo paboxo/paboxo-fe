@@ -24,6 +24,22 @@ describe('useIrmCurve', () => {
     expect(curve?.currentUtil).toBe(market.utilization)
   })
 
+  it('leaves currentUtil undefined when the pool size is unknown', async () => {
+    // A pool whose balances did not resolve has no utilization. `?? 0` here
+    // would draw a confident "Current 0%" marker on the curve — a lie that
+    // reads exactly like a genuinely idle pool. The marker must be absent.
+    const unknown = { ...market, utilization: undefined }
+    const { result } = renderHook(() => useIrmCurve(unknown), {
+      wrapper: QueryWrapper,
+    })
+    await waitFor(() => {
+      expect(result.current.data).not.toBeNull()
+    })
+    expect(result.current.data?.currentUtil).toBeUndefined()
+    // The rest of the curve is still fully drawable without it.
+    expect(result.current.data?.points.length).toBeGreaterThan(0)
+  })
+
   it('samples the curve including the kink points', async () => {
     const { result } = renderHook(() => useIrmCurve(market), {
       wrapper: QueryWrapper,
@@ -38,7 +54,9 @@ describe('useIrmCurve', () => {
     expect(atMax?.borrowApr).toBeCloseTo(120, 1)
     // Monotonically non-decreasing.
     for (let i = 1; i < points.length; i += 1) {
-      expect(points[i].borrowApr).toBeGreaterThanOrEqual(points[i - 1].borrowApr)
+      expect(points[i].borrowApr).toBeGreaterThanOrEqual(
+        points[i - 1].borrowApr,
+      )
     }
   })
 })

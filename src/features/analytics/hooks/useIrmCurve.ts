@@ -21,10 +21,14 @@ export interface IrmCurve {
   params: IrmCurveParams
   optimalUtil: number
   maxUtil: number
-  currentUtil: number
+  /** `undefined` when the pool's utilization could not be read. */
+  currentUtil: number | undefined
 }
 
-function buildCurve(params: IrmCurveParams, currentUtil: number): IrmCurve {
+function buildCurve(
+  params: IrmCurveParams,
+  currentUtil: number | undefined,
+): IrmCurve {
   // Sample every 2%, plus the exact kink points so the corners stay sharp.
   const utils = new Set<number>([params.optimalUtilPct, params.maxUtilPct])
   for (let u = 0; u <= 100; u += 2) utils.add(u)

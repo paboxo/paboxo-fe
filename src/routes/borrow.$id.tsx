@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
+import { EmptyState } from '#/components/ui/states/EmptyState'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
-import { getMarketConfig } from '#/lib/contracts'
-import { useMarket } from '#/features/markets/hooks/useMarkets'
+import type { Address } from '#/lib/contracts'
+import { usePool } from '#/features/markets/hooks/usePools'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
+import { PoolBreadcrumb } from '#/components/layout/PoolBreadcrumb'
 import { PoolInfo } from '#/features/markets/components/PoolInfo'
 import { BorrowActions } from '#/features/borrow/components/BorrowActions'
 
@@ -14,35 +16,37 @@ export const Route = createFileRoute('/borrow/$id')({
 
 function BorrowPoolPage() {
   const { id } = Route.useParams()
-  const config = getMarketConfig(id)
-  const { data, isLoading } = useMarket(id)
+  // `$id` is the pool address, resolved case-insensitively from the shared
+  // query into one of four terminal states; the raw `id` never reaches a call.
+  const pool = usePool(id as Address)
   const { data: position } = useMarketPosition(id)
 
+  const collateralSymbol =
+    pool.status === 'ready' ? pool.market.collateralSymbol : undefined
   const hasCollateral =
     position?.supplies.some(
-      (row) => row.symbol === config?.collateralSymbol && row.valueUsd > 0,
+      (row) => row.symbol === collateralSymbol && row.valueUsd > 0,
     ) ?? false
 
   return (
     <main className="page-wrap flex flex-col gap-5 px-4 pb-12 pt-8">
-      <nav
-        aria-label="Breadcrumb"
-        className="text-sm text-[var(--sea-ink-soft)]"
-      >
-        <Link
-          to="/borrow"
-          className="font-semibold text-[var(--sea-ink)] no-underline"
-        >
-          Borrow
-        </Link>
-        {config ? <span> / {config.collateralSymbol}</span> : null}
-      </nav>
+      <PoolBreadcrumb
+        to="/borrow"
+        label="Borrow"
+        current={
+          pool.status === 'ready'
+            ? `${pool.market.collateralSymbol} · ${pool.market.borrowSymbol}`
+            : undefined
+        }
+      />
 
-      {!config ? (
+      {pool.status === 'pending' ? (
+        <LoadingCard />
+      ) : pool.status === 'unavailable' ? (
         <div className="flex flex-col items-center gap-3">
-          <ErrorState
-            title="Pool not found"
-            message="This pool doesn’t exist or hasn’t launched yet."
+          <EmptyState
+            title="Pool unavailable"
+            description="This pool is listed on the network but can’t be displayed — its token data couldn’t be verified."
           />
           <Link
             to="/borrow"
@@ -51,12 +55,23 @@ function BorrowPoolPage() {
             ← Back to Borrow
           </Link>
         </div>
-      ) : isLoading || !data ? (
-        <LoadingCard />
+      ) : pool.status === 'not-found' ? (
+        <div className="flex flex-col items-center gap-3">
+          <ErrorState
+            title="Pool not found"
+            message="This address isn’t a pool the network returned."
+          />
+          <Link
+            to="/borrow"
+            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+          >
+            ← Back to Borrow
+          </Link>
+        </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
           <PoolInfo
-            market={data}
+            market={pool.market}
             context="borrow"
             health={position?.healthFactor}
           />
@@ -65,7 +80,10 @@ function BorrowPoolPage() {
               title="Connect to borrow"
               description="Connect a wallet to supply collateral, borrow, repay, or withdraw in this pool."
             >
-              <BorrowActions market={data} hasCollateral={hasCollateral} />
+              <BorrowActions
+                market={pool.market}
+                hasCollateral={hasCollateral}
+              />
             </NetworkGuard>
           </aside>
         </div>

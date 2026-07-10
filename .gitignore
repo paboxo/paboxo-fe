@@ -17,3 +17,6 @@ todos.json
 
 # Reference material (smart contracts, integration docs) — not part of the frontend
 references/
+
+# references/ is a symlink into the sibling checkout
+references

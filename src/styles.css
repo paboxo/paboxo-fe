@@ -149,11 +149,10 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#app {
-  min-height: 100%;
-}
+/* No `min-height: 100%` here. It is unlayered, so it beat the `min-h-dvh`
+   utility on <body> and pinned the page to the content height — the footer
+   stopped ~300px above the viewport bottom. The app shell in __root owns the
+   full-height column now, and `#app` never existed in this DOM. */
 
 body {
   margin: 0;
@@ -197,7 +196,7 @@ pre code {
 }
 
 .page-wrap {
-  width: min(1080px, calc(100% - 2rem));
+  width: min(1280px, calc(100% - 2rem));
   margin-inline: auto;
 }
 

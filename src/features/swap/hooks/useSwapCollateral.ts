@@ -61,7 +61,11 @@ export function useSwapCollateral(pool: Address) {
       )
       // amountOutMinimum = expectedOut * (1 - slippage).
       const slippageBps = BigInt(Math.round(input.slippagePct * 100))
-      const amountOutMinimum = mulDiv(expectedOut, 10_000n - slippageBps, 10_000n)
+      const amountOutMinimum = mulDiv(
+        expectedOut,
+        10_000n - slippageBps,
+        10_000n,
+      )
 
       await write.run({
         preflight: preflightSwap({

@@ -5,7 +5,11 @@ import { currentDebt, debtSharesForAssets } from './debt'
 describe('currentDebt', () => {
   it('is shares × totalBorrowAssets / totalBorrowShares', () => {
     // 3,000 shares of a pool with 1,586,000 assets / 1,500,000 shares (6dp).
-    const debt = currentDebt(3_000_000_000n, 1_586_000_000000n, 1_500_000_000000n)
+    const debt = currentDebt(
+      3_000_000_000n,
+      1_586_000_000000n,
+      1_500_000_000000n,
+    )
     expect(debt).toBe((3_000_000_000n * 1_586_000_000000n) / 1_500_000_000000n)
   })
 
@@ -22,7 +26,11 @@ describe('currentDebt', () => {
 
 describe('debtSharesForAssets', () => {
   it('inverts currentDebt: assets × totalBorrowShares / totalBorrowAssets', () => {
-    const shares = debtSharesForAssets(500_000_000n, 1_586_000_000000n, 1_500_000_000000n)
+    const shares = debtSharesForAssets(
+      500_000_000n,
+      1_586_000_000000n,
+      1_500_000_000000n,
+    )
     expect(shares).toBe((500_000_000n * 1_500_000_000000n) / 1_586_000_000000n)
   })
 

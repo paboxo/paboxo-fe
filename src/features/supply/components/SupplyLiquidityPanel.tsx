@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import type { PreflightResult } from '#/components/action/ActionPanel'
-import { TOKENS } from '#/lib/contracts'
-import { formatTokenAmount, formatUsd, toNumber } from '#/lib/format'
+import { toNumber } from '#/lib/format'
+import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
@@ -17,27 +16,26 @@ const TABS: { key: LiquidityAction; label: string }[] = [
   { key: 'withdraw', label: 'Withdraw' },
 ]
 
-const positiveAmount = (amountTokens: number): PreflightResult =>
-  amountTokens > 0
-    ? { enabled: true }
-    : { enabled: false, reason: 'Enter an amount greater than zero.' }
-
 /**
- * Earn-side liquidity action host (U2, R6, AE1). Supplies pxUSDT *liquidity* to
- * the pool and withdraws it. The Supply tab caps at the user's wallet pxUSDT
- * balance; the Withdraw tab caps at what the user has supplied in *this* pool
- * (read from the pool via `useMarketPosition`), so they can only pull out what
- * they put in. Reuses the existing hooks unchanged (no new write logic).
+ * Earn-side liquidity action host. Supplies pxUSDT *liquidity* to the pool and
+ * withdraws it. The Supply tab caps at the user's wallet pxUSDT balance; the
+ * Withdraw tab caps at what the user has supplied in *this* pool.
+ *
+ * A stale collateral price blocks **Supply** but not **Withdraw** (R10 says
+ * "write actions"; this narrows it deliberately). Supplying adds exposure to a
+ * pool whose collateral cannot be valued. Withdrawing only removes it, and
+ * `withdrawLiquidity` makes no on-chain oracle call at all (AS8) — blocking it
+ * would trap a lender's own funds behind a feed they never depended on.
  */
 export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
   const [active, setActive] = useState<LiquidityAction>('supply')
   const supplyLiquidity = useSupplyLiquidity(market)
   const withdraw = useWithdraw(market)
-  const decimals = TOKENS.pxUSDT.decimals
+  const decimals = market.borrowDecimals
 
   // Wallet pxUSDT balance (supply cap) and the user's supplied liquidity in this
   // isolated pool (withdraw cap).
-  const { balance: walletBalance } = useTokenBalance(TOKENS.pxUSDT.address)
+  const { balance: walletBalance } = useTokenBalance(market.borrowAddress)
   const { data: position } = useMarketPosition(market.id)
   const suppliedRow = position?.supplies.find(
     (row) => row.symbol === market.borrowSymbol,
@@ -57,21 +55,6 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="island-shell flex items-center justify-between rounded-2xl px-4 py-3 text-sm">
-        <span className="text-[var(--sea-ink-soft)]">
-          Supplied in this pool
-        </span>
-        <span className="num font-semibold text-[var(--sea-ink)]">
-          {formatTokenAmount(suppliedBalance, decimals)} {market.borrowSymbol}
-          {suppliedRow ? (
-            <span className="text-[var(--sea-ink-soft)]">
-              {' '}
-              · {formatUsd(suppliedRow.valueUsd)}
-            </span>
-          ) : null}
-        </span>
-      </div>
-
       <div
         role="tablist"
         aria-label="Liquidity actions"
@@ -109,6 +92,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           maxTokens={toNumber(wallet, decimals)}
           maxLabel="Wallet balance"
           preflight={positiveAmount}
+          blockReason={staleBlockReason(market)}
           reviewApy={market.supplyApy}
           networkFeeUsd={0.42}
           txState={supplyLiquidity.state}

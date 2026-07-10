@@ -57,8 +57,8 @@ beforeEach(() => {
   })
 })
 
-function renderPanel() {
-  return render(<SupplyLiquidityPanel market={market} />, {
+function renderPanel(override?: typeof market) {
+  return render(<SupplyLiquidityPanel market={override ?? market} />, {
     wrapper: QueryWrapper,
   })
 }
@@ -80,10 +80,38 @@ describe('SupplyLiquidityPanel', () => {
     expect(screen.getByRole('tab', { name: 'Withdraw' })).toBeTruthy()
   })
 
-  it("shows the user's supplied balance in this pool", () => {
+  it('disables Supply with a linked reason when the collateral price is stale', () => {
+    renderPanel({ ...market, priceStale: true })
+    const button = screen.getByRole('button', { name: /Supply/ })
+    expect(button.hasAttribute('disabled')).toBe(true)
+
+    // The reason must reach a keyboard/screen-reader user. A native disabled
+    // button takes no hover and no focus, so a tooltip would never arrive.
+    const describedBy = button.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    const reason = document.getElementById(describedBy as string)
+    expect(reason?.textContent).toMatch(/price feed is stale/i)
+  })
+
+  it('leaves Withdraw enabled on a stale price — it never consulted the feed', () => {
+    renderPanel({ ...market, priceStale: true })
+    fireEvent.click(screen.getByRole('tab', { name: 'Withdraw' }))
+    const button = screen.getByRole('button', { name: /Withdraw/ })
+    // Disabled only by the zero-amount preflight, not by a hard block.
+    expect(button.getAttribute('aria-describedby')).toBeNull()
+  })
+
+  it('no longer renders a standalone supplied-balance row', () => {
     renderPanel()
-    expect(screen.getByText('Supplied in this pool')).toBeTruthy()
-    // 12,500 pxUSDT supplied (amount + USD value both surface it).
+    // The row duplicated what the Withdraw tab already shows; the supplied
+    // balance still caps the withdraw amount, it just has no island of its own.
+    expect(screen.queryByText('Supplied in this pool')).toBeNull()
+  })
+
+  it('still caps the withdraw amount at what the user supplied', () => {
+    renderPanel()
+    fireEvent.click(screen.getByRole('tab', { name: 'Withdraw' }))
+    // 12,500 pxUSDT supplied in this pool.
     expect(screen.getAllByText(/12,500/).length).toBeGreaterThan(0)
   })
 

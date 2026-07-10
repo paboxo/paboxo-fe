@@ -1,7 +1,6 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import type { PreflightResult } from '#/components/action/ActionPanel'
-import { TOKENS } from '#/lib/contracts'
+import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useRepay } from '../hooks/useRepay'
 
@@ -12,13 +11,8 @@ import { useRepay } from '../hooks/useRepay'
 export function RepayPanel({ market }: { market: MarketView }) {
   const { state, revert, repay } = useRepay(market)
 
-  const preflight = (amountTokens: number): PreflightResult =>
-    amountTokens > 0
-      ? { enabled: true }
-      : { enabled: false, reason: 'Enter an amount greater than zero.' }
-
   const onSubmit = (amountTokens: number) => {
-    void repay(parseUnits(amountTokens.toString(), TOKENS.pxUSDT.decimals))
+    void repay(parseUnits(amountTokens.toString(), market.borrowDecimals))
   }
 
   return (
@@ -26,10 +20,11 @@ export function RepayPanel({ market }: { market: MarketView }) {
       title={`Repay ${market.borrowSymbol}`}
       idleLabel="Repay"
       symbol={market.borrowSymbol}
-      decimals={TOKENS.pxUSDT.decimals}
+      decimals={market.borrowDecimals}
       priceUsd={1}
       maxTokens={1000}
-      preflight={preflight}
+      preflight={positiveAmount}
+      blockReason={staleBlockReason(market)}
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}

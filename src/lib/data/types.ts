@@ -110,6 +110,17 @@ export interface ChainAdapter {
   getIrmParams: (pool: Address) => Promise<IrmParams>
   /** Feed price for a collateral token; the real impl reverts `PriceStale` > 1h. */
   getPrice: (token: Address) => Promise<PriceData>
+  /**
+   * Batched reads for the whole pool list: balances and rates per pool, prices
+   * and verified decimals per registry token. Never rejects — every failure is
+   * carried in the result so one bad feed cannot blank the list.
+   *
+   * `enrichPools([])` is load-bearing, not a no-op: the token map is keyed off
+   * the registry, not off `pools`, so an empty list still verifies every token's
+   * decimals in one batch. `useTokenDecimals` depends on exactly that. An
+   * implementation that short-circuits on `pools.length === 0` breaks it.
+   */
+  enrichPools: (pools: RawPool[]) => Promise<PoolsEnrichment>
   getUserBorrowShares: (pool: Address, user: Address) => Promise<bigint>
   getUserSupplyShares: (pool: Address, user: Address) => Promise<bigint>
   /** Borrow-token decimals (from HelperUtils). */
@@ -249,7 +260,103 @@ export interface RatePoint {
   supplyApy: number
 }
 
+/**
+ * A lending market exactly as the indexer emits it (`lendingPoolCreateds`).
+ * Addresses stay `Address`; risk/rate params stay raw WAD `bigint` (1e18 = 100%);
+ * the display symbols are the indexer's `*Formatted` fields. The domain/market
+ * layer converts these — this is the untouched wire shape.
+ */
+export interface RawPool {
+  /** The LendingPool address (writes target this). */
+  lendingPool: Address
+  collateralToken: Address
+  /** Display symbol, e.g. `pxWHSK` or the cross-chain `pxWHSK-xc`. */
+  collateralTokenFormatted: string
+  borrowToken: Address
+  borrowTokenFormatted: string
+  /** Loan-to-value, WAD. */
+  ltv: bigint
+  /** Borrow rate at 0% utilization, WAD. */
+  baseRate: bigint
+  /** Borrow rate at the optimal utilization (the kink), WAD. */
+  rateAtOptimal: bigint
+  /** Utilization at the kink, WAD. */
+  optimalUtilization: bigint
+  /** Utilization at which the rate reaches maxRate, WAD. */
+  maxUtilization: bigint
+  /** Borrow rate at the max utilization, WAD. */
+  maxRate: bigint
+  /** Liquidation threshold, WAD. */
+  liquidationThreshold: bigint
+  /** Liquidation bonus, WAD. */
+  liquidationBonus: bigint
+  sharesToken: Address
+  /** The accounting router for this market (`LendingPool(pool).router()`). */
+  router: Address
+  /**
+   * Reserve factor, WAD (1e18 = 100%). Not emitted on `lendingPoolCreated` — it
+   * comes from the `tokenReserveFactorSets` table keyed by the pool's *router*
+   * (latest-timestamp-wins), and feeds `supplyRateWad`. `0n` when no row exists.
+   */
+  reserveFactorWad: bigint
+  contractChainId: number
+}
+
+// -------------------------------------------------------- batched enrichment
+
+/**
+ * A token's decimals, checked at runtime against the static registry.
+ *
+ * A `decimals()` that *reverts* is as untrustworthy as one that disagrees — it
+ * never "differs", so a naive mismatch check would silently keep using the
+ * unverified constant. Both invalid shapes drop the token.
+ */
+export type VerifiedDecimals =
+  | { valid: true; decimals: number }
+  | { valid: false; reason: 'mismatch'; registry: number; onChain: number }
+  | { valid: false; reason: 'unreadable'; registry: number }
+
+/** A feed price. Unavailable when `latestRoundData` reverts — usually `PriceStale`. */
+export type TokenPrice =
+  { available: true; data: PriceData } | { available: false }
+
+export interface TokenEnrichment {
+  decimals: VerifiedDecimals
+  price: TokenPrice
+}
+
+/**
+ * A pool's size. Unknown when its router or a balance read reverts — a transport
+ * problem, not a reason to hide the pool (it renders with em dashes instead).
+ */
+export type PoolSize =
+  | {
+      known: true
+      totalSupplyAssets: bigint
+      totalBorrowAssets: bigint
+      borrowRateWad: bigint
+    }
+  | { known: false }
+
+export interface PoolEnrichment {
+  pool: Address
+  size: PoolSize
+}
+
+/** The result of one `enrichPools` call. Both maps are keyed by lowercased address. */
+export interface PoolsEnrichment {
+  pools: Record<string, PoolEnrichment>
+  tokens: Record<string, TokenEnrichment>
+}
+
 export interface IndexerAdapter {
+  /**
+   * The live lending markets. Unlike the other reads this REJECTS on any indexer
+   * fault (network error, non-OK response, GraphQL `errors`, or a malformed
+   * body) so an outage renders an error state rather than a false "no pools".
+   * It resolves `[]` only for a well-formed empty result.
+   */
+  getPools: () => Promise<RawPool[]>
   getUserHistory: (user: Address) => Promise<HistoryEvent[]>
   getProtocolAggregates: () => Promise<ProtocolAggregates>
   getCrossChainStatus: (messageId: Hash) => Promise<CrossChainStatus>

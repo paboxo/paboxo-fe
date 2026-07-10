@@ -43,4 +43,20 @@ describe('PoolInfo', () => {
     // No health meter without a health value.
     expect(screen.queryByRole('group', { name: /Health/ })).toBeNull()
   })
+
+  // U9: the stale badge appears on the detail header, and the price tile em-dashes
+  // rather than lying with a zero (R9). A healthy market carries no badge.
+  it('shows the stale badge and an em-dash price tile for a stale pool', () => {
+    const stale = { ...market, priceStale: true, priceUsd: undefined }
+    renderPoolInfo(<PoolInfo market={stale} context="earn" />)
+    const badge = screen.getByText('Price stale')
+    expect(badge.getAttribute('role')).toBe('status')
+    // The price tile renders an em dash paired with a screen-reader word.
+    expect(screen.getByText('Unavailable')).toBeTruthy()
+  })
+
+  it('shows no stale badge for a healthy pool', () => {
+    renderPoolInfo(<PoolInfo market={market} context="earn" />)
+    expect(screen.queryByText('Price stale')).toBeNull()
+  })
 })

@@ -3,7 +3,7 @@ import { useDensity } from '#/components/density/useDensity'
 import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { truncateAddress } from '#/components/ui/wallet/AccountPill'
-import { HASHKEY } from '#/lib/contracts'
+import { HASHKEY, TOKENS } from '#/lib/contracts'
 import { APYBreakdown } from './APYBreakdown'
 import { MarketActions } from './MarketActions'
 import type { MarketView } from '../types'
@@ -39,6 +39,9 @@ export function MarketDetail({ market }: { market: MarketView }) {
             <TokenPairGlyph
               collateralSymbol={market.collateralSymbol}
               borrowSymbol={market.borrowSymbol}
+              collateralAddress={market.collateralAddress}
+              // Every pool borrows pxUSDT today.
+              borrowAddress={TOKENS.pxUSDT.address}
               size={38}
             />
             <div>
@@ -66,7 +69,7 @@ export function MarketDetail({ market }: { market: MarketView }) {
           </div>
         </div>
 
-        <APYBreakdown base={market.supplyApy} rewards={market.rewardsApy} />
+        <APYBreakdown base={market.supplyApy} />
 
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <StatTile

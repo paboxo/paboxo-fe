@@ -1,17 +1,19 @@
 import { formatPercent } from '#/lib/format'
 
 export interface APYValueProps {
-  /** APY in percent units (e.g. 5.24 for 5.24%). */
-  apy: number
+  /** APY in percent units (e.g. 5.24 for 5.24%). `undefined` renders an em dash —
+   *  `formatPercent` handles it — because a zero APY and an unreadable one are
+   *  different facts. */
+  apy: number | undefined
   /** Optional reward APY split out so provenance (real yield vs incentives) is visible. */
   rewards?: number
   size?: 'sm' | 'lg'
 }
 
 /**
- * APY as the visual hero (U3, R4, R31). Palm-green, mono at row scale and
- * Fraunces at hero scale; rewards are a separate tinted chip so users can see
- * how much of the yield is incentives.
+ * APY as the visual hero. Palm-green, mono at row scale and Fraunces at hero
+ * scale; rewards are a separate tinted chip so users can see how much of the
+ * yield is incentives.
  */
 export function APYValue({ apy, rewards, size = 'sm' }: APYValueProps) {
   const large = size === 'lg'

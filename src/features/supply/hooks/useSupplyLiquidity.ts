@@ -39,7 +39,8 @@ export function useSupplyLiquidity(market: MarketView) {
           priceUpdatedAt: price.updatedAt,
           nowSeconds: unixNow(),
         }),
-        send: () => chain.supplyLiquidity(market.poolAddress, beneficiary, amount),
+        send: () =>
+          chain.supplyLiquidity(market.poolAddress, beneficiary, amount),
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
     },

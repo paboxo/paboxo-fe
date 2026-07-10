@@ -1,12 +1,9 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import { AppHeader } from '../components/layout/AppHeader'
+import { AppShell } from '../components/layout/AppShell'
 import { DensityProvider } from '../components/density/DensityProvider'
 import { Web3Provider } from '../lib/web3/Web3Provider'
-import ConnectButton from '../components/wallet/ConnectButton'
-import { NetworkStatus } from '../components/wallet/NetworkStatus'
 
 import appCss from '../styles.css?url'
 
@@ -43,15 +40,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="flex min-h-dvh flex-col font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <Web3Provider>
           <DensityProvider>
-            <AppHeader
-              connect={<ConnectButton />}
-              networkStatus={<NetworkStatus />}
-            />
-            <div className="flex flex-1 flex-col">{children}</div>
-            <Footer />
+            <AppShell>{children}</AppShell>
           </DensityProvider>
         </Web3Provider>
         <TanStackDevtools

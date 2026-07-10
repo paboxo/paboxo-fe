@@ -18,10 +18,16 @@ function dayLabel(timestampSeconds: number): string {
 
 /** Presentational borrow/supply rate line chart (U5), themed to the blue palette. */
 export function RateChart({ data }: { data: RatePoint[] }) {
-  const rows = data.map((point) => ({ ...point, label: dayLabel(point.timestamp) }))
+  const rows = data.map((point) => ({
+    ...point,
+    label: dayLabel(point.timestamp),
+  }))
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
+      <LineChart
+        data={rows}
+        margin={{ top: 8, right: 8, bottom: 0, left: -12 }}
+      >
         <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
         <XAxis
           dataKey="label"

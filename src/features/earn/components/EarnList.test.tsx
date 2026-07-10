@@ -1,53 +1,110 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MOCK_MARKETS } from '#/features/markets/mock'
-import { useMarkets } from '#/features/markets/hooks/useMarkets'
+import { PX_WHSK, makeMarket } from '#/features/markets/testFixtures'
+import type { MarketView } from '#/features/markets/types'
+import { usePools } from '#/features/markets/hooks/usePools'
 import { EarnList } from './EarnList'
 
-vi.mock('#/features/markets/hooks/useMarkets', () => ({ useMarkets: vi.fn() }))
+vi.mock('#/features/markets/hooks/usePools', () => ({ usePools: vi.fn() }))
 
-const mockUseMarkets = vi.mocked(useMarkets)
+const mockUsePools = vi.mocked(usePools)
 
-beforeEach(() => {
-  mockUseMarkets.mockReturnValue({
-    data: MOCK_MARKETS,
+function setPools(data: MarketView[]): void {
+  mockUsePools.mockReturnValue({
+    data,
     isLoading: false,
     error: null,
+    sharedTokenFailed: false,
   })
+}
+
+/** The `/earn/{id}` targets of each rendered row, in DOM order. */
+function earnLinkHrefs(): string[] {
+  return screen
+    .getAllByRole('link')
+    .map((a) => a.getAttribute('href') ?? '')
+    .filter((href) => href.startsWith('/earn/'))
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
 })
 
-// Covers R5.
+// Covers R14, R26.
 describe('EarnList', () => {
-  it('renders a table of pools with pool-level metrics (no wallet needed)', () => {
+  it('orders two pools with different total supply largest-first', () => {
+    setPools([
+      makeMarket({ id: '0xbbb', totalSupplyAssets: 100n }),
+      makeMarket({ id: '0xaaa', totalSupplyAssets: 50n }),
+    ])
     render(<EarnList />)
-    // Table headers for the pool metrics.
-    expect(screen.getByText('Supply APY')).toBeTruthy()
-    expect(screen.getByText('Total supply')).toBeTruthy()
-    expect(screen.getByText('Interest rate')).toBeTruthy()
-    expect(screen.getByText('Liquidity')).toBeTruthy()
-    // One row per pool, each linking into its lend page.
-    const rows = screen.getAllByRole('row')
-    // header row + one per market
-    expect(rows.length).toBe(MOCK_MARKETS.length + 1)
-    expect(screen.getAllByRole('link')[0].getAttribute('href')).toContain(
-      '/earn/',
+    // Larger supply first, even though its address sorts later — proves supply
+    // ranking, not address ordering.
+    expect(earnLinkHrefs()).toEqual(['/earn/0xbbb', '/earn/0xaaa'])
+  })
+
+  it('ranks the larger pool first even when it has no free liquidity', () => {
+    // Same fixtures the Borrow suite uses: A is bigger but fully borrowed, B is
+    // smaller but has free liquidity. Earn ranks by size, so A leads.
+    setPools([
+      makeMarket({
+        id: '0xaaa',
+        totalSupplyAssets: 100n,
+        totalBorrowAssets: 100n,
+      }),
+      makeMarket({
+        id: '0xbbb',
+        totalSupplyAssets: 50n,
+        totalBorrowAssets: 0n,
+      }),
+    ])
+    render(<EarnList />)
+    expect(earnLinkHrefs()).toEqual(['/earn/0xaaa', '/earn/0xbbb'])
+  })
+
+  it('breaks an identical size signal by ascending pool address', () => {
+    setPools([
+      makeMarket({ id: '0xbbb', totalSupplyAssets: 100n }),
+      makeMarket({ id: '0xaaa', totalSupplyAssets: 100n }),
+    ])
+    render(<EarnList />)
+    expect(earnLinkHrefs()).toEqual(['/earn/0xaaa', '/earn/0xbbb'])
+  })
+
+  it('sorts an unknown-size pool below a genuinely zero-size pool', () => {
+    setPools([
+      makeMarket({
+        id: '0xaaa',
+        sizeKnown: false,
+        totalSupplyAssets: undefined,
+      }),
+      makeMarket({ id: '0xbbb', sizeKnown: true, totalSupplyAssets: 0n }),
+    ])
+    render(<EarnList />)
+    // Zero is a real (known) zero; unknown always sinks last, ignoring address.
+    expect(earnLinkHrefs()).toEqual(['/earn/0xbbb', '/earn/0xaaa'])
+  })
+
+  it('renders a real logo image for a registry token (address reached the glyph)', () => {
+    setPools([makeMarket({ id: '0xaaa', collateralAddress: PX_WHSK })])
+    const { container } = render(<EarnList />)
+    const img = container.querySelector('img')
+    expect(img).not.toBeNull()
+    expect(img?.getAttribute('src')).toContain('/tokens/whsx.webp')
+  })
+
+  it('links each row to its pool address under /earn', () => {
+    setPools([makeMarket({ id: '0xaaa' })])
+    render(<EarnList />)
+    expect(earnLinkHrefs()).toEqual(['/earn/0xaaa'])
+  })
+
+  it('owns no loading, error, or empty markup of its own', () => {
+    const source = readFileSync(
+      'src/features/earn/components/EarnList.tsx',
+      'utf8',
     )
-  })
-
-  it('shows no connect-wallet prompt on the list', () => {
-    render(<EarnList />)
-    expect(screen.queryByText(/Connect a wallet/)).toBeNull()
-  })
-
-  it('renders a loading state while pools load', () => {
-    mockUseMarkets.mockReturnValue({ data: [], isLoading: true, error: null })
-    render(<EarnList />)
-    expect(screen.getAllByRole('status').length).toBeGreaterThan(0)
-  })
-
-  it('renders an empty state when there are no pools', () => {
-    mockUseMarkets.mockReturnValue({ data: [], isLoading: false, error: null })
-    render(<EarnList />)
-    expect(screen.getByText('No pools yet')).toBeTruthy()
+    expect(source).not.toMatch(/LoadingCard|ErrorState|EmptyState/)
   })
 })

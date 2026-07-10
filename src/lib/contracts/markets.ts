@@ -2,6 +2,14 @@
  * The four live isolated lending markets on HashKey 177 (all borrow pxUSDT).
  * Per-market two-slope IRM tiers keyed by collateral risk (from DEPLOYMENT.md).
  * `router` for each pool is resolved at runtime via LendingPool(pool).router().
+ *
+ * `ltv` and `liqThreshold` are NOT the risk-tiered values DEPLOYMENT.md lists.
+ * Every pool actually shipped at 70/75: `LendingPool(pool).router().ltv()`
+ * returns `7e17` on all four routers, and the indexer's `LendingPoolCreated`
+ * event carries `liquidationThreshold: 75%` for all four. (No on-chain
+ * `liquidationThreshold()` getter exists, so the creation event is the only
+ * source.) The tiered numbers were a plan that never deployed; trusting them
+ * made `usePosition` understate the liquidation price.
  */
 import type { Address } from './chains'
 import { CROSS_CHAIN, PRICE_FEEDS, TOKENS } from './addresses'
@@ -59,8 +67,8 @@ export const MARKETS: MarketConfig[] = [
     collateralDecimals: TOKENS.pxWBTC.decimals,
     borrowSymbol: 'pxUSDT',
     oracleFeed: PRICE_FEEDS.pxWBTC.address,
-    ltv: 80,
-    liqThreshold: 85,
+    ltv: 70,
+    liqThreshold: 75,
     optimalUtil: 85,
     maxUtil: 95,
     baseRate: 0,
@@ -78,8 +86,8 @@ export const MARKETS: MarketConfig[] = [
     collateralDecimals: TOKENS.pxWETH.decimals,
     borrowSymbol: 'pxUSDT',
     oracleFeed: PRICE_FEEDS.pxWETH.address,
-    ltv: 80,
-    liqThreshold: 85,
+    ltv: 70,
+    liqThreshold: 75,
     optimalUtil: 85,
     maxUtil: 95,
     baseRate: 0,
@@ -98,8 +106,8 @@ export const MARKETS: MarketConfig[] = [
     collateralDecimals: 18,
     borrowSymbol: 'pxUSDT',
     oracleFeed: PRICE_FEEDS['pxWHSK-xchain'].address,
-    ltv: 65,
-    liqThreshold: 72,
+    ltv: 70,
+    liqThreshold: 75,
     optimalUtil: 70,
     maxUtil: 90,
     baseRate: 0.5,
@@ -111,6 +119,18 @@ export const MARKETS: MarketConfig[] = [
   },
 ]
 
+/**
+ * Resolve a market by either identity in circulation.
+ *
+ * `MarketConfig.id` is a human slug (`pxwhsk`), but `MarketView.id` is now the
+ * lowercased pool address — the routable identity the indexer supplies. Callers
+ * hold one or the other depending on which layer they came from, so match both.
+ * Matching only the slug silently disabled `useMarketPosition`, which capped the
+ * Withdraw tab at zero and hid a lender's own supplied liquidity.
+ */
 export function getMarketConfig(id: string): MarketConfig | undefined {
-  return MARKETS.find((market) => market.id === id)
+  const key = id.toLowerCase()
+  return MARKETS.find(
+    (market) => market.id === id || market.pool.toLowerCase() === key,
+  )
 }

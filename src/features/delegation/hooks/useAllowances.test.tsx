@@ -70,7 +70,11 @@ describe('useDelegation', () => {
     await act(async () => {
       await result.current.grantBorrow(DELEGATE, 1_000_000_000n)
     })
-    expect(grant).toHaveBeenCalledWith(market.poolAddress, DELEGATE, 1_000_000_000n)
+    expect(grant).toHaveBeenCalledWith(
+      market.poolAddress,
+      DELEGATE,
+      1_000_000_000n,
+    )
     expect(result.current.state).toBe('confirmed')
     grant.mockRestore()
   })

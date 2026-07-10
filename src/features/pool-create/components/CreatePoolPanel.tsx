@@ -4,6 +4,7 @@ import { ActionButton } from '#/components/ui/ActionButton'
 import { TOKENS } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
 import { WAD } from '#/lib/math'
+import { useTokenDecimals } from '#/features/shared/useTokenDecimals'
 import { useCreatePool } from '../hooks/useCreatePool'
 
 const COLLATERAL_OPTIONS: Exclude<TokenSymbol, 'pxUSDT'>[] = [
@@ -15,24 +16,35 @@ const COLLATERAL_OPTIONS: Exclude<TokenSymbol, 'pxUSDT'>[] = [
 /**
  * Create a lending pool (U15, R25). The below-minimum seed is blocked before
  * submit; deploy carries a deliberate acknowledgement and seeds via the Factory.
+ *
+ * Unlike the pool panels this form has no market to inherit verified decimals
+ * from, so it reads `decimals()` for the seed token itself and refuses to submit
+ * until that read succeeds (R31). Falling back to the registry constant would
+ * scale the seed by a number nothing has checked.
  */
 export function CreatePoolPanel({ minSeed = 1000 }: { minSeed?: number }) {
   const { state, createPool } = useCreatePool()
-  const [collateral, setCollateral] = useState<
-    Exclude<TokenSymbol, 'pxUSDT'>
-  >('pxWHSK')
+  const [collateral, setCollateral] =
+    useState<Exclude<TokenSymbol, 'pxUSDT'>>('pxWHSK')
   const [seed, setSeed] = useState('')
   const [confirmed, setConfirmed] = useState(false)
+
+  const seedToken = TOKENS.pxUSDT.address
+  const { decimals: seedDecimals, isLoading: decimalsLoading } =
+    useTokenDecimals(seedToken)
 
   const seedNum = seed === '' ? 0 : Number(seed)
   const belowMin = seedNum < minSeed
   const showMinError = seed !== '' && belowMin
 
+  const decimalsUnverified = !decimalsLoading && seedDecimals === undefined
+
   const onCreate = () => {
+    if (seedDecimals === undefined) return
     void createPool({
       collateralToken: TOKENS[collateral].address,
-      seedAmount: parseUnits(seed || '0', TOKENS.pxUSDT.decimals),
-      minSeed: parseUnits(String(minSeed), TOKENS.pxUSDT.decimals),
+      seedAmount: parseUnits(seed || '0', seedDecimals),
+      minSeed: parseUnits(String(minSeed), seedDecimals),
       // Default LTV for a new market; a full form would collect this.
       ltv: (70n * WAD) / 100n,
     })
@@ -96,10 +108,30 @@ export function CreatePoolPanel({ minSeed = 1000 }: { minSeed?: number }) {
         I understand I’m deploying a market others can use.
       </label>
 
+      {decimalsUnverified ? (
+        <p
+          className="m-0 text-[0.78rem]"
+          role="alert"
+          id="seed-decimals-unverified"
+          style={{ color: 'var(--danger)' }}
+        >
+          Could not verify pxUSDT decimals on-chain. Seeding is blocked until
+          the read succeeds.
+        </p>
+      ) : null}
+
       <ActionButton
         state={state}
         idleLabel="Create pool"
-        disabled={belowMin || !confirmed}
+        disabled={
+          belowMin ||
+          !confirmed ||
+          decimalsLoading ||
+          seedDecimals === undefined
+        }
+        aria-describedby={
+          decimalsUnverified ? 'seed-decimals-unverified' : undefined
+        }
         onClick={onCreate}
       />
     </div>
