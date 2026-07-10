@@ -5,6 +5,7 @@
  */
 import type { Address } from '#/lib/contracts'
 import { MARKETS } from '#/lib/contracts'
+import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import type {
   BorrowParams,
   ChainAdapter,
@@ -13,9 +14,13 @@ import type {
   IrmParams,
   LiquidatableStatus,
   MarketTotals,
+  PoolEnrichment,
+  PoolsEnrichment,
   PriceData,
   RepayParams,
   SwapParams,
+  TokenEnrichment,
+  VerifiedDecimals,
 } from '../types'
 import {
   BALANCE_FIXTURES,
@@ -43,6 +48,32 @@ const NOT_LIQUIDATABLE: LiquidatableStatus = {
 }
 
 const key = (address: Address): string => address.toLowerCase()
+
+/**
+ * Forced enrichment failures, so tests can reach every degraded branch without
+ * a live chain. All keys are lowercased addresses. Empty by default — preview
+ * mode renders a healthy protocol.
+ */
+export interface EnrichFailureFixture {
+  /** Pools whose router or balance reads revert — rendered, size unknown. */
+  unknownSizePools?: string[]
+  /** Tokens whose `decimals()` reverts — the token is dropped. */
+  unreadableDecimals?: string[]
+  /** Tokens whose `decimals()` disagrees with the registry — also dropped. */
+  mismatchedDecimals?: Record<string, number>
+  /** Tokens whose feed reverts `PriceStale` — rendered, price unavailable. */
+  stalePrices?: string[]
+}
+
+let enrichFailures: EnrichFailureFixture = {}
+
+export function setMockEnrichFailures(fixture: EnrichFailureFixture): void {
+  enrichFailures = fixture
+}
+
+export function resetMockEnrichFailures(): void {
+  enrichFailures = {}
+}
 
 /** Simulate a small network round-trip so loading states are reachable. */
 function resolve<T>(value: T): Promise<T> {
@@ -106,6 +137,57 @@ export const mockChainAdapter: ChainAdapter = {
   },
   getTokenBalance(token) {
     return resolve(BALANCE_FIXTURES[key(token)] ?? 0n)
+  },
+
+  enrichPools(pools): Promise<PoolsEnrichment> {
+    const f = enrichFailures
+
+    const poolMap: Record<string, PoolEnrichment> = {}
+    for (const p of pools) {
+      const k = key(p.lendingPool)
+      const fixture = POOL_FIXTURES[k]
+      if (f.unknownSizePools?.includes(k) || !fixture) {
+        poolMap[k] = { pool: p.lendingPool, size: { known: false } }
+        continue
+      }
+      poolMap[k] = {
+        pool: p.lendingPool,
+        size: {
+          known: true,
+          totalSupplyAssets: fixture.totals.totalSupplyAssets,
+          totalBorrowAssets: fixture.totals.totalBorrowAssets,
+          borrowRateWad: fixture.borrowRateWad,
+        },
+      }
+    }
+
+    const tokenMap: Record<string, TokenEnrichment> = {}
+    for (const [token, entry] of Object.entries(TOKEN_REGISTRY)) {
+      let decimals: VerifiedDecimals = { valid: true, decimals: entry.decimals }
+      if (f.unreadableDecimals?.includes(token)) {
+        decimals = { valid: false, reason: 'unreadable', registry: entry.decimals }
+      } else if (f.mismatchedDecimals?.[token] !== undefined) {
+        decimals = {
+          valid: false,
+          reason: 'mismatch',
+          registry: entry.decimals,
+          onChain: f.mismatchedDecimals[token],
+        }
+      }
+
+      const fixturePrice = PRICE_FIXTURES[token]
+      const price: TokenEnrichment['price'] =
+        f.stalePrices?.includes(token) || fixturePrice === undefined
+          ? { available: false }
+          : {
+              available: true,
+              data: { price: fixturePrice, updatedAt: Math.floor(Date.now() / 1000) },
+            }
+
+      tokenMap[token] = { decimals, price }
+    }
+
+    return resolve({ pools: poolMap, tokens: tokenMap })
   },
   getBorrowDelegation() {
     return resolve(0n)
