@@ -249,7 +249,50 @@ export interface RatePoint {
   supplyApy: number
 }
 
+/**
+ * A lending market exactly as the indexer emits it (`lendingPoolCreateds`).
+ * Addresses stay `Address`; risk/rate params stay raw WAD `bigint` (1e18 = 100%);
+ * the display symbols are the indexer's `*Formatted` fields. The domain/market
+ * layer converts these — this is the untouched wire shape.
+ */
+export interface RawPool {
+  /** The LendingPool address (writes target this). */
+  lendingPool: Address
+  collateralToken: Address
+  /** Display symbol, e.g. `pxWHSK` or the cross-chain `pxWHSK-xc`. */
+  collateralTokenFormatted: string
+  borrowToken: Address
+  borrowTokenFormatted: string
+  /** Loan-to-value, WAD. */
+  ltv: bigint
+  /** Borrow rate at 0% utilization, WAD. */
+  baseRate: bigint
+  /** Borrow rate at the optimal utilization (the kink), WAD. */
+  rateAtOptimal: bigint
+  /** Utilization at the kink, WAD. */
+  optimalUtilization: bigint
+  /** Utilization at which the rate reaches maxRate, WAD. */
+  maxUtilization: bigint
+  /** Borrow rate at the max utilization, WAD. */
+  maxRate: bigint
+  /** Liquidation threshold, WAD. */
+  liquidationThreshold: bigint
+  /** Liquidation bonus, WAD. */
+  liquidationBonus: bigint
+  sharesToken: Address
+  /** The accounting router for this market (`LendingPool(pool).router()`). */
+  router: Address
+  contractChainId: number
+}
+
 export interface IndexerAdapter {
+  /**
+   * The live lending markets. Unlike the other reads this REJECTS on any indexer
+   * fault (network error, non-OK response, GraphQL `errors`, or a malformed
+   * body) so an outage renders an error state rather than a false "no pools".
+   * It resolves `[]` only for a well-formed empty result.
+   */
+  getPools: () => Promise<RawPool[]>
   getUserHistory: (user: Address) => Promise<HistoryEvent[]>
   getProtocolAggregates: () => Promise<ProtocolAggregates>
   getCrossChainStatus: (messageId: Hash) => Promise<CrossChainStatus>

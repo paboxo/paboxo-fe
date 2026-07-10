@@ -1,98 +1,177 @@
 /**
- * GraphQL documents for the Paboxo subgraph (U8), authored against the entities
- * in INTEGRATION-INDEXER.md so the real indexer swap (U19) is drop-in. The mock
- * indexer adapter serves fixtures today; the live adapter runs these.
+ * GraphQL documents for the live Ponder indexer at `VITE_INDEXER_URL`.
  *
- * Note: live pool totals (totalSupplyAssets/BorrowAssets) are NOT in the
- * subgraph — they are read from the router via RPC (chain adapter), so protocol
- * TVL/utilization never come from these queries (R13).
+ * The endpoint is Ponder-shaped: every table is pluralised and wraps its rows in
+ * an `items` array, and root-collection args are `where` / `orderBy` /
+ * `orderDirection` / `limit` (there is no `first`, and no protocol singleton or
+ * rate-history collection — the earlier documents were written against a schema
+ * that never shipped). `orderBy` takes a field name as a string; `orderDirection`
+ * is `"asc"` / `"desc"`.
+ *
+ * Note: live pool totals (totalSupply/BorrowAssets) come from the router via RPC
+ * (chain adapter), so protocol TVL/utilization never come from these queries.
  */
 
-/** A user's activity across supply/borrow/repay/withdraw/liquidation/cross-chain. */
-export const USER_HISTORY_QUERY = /* GraphQL */ `
-  query UserHistory($user: Bytes!, $first: Int = 50) {
-    supplies(where: { user: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      timestamp
-      txHash
-    }
-    borrows(where: { user: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      timestamp
-      txHash
-    }
-    repays(where: { user: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      timestamp
-      txHash
-    }
-    withdraws(where: { user: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      timestamp
-      txHash
-    }
-    liquidations(where: { borrower: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      timestamp
-      txHash
-    }
-    crossChainTransfers(where: { user: $user }, first: $first, orderBy: timestamp, orderDirection: desc) {
-      id
-      pool
-      token
-      amount
-      messageId
-      status
-      timestamp
-      txHash
+/** The live lending markets (`lendingPoolCreateds`). Drives `getPools`. */
+export const POOLS_QUERY = /* GraphQL */ `
+  query Pools($chainId: Int = 177) {
+    lendingPoolCreateds(where: { contractChainId: $chainId }) {
+      items {
+        id
+        lendingPool
+        collateralToken
+        borrowToken
+        collateralTokenFormatted
+        borrowTokenFormatted
+        ltv
+        baseRate
+        rateAtOptimal
+        optimalUtilization
+        maxUtilization
+        maxRate
+        liquidationThreshold
+        liquidationBonus
+        sharesToken
+        router
+        contractChainId
+      }
     }
   }
 `
 
-/** Protocol aggregates the indexer owns — cumulative volume + counts (NOT TVL). */
+/** A user's activity across supply/withdraw/borrow/repay/liquidation/cross-chain. */
+export const USER_HISTORY_QUERY = /* GraphQL */ `
+  query UserHistory($user: String!, $limit: Int = 50) {
+    supplyLiquiditys(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        amount
+        timestamp
+        txHash
+      }
+    }
+    withdrawLiquiditys(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        amount
+        timestamp
+        txHash
+      }
+    }
+    borrowDebts(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        amount
+        timestamp
+        txHash
+      }
+    }
+    repayByPositions(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        amount
+        timestamp
+        txHash
+      }
+    }
+    liquidations(
+      where: { borrower: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        borrowToken
+        userBorrowAssets
+        timestamp
+        txHash
+      }
+    }
+    borrowDebtCrossChains(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $limit
+    ) {
+      items {
+        id
+        lendingPoolAddress
+        amount
+        timestamp
+        txHash
+      }
+    }
+  }
+`
+
+/**
+ * Protocol activity counts. There is no aggregates entity in this schema, so the
+ * only indexer-owned figure is a transaction count summed from the activity
+ * tables' `totalCount`; USD volumes come from elsewhere and stay 0 here.
+ */
 export const PROTOCOL_AGGREGATES_QUERY = /* GraphQL */ `
   query ProtocolAggregates {
-    protocol(id: "paboxo") {
-      cumulativeVolumeUsd
-      totalBorrowsUsd
-      totalSuppliesUsd
-      transactionCount
-    }
+    supplyLiquiditys { totalCount }
+    withdrawLiquiditys { totalCount }
+    borrowDebts { totalCount }
+    repayByPositions { totalCount }
+    liquidations { totalCount }
   }
 `
 
-/** Track a cross-chain supply between its Base send and HashKey delivery. */
+/** Track a cross-chain supply — delivered once its inbound leg lands on HashKey. */
 export const CROSS_CHAIN_STATUS_QUERY = /* GraphQL */ `
-  query CrossChainStatus($messageId: Bytes!) {
-    crossChainTransfer(id: $messageId) {
-      messageId
-      status
+  query CrossChainStatus($messageId: String!) {
+    crossChainTransfers(where: { id: $messageId }, limit: 1) {
+      items {
+        id
+        inboundTxHash
+        inboundAt
+      }
     }
   }
 `
 
-/** A market's borrow/supply rate history for charts (rates are WAD strings). */
+/** A market's borrow/supply APY history for charts (rates are WAD strings). */
 export const RATE_HISTORY_QUERY = /* GraphQL */ `
-  query RateHistory($pool: Bytes!, $first: Int = 60) {
-    lendingPoolRates(where: { pool: $pool }, first: $first, orderBy: timestamp, orderDirection: asc) {
-      timestamp
-      borrowRate
-      supplyRate
+  query RateHistory($pool: String!, $limit: Int = 60) {
+    lendingPoolRateSnapshots(
+      where: { lendingPool: $pool }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        timestamp
+        borrowApy
+        supplyApy
+      }
     }
   }
 `
