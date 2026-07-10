@@ -113,6 +113,23 @@ function driveBatches(pools: RawPool[], s: Scenario) {
   mockReads.mockImplementation((_config, args) => {
     const contracts = (args as unknown as { contracts: SentCall[] }).contracts
 
+    /** Resolve a router back to its pool's trio, or fail loudly. */
+    const trioForRouter = (
+      router: string,
+      what: string,
+    ): [Result, Result, Result] => {
+      const pool = pools.find(
+        (p) => routerFor(p.lendingPool).toLowerCase() === router,
+      )
+      if (pool === undefined) {
+        throw new Error(
+          `${what}: address is not any pool's router. Balance and rate reads ` +
+            `must target LendingPool(pool).router(), not the pool.`,
+        )
+      }
+      return s.balances?.[pool.lendingPool.toLowerCase()] ?? DEFAULT_TRIO
+    }
+
     const answer = (c: SentCall): Result => {
       const at = c.address.toLowerCase()
 
@@ -121,27 +138,22 @@ function driveBatches(pools: RawPool[], s: Scenario) {
         return s.routers?.[at] ?? ok(routerFor(at as Address))
       }
 
-      // Balances are asked of a router; map back to the pool that owns it.
+      // Balances are asked of a **router**, never of the pool (the two-address
+      // rule). An address that owns no router is a bug in the adapter, so refuse
+      // to answer rather than fall through to a default that happens to match
+      // what the happy-path test expects.
       if (
         c.functionName === 'totalSupplyAssets' ||
         c.functionName === 'totalBorrowAssets'
       ) {
-        const pool = pools.find(
-          (p) => routerFor(p.lendingPool).toLowerCase() === at,
-        )
-        const key = pool?.lendingPool.toLowerCase() ?? ''
-        const trio = s.balances?.[key] ?? DEFAULT_TRIO
+        const trio = trioForRouter(at, `${c.functionName} @ ${c.address}`)
         return c.functionName === 'totalSupplyAssets' ? trio[0] : trio[1]
       }
 
       // The rate is asked of the IRM, with the router as its argument.
       if (c.functionName === 'calculateBorrowRate') {
         const router = String(c.args?.[0] ?? '').toLowerCase()
-        const pool = pools.find(
-          (p) => routerFor(p.lendingPool).toLowerCase() === router,
-        )
-        const key = pool?.lendingPool.toLowerCase() ?? ''
-        return (s.balances?.[key] ?? DEFAULT_TRIO)[2]
+        return trioForRouter(router, `calculateBorrowRate(${router})`)[2]
       }
 
       // `decimals()` is asked of the token itself.
@@ -304,6 +316,44 @@ describe('enrichPools — balance and router failures (degrade, do not drop)', (
     const result = await liveChainAdapter.enrichPools(pools)
     expect(result.pools[bad.toLowerCase()].size.known).toBe(false)
     expect(result.pools[good.toLowerCase()].size.known).toBe(true)
+  })
+
+  it('marks a pool’s size unknown when only calculateBorrowRate reverts', async () => {
+    // The balances resolve; only the rate is missing. Nothing may invent a `0n`
+    // borrow rate here — that renders as a truthful-looking 0% supply APY, the
+    // exact lying zero the availability unions exist to make unrepresentable.
+    const pool = nextPool()
+    const pools = [rawPool(pool, PXWETH)]
+    driveBatches(pools, {
+      balances: { [pool.toLowerCase()]: [ok(1000n), ok(400n), fail()] },
+    })
+
+    const result = await liveChainAdapter.enrichPools(pools)
+    expect(result.pools[pool.toLowerCase()].size.known).toBe(false)
+  })
+
+  it('reads balances from the router, never from the pool', async () => {
+    // Guards the two-address rule (R7) at the request level: `driveBatches`
+    // throws on any balance read addressed to something that is not a router,
+    // and `enrichPools` swallows the throw as a dead transport — so a violation
+    // shows up as an unknown size rather than passing silently.
+    const pool = nextPool()
+    const pools = [rawPool(pool, PXWETH)]
+    driveBatches(pools, {})
+
+    await liveChainAdapter.enrichPools(pools)
+
+    const phase2 = mockReads.mock.calls[1]?.[1] as unknown as {
+      contracts: SentCall[]
+    }
+    const balanceCalls = phase2.contracts.filter(
+      (c) => c.functionName === 'totalSupplyAssets',
+    )
+    expect(balanceCalls).toHaveLength(1)
+    expect(balanceCalls[0].address.toLowerCase()).toBe(
+      routerFor(pool).toLowerCase(),
+    )
+    expect(balanceCalls[0].address.toLowerCase()).not.toBe(pool.toLowerCase())
   })
 
   it('marks a pool’s size unknown when router() reverts, without rejecting the batch', async () => {

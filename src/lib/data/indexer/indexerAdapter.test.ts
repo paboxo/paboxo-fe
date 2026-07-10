@@ -108,6 +108,32 @@ describe('createLiveIndexerAdapter', () => {
       spy.mockRestore()
     })
 
+    it('bounds the request with an abort signal so a hung indexer cannot stall the page', async () => {
+      const fetchSpy = mockFetch({
+        data: {
+          lendingPoolCreateds: { items: [] },
+          tokenReserveFactorSets: { totalCount: 0, items: [] },
+        },
+      })
+      globalThis.fetch = fetchSpy
+
+      await createLiveIndexerAdapter(URL).getPools()
+
+      const init = fetchSpy.mock.calls[0]?.[1] as RequestInit | undefined
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+    })
+
+    it('surfaces an aborted request as IndexerError, not a hang', async () => {
+      // `AbortSignal.timeout` rejects with an AbortError. `getPools` must map it
+      // onto its reject-on-fault contract like any other transport failure.
+      const abortError = new DOMException('signal timed out', 'TimeoutError')
+      globalThis.fetch = vi.fn().mockRejectedValue(abortError)
+
+      await expect(
+        createLiveIndexerAdapter(URL).getPools(),
+      ).rejects.toBeInstanceOf(IndexerError)
+    })
+
     it('stays quiet when the reserve-factor page is complete', async () => {
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
       globalThis.fetch = mockFetch({

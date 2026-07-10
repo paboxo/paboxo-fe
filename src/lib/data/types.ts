@@ -114,6 +114,11 @@ export interface ChainAdapter {
    * Batched reads for the whole pool list: balances and rates per pool, prices
    * and verified decimals per registry token. Never rejects — every failure is
    * carried in the result so one bad feed cannot blank the list.
+   *
+   * `enrichPools([])` is load-bearing, not a no-op: the token map is keyed off
+   * the registry, not off `pools`, so an empty list still verifies every token's
+   * decimals in one batch. `useTokenDecimals` depends on exactly that. An
+   * implementation that short-circuits on `pools.length === 0` breaks it.
    */
   enrichPools: (pools: RawPool[]) => Promise<PoolsEnrichment>
   getUserBorrowShares: (pool: Address, user: Address) => Promise<bigint>

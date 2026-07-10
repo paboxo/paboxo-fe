@@ -25,8 +25,19 @@ export function useTokenDecimals(token: Address): VerifiedDecimalsResult {
   const query = useQuery({
     queryKey: ['token-decimals'],
     queryFn: () => getAdapters().chain.enrichPools([]),
-    // A token's decimals cannot change. Refetching them is pure cost.
-    staleTime: Infinity,
+    // A *verified* token's decimals cannot change, so freeze that forever.
+    // An unverified one is a different thing: `enrichPools` never rejects, so an
+    // unreachable RPC resolves *successfully* with every token `unreadable`.
+    // Freezing that would keep the seed form blocked for the life of the tab,
+    // long after the chain came back. Stay stale until a read actually lands.
+    staleTime: (current) => {
+      const tokens = current.state.data?.tokens
+      if (tokens === undefined) return 0
+      const verified = Object.values(tokens)
+      return verified.length > 0 && verified.every((t) => t.decimals.valid)
+        ? Infinity
+        : 0
+    },
   })
 
   const verdict = query.data?.tokens[token.toLowerCase()]?.decimals

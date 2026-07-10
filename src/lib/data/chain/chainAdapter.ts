@@ -112,6 +112,10 @@ type BatchResult =
  * `readContracts` itself reject. `enrichPools` promises never to reject, so the
  * whole batch degrades to per-call failures here — every field then reads as
  * unavailable, which is exactly what an unreadable chain means.
+ *
+ * The same catch also swallows an *encoding* error — a mistyped `functionName`
+ * or a wrong arg tuple — which is a bug, not an outage, and would otherwise be
+ * indistinguishable from one. Log it in DEV so it surfaces at authoring time.
  */
 async function batch(contracts: BatchCall[]): Promise<BatchResult[]> {
   try {
@@ -119,6 +123,12 @@ async function batch(contracts: BatchCall[]): Promise<BatchResult[]> {
       contracts: contracts as never,
     })
   } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[chain] batched read rejected; degrading to unavailable', {
+        error,
+        functionNames: contracts.map((c) => c.functionName),
+      })
+    }
     return contracts.map(() => ({ status: 'failure' as const, error }))
   }
 }

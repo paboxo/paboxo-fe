@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MARKETS } from '#/lib/contracts'
+import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import { getAdapters, resolveAdapters } from './registry'
 import { mockChainAdapter } from './chain/chainAdapter.mock'
 import { liveChainAdapter } from './chain/chainAdapter'
@@ -89,5 +90,19 @@ describe('mock indexer adapter', () => {
     expect(aggregates.cumulativeVolumeUsd).toBeGreaterThan(0)
     expect(aggregates).not.toHaveProperty('totalValueLockedUsd')
     expect(aggregates).not.toHaveProperty('utilization')
+  })
+
+  it('mockChainAdapter.enrichPools([]) still verifies every registry token', async () => {
+    // The zero-pool call is load-bearing, not a no-op: `useTokenDecimals` reads
+    // its token map. The live adapter has this pinned in enrichPools.test.ts;
+    // without the same guard here, a mock that short-circuits on an empty list
+    // would make every test that leans on it quietly meaningless.
+    const result = await mockChainAdapter.enrichPools([])
+
+    expect(Object.keys(result.pools)).toHaveLength(0)
+    expect(Object.keys(result.tokens)).toEqual(Object.keys(TOKEN_REGISTRY))
+    for (const token of Object.keys(TOKEN_REGISTRY)) {
+      expect(result.tokens[token].decimals.valid).toBe(true)
+    }
   })
 })
