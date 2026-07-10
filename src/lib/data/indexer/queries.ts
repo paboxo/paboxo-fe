@@ -22,7 +22,7 @@
  * keeps its reject-on-fault contract.
  */
 export const POOLS_QUERY = /* GraphQL */ `
-  query Pools($chainId: Int = 177) {
+  query Pools($chainId: Int = 177, $reserveLimit: Int = 1000) {
     lendingPoolCreateds(where: { contractChainId: $chainId }) {
       items {
         id
@@ -44,7 +44,17 @@ export const POOLS_QUERY = /* GraphQL */ `
         contractChainId
       }
     }
-    tokenReserveFactorSets(orderBy: "timestamp", orderDirection: "desc") {
+    # Scoped and bounded: this table grows one row per setReserveFactor call,
+    # forever. \`totalCount\` lets the caller notice truncation instead of
+    # silently defaulting a pool's reserve factor to 0 — which would overstate
+    # its supply APY.
+    tokenReserveFactorSets(
+      where: { contractChainId: $chainId }
+      orderBy: "timestamp"
+      orderDirection: "desc"
+      limit: $reserveLimit
+    ) {
+      totalCount
       items {
         lendingPool
         reserveFactor

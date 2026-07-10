@@ -99,6 +99,8 @@ function marketIdForPool(pool: string): string {
 /** A Ponder collection page — rows always arrive under `items`. */
 interface Page<T> {
   items?: T[]
+  /** Requested only where truncation would be silently wrong. */
+  totalCount?: number
 }
 
 /** Common shape of the borrow-token-denominated activity rows. */
@@ -212,12 +214,22 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       // Reserve factors are keyed by router, latest-timestamp wins. The query
       // orders by timestamp desc, so the first row seen per router is the newest.
       // A missing/absent collection is not fatal — pools default to `0n`.
+      const reserves = json.data?.tokenReserveFactorSets
+      const rows = reserves?.items ?? []
       const reserveByRouter = new Map<string, bigint>()
-      for (const row of json.data?.tokenReserveFactorSets?.items ?? []) {
+      for (const row of rows) {
         const key = row.lendingPool.toLowerCase()
         if (!reserveByRouter.has(key)) {
           reserveByRouter.set(key, BigInt(row.reserveFactor || '0'))
         }
+      }
+      // The page is bounded, so a pool whose only row fell off the end would
+      // silently default to a 0 reserve factor — overstating its supply APY.
+      // Say so rather than render a number nothing checked.
+      if (reserves?.totalCount !== undefined && reserves.totalCount > rows.length) {
+        console.error(
+          `[indexer] reserve-factor page truncated (${rows.length} of ${reserves.totalCount}); some pools may report an overstated supply APY`,
+        )
       }
       return collection.items.map((r) => mapRawPool(r, reserveByRouter))
     },

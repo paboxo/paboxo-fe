@@ -1,8 +1,10 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import type { PreflightResult } from '#/components/action/ActionPanel'
+import {
+  positiveAmount,
+  staleBlockReason,
+} from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
-import { STALE_PRICE_REASON } from '#/features/markets/components/PoolBadges'
 import { useBorrow } from '../hooks/useBorrow'
 
 /**
@@ -17,17 +19,6 @@ import { useBorrow } from '../hooks/useBorrow'
 export function BorrowPanel({ market }: { market: MarketView }) {
   const { state, revert, borrow } = useBorrow(market)
 
-  const preflight = (amountTokens: number): PreflightResult =>
-    amountTokens > 0
-      ? { enabled: true }
-      : { enabled: false, reason: 'Enter an amount greater than zero.' }
-
-  // R10: a stale collateral price pauses borrowing, reason surfaced (defence in
-  // depth — borrowDebt's IsHealthy check reverts on a stale feed anyway, AS8).
-  const staleGate: PreflightResult = market.priceStale
-    ? { enabled: false, reason: STALE_PRICE_REASON }
-    : { enabled: true }
-
   const onSubmit = (amountTokens: number) => {
     void borrow(parseUnits(amountTokens.toString(), market.borrowDecimals))
   }
@@ -40,8 +31,8 @@ export function BorrowPanel({ market }: { market: MarketView }) {
       decimals={market.borrowDecimals}
       priceUsd={1}
       maxTokens={1000}
-      preflight={preflight}
-      blockReason={staleGate.enabled ? undefined : staleGate.reason}
+      preflight={positiveAmount}
+      blockReason={staleBlockReason(market)}
       reviewApy={market.borrowApr}
       networkFeeUsd={0.42}
       txState={state}

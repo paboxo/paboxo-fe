@@ -1,5 +1,8 @@
 import type { Address } from '#/lib/contracts'
 
+/** The two pool surfaces. A free `string` would let a typo build a dead link. */
+export type PoolRoute = '/earn' | '/borrow'
+
 /**
  * UI-facing pool view-model (U5). Built by `usePools` from the indexer records,
  * the token registry, and the on-chain enrichment reads.

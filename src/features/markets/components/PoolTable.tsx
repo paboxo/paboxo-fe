@@ -22,7 +22,7 @@ import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { usePools } from '#/features/markets/hooks/usePools'
-import type { MarketView } from '#/features/markets/types'
+import type { MarketView, PoolRoute } from '#/features/markets/types'
 import { PoolSearch } from './PoolSearch'
 import { Pagination } from './Pagination'
 import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
@@ -50,8 +50,8 @@ export interface PoolTableProps {
   comparator: (a: MarketView, b: MarketView) => number
   /** The surface's columns; index 0 is the linked identity column. */
   columns: PoolColumn[]
-  /** Link prefix for a row's destination — `/earn` or `/borrow`. */
-  routePrefix: string
+  /** Link prefix for a row's destination. */
+  routePrefix: PoolRoute
 }
 
 const PER_PAGE = 10

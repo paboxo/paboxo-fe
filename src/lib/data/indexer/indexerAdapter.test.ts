@@ -83,6 +83,54 @@ describe('createLiveIndexerAdapter', () => {
   })
 
   describe('getPools', () => {
+    it('warns when the reserve-factor page is truncated, rather than defaulting to 0', async () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      globalThis.fetch = mockFetch({
+        data: {
+          lendingPoolCreateds: { items: [RAW_POOL] },
+          // 9 rows exist upstream; the bounded page returned one.
+          tokenReserveFactorSets: {
+            totalCount: 9,
+            items: [
+              {
+                lendingPool: RAW_POOL.router,
+                reserveFactor: '150000000000000000',
+                timestamp: 1,
+              },
+            ],
+          },
+        },
+      })
+      await createLiveIndexerAdapter(URL).getPools()
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining('reserve-factor page truncated'),
+      )
+      spy.mockRestore()
+    })
+
+    it('stays quiet when the reserve-factor page is complete', async () => {
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      globalThis.fetch = mockFetch({
+        data: {
+          lendingPoolCreateds: { items: [RAW_POOL] },
+          tokenReserveFactorSets: {
+            totalCount: 1,
+            items: [
+              {
+                lendingPool: RAW_POOL.router,
+                reserveFactor: '150000000000000000',
+                timestamp: 1,
+              },
+            ],
+          },
+        },
+      })
+      const pools = await createLiveIndexerAdapter(URL).getPools()
+      expect(pools[0].reserveFactorWad).toBe(150_000_000_000_000_000n)
+      expect(spy).not.toHaveBeenCalled()
+      spy.mockRestore()
+    })
+
     it('maps a well-formed lendingPoolCreateds.items response into pool records', async () => {
       globalThis.fetch = mockFetch({
         data: { lendingPoolCreateds: { items: [RAW_POOL] } },

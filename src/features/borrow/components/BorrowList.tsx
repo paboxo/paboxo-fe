@@ -1,21 +1,10 @@
-import type { ReactNode } from 'react'
-import { formatPercent, formatUsd } from '#/lib/format'
+import { formatPercent } from '#/lib/format'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { PoolTable } from '#/features/markets/components/PoolTable'
 import type { PoolColumn } from '#/features/markets/components/PoolTable'
-import type { MarketView } from '#/features/markets/types'
+import { compactUsd, numColumn } from '#/features/markets/columns'
 import { byAvailableLiquidity } from '#/features/markets/sort'
 
-/** A right-aligned numeric column. */
-const num = (
-  header: string,
-  cell: (m: MarketView) => ReactNode,
-): PoolColumn => ({
-  header,
-  align: 'right',
-  cell,
-})
-const usd = (v: number | undefined) => formatUsd(v, { compact: true })
 
 // Borrow columns (R7). Index 0 is the identity column: the shell wraps its body
 // in the row link, so it returns just the glyph + symbol — handed the collateral
@@ -35,15 +24,15 @@ const BORROW_COLUMNS: PoolColumn[] = [
       </>
     ),
   },
-  num('Total supply', (m) => usd(m.tvlUsd)),
-  num('Borrow APR', (m) => (
+  numColumn('Total supply', (m) => compactUsd(m.tvlUsd)),
+  numColumn('Borrow APR', (m) => (
     <span className="font-semibold" style={{ color: 'var(--danger)' }}>
       {formatPercent(m.borrowApr)}
     </span>
   )),
-  num('LTV', (m) => formatPercent(m.lltv)),
-  num('Liq. threshold', (m) => formatPercent(m.liqThreshold)),
-  num('Liquidity', (m) => usd(m.availableLiquidityUsd)),
+  numColumn('LTV', (m) => formatPercent(m.lltv)),
+  numColumn('Liq. threshold', (m) => formatPercent(m.liqThreshold)),
+  numColumn('Liquidity', (m) => compactUsd(m.availableLiquidityUsd)),
 ]
 
 // The Borrow plane list (U4, R7): pools ranked by free liquidity first — a big

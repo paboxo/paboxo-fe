@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import type { PreflightResult } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
-import { STALE_PRICE_REASON } from '#/features/markets/components/PoolBadges'
+import {
+  positiveAmount,
+  staleBlockReason,
+} from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
@@ -16,11 +18,6 @@ const TABS: { key: LiquidityAction; label: string }[] = [
   { key: 'supply', label: 'Supply' },
   { key: 'withdraw', label: 'Withdraw' },
 ]
-
-const positiveAmount = (amountTokens: number): PreflightResult =>
-  amountTokens > 0
-    ? { enabled: true }
-    : { enabled: false, reason: 'Enter an amount greater than zero.' }
 
 /**
  * Earn-side liquidity action host. Supplies pxUSDT *liquidity* to the pool and
@@ -98,7 +95,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           maxTokens={toNumber(wallet, decimals)}
           maxLabel="Wallet balance"
           preflight={positiveAmount}
-          blockReason={market.priceStale ? STALE_PRICE_REASON : undefined}
+          blockReason={staleBlockReason(market)}
           reviewApy={market.supplyApy}
           networkFeeUsd={0.42}
           txState={supplyLiquidity.state}

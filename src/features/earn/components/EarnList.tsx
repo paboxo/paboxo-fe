@@ -1,21 +1,10 @@
-import type { ReactNode } from 'react'
-import { formatPercent, formatUsd } from '#/lib/format'
+import { formatPercent } from '#/lib/format'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { PoolTable } from '#/features/markets/components/PoolTable'
 import type { PoolColumn } from '#/features/markets/components/PoolTable'
-import type { MarketView } from '#/features/markets/types'
+import { compactUsd, numColumn } from '#/features/markets/columns'
 import { bySupply } from '#/features/markets/sort'
 
-/** A right-aligned numeric column. */
-const num = (
-  header: string,
-  cell: (m: MarketView) => ReactNode,
-): PoolColumn => ({
-  header,
-  align: 'right',
-  cell,
-})
-const usd = (v: number | undefined) => formatUsd(v, { compact: true })
 
 // Earn columns (R5). Index 0 is the identity column: the shell wraps its body in
 // the row link, so it returns just the glyph + symbol — handed the collateral
@@ -35,15 +24,15 @@ const EARN_COLUMNS: PoolColumn[] = [
       </>
     ),
   },
-  num('Total supply', (m) => usd(m.tvlUsd)),
-  num('Supply APY', (m) => (
+  numColumn('Total supply', (m) => compactUsd(m.tvlUsd)),
+  numColumn('Supply APY', (m) => (
     <span className="font-semibold" style={{ color: 'var(--palm)' }}>
       {formatPercent(m.supplyApy)}
     </span>
   )),
-  num('Interest rate', (m) => formatPercent(m.borrowApr)),
-  num('Utilization', (m) => formatPercent(m.utilization)),
-  num('Liquidity', (m) => usd(m.availableLiquidityUsd)),
+  numColumn('Interest rate', (m) => formatPercent(m.borrowApr)),
+  numColumn('Utilization', (m) => formatPercent(m.utilization)),
+  numColumn('Liquidity', (m) => compactUsd(m.availableLiquidityUsd)),
 ]
 
 // The Earn plane list (U3, R5): pools ranked largest-first — what a lender looks

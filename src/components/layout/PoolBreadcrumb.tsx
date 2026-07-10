@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import type { PoolRoute } from '#/features/markets/types'
 
 /**
  * Detail-page breadcrumb: a back link that names its destination, then the
@@ -15,7 +16,7 @@ export function PoolBreadcrumb({
   label,
   current,
 }: {
-  to: '/earn' | '/borrow'
+  to: PoolRoute
   label: string
   /** The current pool, e.g. `pxWHSK · pxUSDT`. Omitted while the pool loads. */
   current?: string

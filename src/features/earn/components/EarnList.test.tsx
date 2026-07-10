@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import type { Address } from '#/lib/contracts'
+import { PX_WHSK, makeMarket } from '#/features/markets/testFixtures'
 import type { MarketView } from '#/features/markets/types'
 import { usePools } from '#/features/markets/hooks/usePools'
 import { EarnList } from './EarnList'
@@ -9,38 +9,6 @@ import { EarnList } from './EarnList'
 vi.mock('#/features/markets/hooks/usePools', () => ({ usePools: vi.fn() }))
 
 const mockUsePools = vi.mocked(usePools)
-
-// Real registry addresses so `TokenGlyph` resolves a logo from the pool row.
-const PX_WHSK = '0xc3be8ab4CA0cefE3119A765b324bBDF54a16A65b' as Address
-const PX_USDT = '0x4852Bc014401415C4CE4788A04cAB019d1527aAa' as Address
-
-/** A fully-formed pool view; each test overrides only the fields it asserts on. */
-function makeMarket(overrides: Partial<MarketView> & { id: string }): MarketView {
-  return {
-    poolAddress: overrides.id as Address,
-    collateralSymbol: 'pxWHSK',
-    collateralAddress: PX_WHSK,
-    collateralDecimals: 18,
-    borrowSymbol: 'pxUSDT',
-    borrowAddress: PX_USDT,
-    borrowDecimals: 6,
-    supplyApy: 4,
-    borrowApr: 6,
-    utilization: 50,
-    tvlUsd: 1000,
-    availableLiquidityUsd: 500,
-    priceUsd: 1,
-    totalSupplyAssets: 100n,
-    totalBorrowAssets: 0n,
-    priceStale: false,
-    sizeKnown: true,
-    lltv: 80,
-    liqThreshold: 85,
-    oracle: '0xoracle',
-    crossChain: false,
-    ...overrides,
-  }
-}
 
 function setPools(data: MarketView[]): void {
   mockUsePools.mockReturnValue({
