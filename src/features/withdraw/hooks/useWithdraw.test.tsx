@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
+import { supplySharesForAssets } from '#/lib/math'
 import { mockChainAdapter } from '#/lib/data/chain/chainAdapter.mock'
 import { MOCK_MARKETS } from '#/features/markets/mock'
 import { useWithdraw } from './useWithdraw'
@@ -57,5 +58,33 @@ describe('useWithdraw', () => {
     expect(result.current.state).toBe('error')
     expect(result.current.revert?.message).toMatch(/unhealthy/)
     withdraw.mockRestore()
+  })
+
+  // Covers R3: liquidity withdraw is denominated in SHARES on-chain — the hook
+  // converts the entered asset amount, not passing it through raw.
+  it('converts the entered asset amount to supply shares before redeeming', async () => {
+    const withdrawLiq = vi.spyOn(mockChainAdapter, 'withdrawLiquidity')
+    const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
+    const assets = 100_000_000n // 100 pxUSDT (6dp)
+    const expectedShares = supplySharesForAssets(
+      assets,
+      totals.totalSupplyAssets,
+      totals.totalSupplyShares,
+    )
+
+    const { result } = renderHook(() => useWithdraw(market), {
+      wrapper: QueryWrapper,
+    })
+    await act(async () => {
+      await result.current.withdrawLiquidity(assets)
+    })
+
+    expect(withdrawLiq).toHaveBeenCalledWith(
+      market.poolAddress,
+      expectedShares,
+      USER,
+    )
+    expect(result.current.state).toBe('confirmed')
+    withdrawLiq.mockRestore()
   })
 })

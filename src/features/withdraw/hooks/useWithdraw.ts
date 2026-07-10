@@ -3,12 +3,21 @@
  * always go to the owner. Withdrawing collateral re-checks health via pre-flight
  * (an approximate post-withdraw borrowing-power estimate in preview; the real
  * contract enforces it precisely and a revert surfaces through the wrapper).
+ *
+ * `withdrawLiquidity` takes the **asset** amount the user typed and converts it
+ * to supply **shares** before the write — the pool burns shares, and shares ≠
+ * assets once the pool has accrued yield.
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import type { Address } from '#/lib/contracts'
 import { getAdapters } from '#/lib/data'
-import { availableLiquidity, currentDebt, toWholeNumber } from '#/lib/math'
+import {
+  availableLiquidity,
+  currentDebt,
+  supplySharesForAssets,
+  toWholeNumber,
+} from '#/lib/math'
 import { preflightWithdraw, unixNow } from '#/lib/tx/preflight'
 import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
@@ -72,11 +81,20 @@ export function useWithdraw(market: MarketView) {
   )
 
   const withdrawLiquidity = useCallback(
-    async (shares: bigint, to?: Address) => {
+    async (assets: bigint, to?: Address) => {
       const recipient = to ?? address
       if (!recipient) return
       const { chain } = getAdapters()
       const totals = await chain.getMarketTotals(market.poolAddress)
+      // The pool burns SHARES, not the asset amount the user typed — convert via
+      // live totals so accrued yield is accounted for (senja `sharesToUnderlying`
+      // inverse). A withdraw of the full supplied amount rounds down to at most
+      // the user's shares, so it never reverts on an over-burn.
+      const shares = supplySharesForAssets(
+        assets,
+        totals.totalSupplyAssets,
+        totals.totalSupplyShares,
+      )
       const available = availableLiquidity(
         totals.totalSupplyAssets,
         totals.totalBorrowAssets,
