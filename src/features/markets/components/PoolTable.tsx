@@ -24,6 +24,7 @@ import { EmptyState } from '#/components/ui/states/EmptyState'
 import { usePools } from '#/features/markets/hooks/usePools'
 import type { MarketView, PoolRoute } from '#/features/markets/types'
 import { PoolSearch } from './PoolSearch'
+import { PoolFilterTabs } from './PoolFilterTabs'
 import { Pagination } from './Pagination'
 import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
@@ -145,44 +146,50 @@ export function PoolTable({
 
   return (
     <div className="flex flex-col gap-4">
-      <PoolSearch value={query} onChange={handleQueryChange} />
+      <div className="island-shell overflow-hidden rounded-lg">
+        {/* Card header: search on the left, filter tabs on the right. */}
+        <div className="flex flex-col gap-3 border-b border-[var(--line)] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <PoolSearch value={query} onChange={handleQueryChange} />
+          <PoolFilterTabs />
+        </div>
 
-      {/* Polite live region: announces the filtered count and page changes. */}
-      <div
-        id={liveRegionId}
-        role="status"
-        aria-live="polite"
-        className="sr-only"
-      >
-        {announcement}
-      </div>
+        {/* Polite live region: announces the filtered count and page changes. */}
+        <div
+          id={liveRegionId}
+          role="status"
+          aria-live="polite"
+          className="sr-only"
+        >
+          {announcement}
+        </div>
 
-      {/* --- 4. no matches (pools exist, query matches none) R29 ------------- */}
-      {count === 0 ? (
-        <EmptyState
-          title="No matching pools"
-          description={`No pools match "${query.trim()}".`}
-          action={
-            <button
-              type="button"
-              onClick={() => handleQueryChange('')}
-              className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-[0.82rem] font-bold text-[var(--sea-ink)]"
-            >
-              Clear search
-            </button>
-          }
-        />
-      ) : (
-        // --- 5. table ---------------------------------------------------------
-        <>
-          <div className="island-shell overflow-x-auto rounded-2xl">
+        {/* --- 4. no matches (pools exist, query matches none) R29 ----------- */}
+        {count === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title="No matching pools"
+              description={`No pools match "${query.trim()}".`}
+              action={
+                <button
+                  type="button"
+                  onClick={() => handleQueryChange('')}
+                  className="rounded border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-[0.82rem] font-bold text-[var(--sea-ink)]"
+                >
+                  Clear search
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          // --- 5. table -------------------------------------------------------
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
+                <tr className="border-b border-[var(--line)] font-mono text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
                   {columns.map((column, index) => (
                     <th
                       key={index}
-                      className={`px-4 py-3 font-bold ${
+                      className={`px-4 py-3 font-medium ${
                         column.align === 'right' ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -195,7 +202,7 @@ export function PoolTable({
                 {pageItems.map((market) => (
                   <tr
                     key={market.id}
-                    className="border-b border-[var(--line)] last:border-0 hover:bg-[color-mix(in_oklab,var(--lagoon)_8%,transparent)]"
+                    className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--surface-strong)]"
                   >
                     {columns.map((column, index) => (
                       <td key={index} className={cellAlignClass(column.align)}>
@@ -223,14 +230,16 @@ export function PoolTable({
               </tbody>
             </table>
           </div>
+        )}
+      </div>
 
-          <Pagination
-            page={page}
-            pageCount={pageCount}
-            onPageChange={setRequestedPage}
-          />
-        </>
-      )}
+      {count > 0 ? (
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={setRequestedPage}
+        />
+      ) : null}
     </div>
   )
 }
