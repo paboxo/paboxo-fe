@@ -24,7 +24,10 @@ describe('SwapPanel', () => {
   it('renders the market, amount, target token, and slippage controls', () => {
     renderPanel()
     expect(screen.getByRole('button', { name: 'Swap' })).toBeTruthy()
-    expect(screen.getByLabelText('Slippage tolerance')).toBeTruthy()
+    // Slippage is now a chip group; the 0.5% default is active.
+    expect(
+      screen.getByRole('button', { name: '0.5%' }).getAttribute('aria-pressed'),
+    ).toBe('true')
     // The target token trigger shows the default (pxUSDT).
     expect(screen.getByRole('button', { name: /pxUSDT/ })).toBeTruthy()
     // Amount empty -> the swap stays disabled until an amount is entered.

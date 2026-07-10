@@ -3,7 +3,7 @@ import { parseUnits } from 'viem'
 import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
-import { MoneyInput } from '#/components/ui/MoneyInput'
+import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { ActionButton } from '#/components/ui/ActionButton'
 import {
   useTokenBalance,
@@ -55,46 +55,71 @@ export function SwapPanel() {
   const disabled = amount === '' || Number(amount) <= 0 || sameToken
 
   return (
-    <div className="island-shell flex flex-col gap-4 rounded-2xl p-5">
-      <div>
-        <h2 className="display-title m-0 text-lg font-semibold">
-          Swap collateral
-        </h2>
-        <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-          Trade the collateral held in your position — routed through the DEX,
-          staying inside the position.
-        </p>
-      </div>
-
-      <label className="flex flex-col gap-1 text-[0.78rem] text-[var(--sea-ink-soft)]">
-        Position (market)
+    <div className="island-shell mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg p-5">
+      {/* Select Market */}
+      <label className="flex flex-col gap-1.5 text-[0.78rem] font-semibold text-[var(--sea-ink-soft)]">
+        Select Market
         <select
           value={marketId}
           onChange={(event) => setMarketId(event.target.value)}
-          className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-2 text-sm text-[var(--sea-ink)]"
+          className="rounded border border-[var(--palm)] bg-[var(--surface)] px-3 py-3 text-sm font-semibold text-[var(--sea-ink)]"
         >
           {MARKETS.map((entry) => (
             <option key={entry.id} value={entry.id}>
-              {entry.collateralSymbol} market
+              {entry.collateralSymbol} / {entry.borrowSymbol}
             </option>
           ))}
         </select>
       </label>
 
-      <MoneyInput
-        symbol={market.collateralSymbol}
-        decimals={market.collateralDecimals}
-        value={amount}
-        onChange={setAmount}
-        balance={collateralBalance}
-      />
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="text-[0.78rem] text-[var(--sea-ink-soft)]">
-            Swap into
+      {/* Sell */}
+      <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-4">
+        <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+          <span>Sell</span>
+          <span className="num">
+            Balance:{' '}
+            {formatTokenAmount(
+              collateralBalance ?? 0n,
+              market.collateralDecimals,
+            )}{' '}
+            {market.collateralSymbol}
           </span>
-          <span className="num text-[0.72rem] text-[var(--sea-ink-soft)]">
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <input
+            aria-label="Sell amount"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            className="num min-w-0 flex-1 bg-transparent text-3xl font-bold text-[var(--sea-ink)] outline-none"
+          />
+          <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-bold text-[var(--sea-ink)]">
+            <TokenGlyph
+              symbol={market.collateralSymbol}
+              address={market.collateralAddress}
+              size={20}
+            />
+            {market.collateralSymbol}
+          </span>
+        </div>
+      </div>
+
+      {/* Swap direction (decorative — swap-collateral does not reverse) */}
+      <div className="-my-2 flex justify-center">
+        <span
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] text-[var(--palm)]"
+          aria-hidden="true"
+        >
+          ↓
+        </span>
+      </div>
+
+      {/* Buy */}
+      <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-4">
+        <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+          <span>Buy</span>
+          <span className="num">
             Balance:{' '}
             {balancesLoading
               ? '…'
@@ -105,25 +130,52 @@ export function SwapPanel() {
             {tokenOut}
           </span>
         </div>
-        <TokenSelectButton
-          symbol={tokenOut}
-          onClick={() => setPickerOpen(true)}
-        />
+        <div className="mt-2 flex items-center justify-between gap-2">
+          {/* Read-only estimated output — a live quote is not wired yet. */}
+          <span className="num text-3xl font-bold text-[var(--sea-ink-soft)]">
+            —
+          </span>
+          <TokenSelectButton
+            symbol={tokenOut}
+            onClick={() => setPickerOpen(true)}
+          />
+        </div>
       </div>
 
-      <label className="flex items-center justify-between gap-2 text-[0.78rem] text-[var(--sea-ink-soft)]">
-        Slippage tolerance
-        <span className="flex items-center gap-1">
-          <input
-            aria-label="Slippage tolerance"
-            inputMode="decimal"
-            value={slippage}
-            onChange={(event) => setSlippage(event.target.value)}
-            className="num w-16 rounded-lg border border-[var(--line)] bg-[var(--chip-bg)] px-2 py-1 text-right text-sm text-[var(--sea-ink)]"
-          />
-          %
-        </span>
-      </label>
+      {/* Details */}
+      <div className="flex flex-col gap-2 text-[0.82rem] text-[var(--sea-ink-soft)]">
+        <div className="flex items-center justify-between">
+          <span>Exchange Rate</span>
+          <span className="num text-[var(--sea-ink)]">—</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Network Fee</span>
+          <span className="num text-[var(--sea-ink)]">~$0.42</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Slippage Tolerance</span>
+          <span className="inline-flex gap-1">
+            {['0.1', '0.5', '1.0'].map((value) => {
+              const isActive = slippage === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSlippage(value)}
+                  aria-pressed={isActive}
+                  className={
+                    isActive
+                      ? 'rounded bg-[var(--palm)] px-2 py-1 text-xs font-bold text-white'
+                      : 'rounded bg-[var(--chip-bg)] px-2 py-1 text-xs font-bold text-[var(--sea-ink)]'
+                  }
+                >
+                  {value}%
+                </button>
+              )
+            })}
+          </span>
+        </div>
+      </div>
 
       {sameToken ? (
         <p className="m-0 text-[0.78rem]" style={{ color: 'var(--danger)' }}>
