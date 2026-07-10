@@ -8,6 +8,7 @@ import { usePool } from '#/features/markets/hooks/usePools'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import { PoolBreadcrumb } from '#/components/layout/PoolBreadcrumb'
 import { PoolInfo } from '#/features/markets/components/PoolInfo'
+import { HealthMeter } from '#/components/ui/HealthMeter'
 import { BorrowActions } from '#/features/borrow/components/BorrowActions'
 
 export const Route = createFileRoute('/borrow/$id')({
@@ -70,20 +71,27 @@ function BorrowPoolPage() {
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <PoolInfo
-            market={pool.market}
-            context="borrow"
-            health={position?.healthFactor}
-          />
+          {/* Left card is wallet-independent: pool data for any visitor. */}
+          <PoolInfo market={pool.market} context="borrow" />
           <aside className="h-fit lg:sticky lg:top-20">
             <NetworkGuard
               title="Connect to borrow"
               description="Connect a wallet to supply collateral, borrow, repay, or withdraw in this pool."
             >
-              <BorrowActions
-                market={pool.market}
-                hasCollateral={hasCollateral}
-              />
+              <div className="flex flex-col gap-3">
+                {position?.healthFactor !== undefined ? (
+                  <div className="island-shell flex flex-col gap-2 rounded-2xl p-4">
+                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--sea-ink-soft)]">
+                      Your health
+                    </span>
+                    <HealthMeter hf={position.healthFactor} />
+                  </div>
+                ) : null}
+                <BorrowActions
+                  market={pool.market}
+                  hasCollateral={hasCollateral}
+                />
+              </div>
             </NetworkGuard>
           </aside>
         </div>
