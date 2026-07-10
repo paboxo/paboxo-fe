@@ -1,0 +1,5 @@
+export type { IconProps } from './types'
+export { EarnIcon } from './EarnIcon'
+export { BorrowIcon } from './BorrowIcon'
+export { SwapIcon } from './SwapIcon'
+export { PortfolioIcon } from './PortfolioIcon'

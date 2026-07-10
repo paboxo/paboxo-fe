@@ -5,8 +5,6 @@ import Footer from '../components/Footer'
 import { AppHeader } from '../components/layout/AppHeader'
 import { DensityProvider } from '../components/density/DensityProvider'
 import { Web3Provider } from '../lib/web3/Web3Provider'
-import ConnectButton from '../components/wallet/ConnectButton'
-import { NetworkStatus } from '../components/wallet/NetworkStatus'
 
 import appCss from '../styles.css?url'
 
@@ -46,10 +44,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body className="flex min-h-dvh flex-col font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <Web3Provider>
           <DensityProvider>
-            <AppHeader
-              connect={<ConnectButton />}
-              networkStatus={<NetworkStatus />}
-            />
+            <AppHeader />
             <div className="flex flex-1 flex-col">{children}</div>
             <Footer />
           </DensityProvider>
