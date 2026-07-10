@@ -15,7 +15,12 @@ export function MarketRateChart({ market }: { market: MarketView }) {
       </h3>
       {isLoading ? (
         <LoadingCard rows={2} />
-      ) : error || data.length === 0 ? (
+      ) : error ? (
+        <EmptyState
+          title="Couldn't load rate history"
+          description="The indexer request failed. It'll retry shortly."
+        />
+      ) : data.length === 0 ? (
         <EmptyState
           title="No rate history yet"
           description="Rate history appears once the indexer has data for this market."
