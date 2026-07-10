@@ -129,13 +129,115 @@ describe('liveChainAdapter reads', () => {
     expect(price.updatedAt).toBe(0)
   })
 
-  it('degrades HelperUtils reads to 0/zero until its address is supplied', async () => {
-    const pool = nextPool()
-    expect(await liveChainAdapter.getMaxBorrowAmount(pool, USER)).toBe(0n)
-    expect(await liveChainAdapter.getCollateralValue(pool, USER)).toBe(0n)
-    expect(await liveChainAdapter.getPositionAddress(pool, USER)).toBe(
-      zeroAddress,
+})
+
+// Covers R1, R7, AE1: collateral value, position, and max-borrow are derived
+// from the router + oracle (senja parity), not the unset HelperUtils.
+describe('liveChainAdapter position-derived reads', () => {
+  const POSITION = '0xP0000000000000000000000000000000000000aa' as const
+  // Registry tokens so decimals resolve: pxWHSK (18dp) collateral, pxUSDT (6dp) borrow.
+  const COLLATERAL = '0xc3be8ab4ca0cefe3119a765b324bbdf54a16a65b' as const
+  const BORROW = '0x4852bc014401415c4ce4788a04cab019d1527aaa' as const
+
+  function mockChain(opts: {
+    position: `0x${string}`
+    collateralBalance: bigint
+    colPrice: bigint
+    borPrice: bigint
+    userBorrowShares?: bigint
+    ltv?: bigint
+  }) {
+    const {
+      position,
+      collateralBalance,
+      colPrice,
+      borPrice,
+      userBorrowShares = 0n,
+      ltv = 7n * 10n ** 17n, // 0.7 in WAD
+    } = opts
+    mockRead.mockImplementation((_config, params) => {
+      const p = params as { functionName: string; args?: readonly unknown[] }
+      switch (p.functionName) {
+        case 'router':
+          return Promise.resolve(ROUTER)
+        case 'addressPositions':
+          return Promise.resolve(position)
+        case 'collateralToken':
+          return Promise.resolve(COLLATERAL)
+        case 'borrowToken':
+          return Promise.resolve(BORROW)
+        case 'ltv':
+          return Promise.resolve(ltv)
+        case 'balanceOf':
+          return Promise.resolve(collateralBalance)
+        case 'userBorrowShares':
+          return Promise.resolve(userBorrowShares)
+        case 'totalBorrowAssets':
+          return Promise.resolve(1_000_000000n)
+        case 'totalBorrowShares':
+          return Promise.resolve(1_000_000000n)
+        case 'latestRoundData': {
+          const token = String(p.args?.[0] ?? '').toLowerCase()
+          const price = token === COLLATERAL.toLowerCase() ? colPrice : borPrice
+          return Promise.resolve([0n, price, 0n, 1_700_000_000n, 0n])
+        }
+        default:
+          return Promise.resolve(0n)
+      }
+    })
+  }
+
+  it('reads the position address from the router (not HelperUtils)', async () => {
+    mockChain({ position: POSITION, collateralBalance: 0n, colPrice: 0n, borPrice: 0n })
+    expect(await liveChainAdapter.getPositionAddress(nextPool(), USER)).toBe(
+      POSITION,
     )
+  })
+
+  it('returns 0 collateral when the user has no position', async () => {
+    mockChain({
+      position: zeroAddress,
+      collateralBalance: 5n,
+      colPrice: 1n * 10n ** 8n,
+      borPrice: 1n * 10n ** 8n,
+    })
+    expect(await liveChainAdapter.getCollateralValue(nextPool(), USER)).toBe(0n)
+  })
+
+  it('derives collateral USD (6dp) from balanceOf(position) × price', async () => {
+    // 10 pxWHSK (18dp) at $2 (8dp) = $20 → 20_000000 (6dp)
+    mockChain({
+      position: POSITION,
+      collateralBalance: 10n * 10n ** 18n,
+      colPrice: 2n * 10n ** 8n,
+      borPrice: 1n * 10n ** 8n,
+    })
+    expect(await liveChainAdapter.getCollateralValue(nextPool(), USER)).toBe(
+      20_000000n,
+    )
+  })
+
+  it('derives max-borrow from collateral × ltv / borrow price minus debt', async () => {
+    // colUsd $20 × ltv 0.7 = $14; borrow price $1 → 14 pxUSDT (6dp)
+    mockChain({
+      position: POSITION,
+      collateralBalance: 10n * 10n ** 18n,
+      colPrice: 2n * 10n ** 8n,
+      borPrice: 1n * 10n ** 8n,
+    })
+    expect(await liveChainAdapter.getMaxBorrowAmount(nextPool(), USER)).toBe(
+      14_000000n,
+    )
+  })
+
+  it('blocks borrow (max 0) when the position holds no collateral', async () => {
+    mockChain({
+      position: POSITION,
+      collateralBalance: 0n,
+      colPrice: 2n * 10n ** 8n,
+      borPrice: 1n * 10n ** 8n,
+    })
+    expect(await liveChainAdapter.getMaxBorrowAmount(nextPool(), USER)).toBe(0n)
   })
 })
 
