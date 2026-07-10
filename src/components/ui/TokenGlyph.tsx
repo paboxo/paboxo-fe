@@ -1,11 +1,41 @@
-/** A simple circular token glyph (initials) so rows read against the glass. */
+import type { Address } from '#/lib/contracts'
+import { getTokenByAddress } from '#/lib/tokens/registry'
+
+/** A simple circular token glyph so rows read against the glass. Renders the
+ *  token's real logo when an `address` the registry knows is passed, and falls
+ *  back to an initials circle otherwise. */
 export function TokenGlyph({
   symbol,
+  address,
   size = 26,
 }: {
   symbol: string
+  /** When set and known to the registry, the real logo renders instead of initials. */
+  address?: Address
   size?: number
 }) {
+  const entry = address ? getTokenByAddress(address) : undefined
+
+  // The 1.5px cutout border is what separates the front token from the one
+  // tucked 40% behind it in TokenPairGlyph — the logo must keep it too.
+  if (entry) {
+    return (
+      <img
+        src={entry.logo}
+        alt=""
+        aria-hidden="true"
+        className="inline-block flex-shrink-0"
+        style={{
+          width: size,
+          height: size,
+          borderRadius: '9999px',
+          border: '1.5px solid var(--surface-strong)',
+          objectFit: 'cover',
+        }}
+      />
+    )
+  }
+
   const label = symbol.replace(/^px/i, '').slice(0, 3).toUpperCase()
   return (
     <span

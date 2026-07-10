@@ -1,4 +1,5 @@
 import { formatPercent, formatUsd } from '#/lib/format'
+import { TOKENS } from '#/lib/contracts'
 import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { HealthMeter } from '#/components/ui/HealthMeter'
@@ -32,6 +33,9 @@ export function PoolInfo({ market, context, health }: PoolInfoProps) {
           <TokenPairGlyph
             collateralSymbol={market.collateralSymbol}
             borrowSymbol={market.borrowSymbol}
+            collateralAddress={market.collateralAddress}
+            // Every pool borrows pxUSDT today.
+            borrowAddress={TOKENS.pxUSDT.address}
             size={38}
           />
           <div>
