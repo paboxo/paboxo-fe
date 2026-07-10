@@ -2,6 +2,7 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import type { MarketView } from '#/features/markets/types'
+import { STALE_PRICE_REASON } from '#/features/markets/components/PoolBadges'
 import { useWithdraw } from '../hooks/useWithdraw'
 
 /**
@@ -15,6 +16,12 @@ export function WithdrawPanel({ market }: { market: MarketView }) {
     amountTokens > 0
       ? { enabled: true }
       : { enabled: false, reason: 'Enter an amount greater than zero.' }
+
+  // R10: a stale price feed pauses writes on this pool, reason surfaced (AS8 —
+  // withdrawLiquidity makes no oracle call, so this disable is the only gate).
+  const staleGate: PreflightResult = market.priceStale
+    ? { enabled: false, reason: STALE_PRICE_REASON }
+    : { enabled: true }
 
   const onSubmit = (amountTokens: number) => {
     void withdrawCollateral(
@@ -31,6 +38,7 @@ export function WithdrawPanel({ market }: { market: MarketView }) {
       priceUsd={market.priceUsd}
       maxTokens={1000}
       preflight={preflight}
+      blockReason={staleGate.enabled ? undefined : staleGate.reason}
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}

@@ -2,6 +2,7 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import type { MarketView } from '#/features/markets/types'
+import { STALE_PRICE_REASON } from '#/features/markets/components/PoolBadges'
 import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
 
 /**
@@ -17,6 +18,12 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       ? { enabled: true }
       : { enabled: false, reason: 'Enter an amount greater than zero.' }
 
+  // R10: a stale price feed pauses writes, with the reason surfaced (AS8 —
+  // supplyCollateral makes no oracle call, so this disable is the only gate).
+  const staleGate: PreflightResult = market.priceStale
+    ? { enabled: false, reason: STALE_PRICE_REASON }
+    : { enabled: true }
+
   const onSubmit = (amountTokens: number) => {
     void supply(parseUnits(amountTokens.toString(), market.collateralDecimals))
   }
@@ -30,6 +37,7 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       priceUsd={market.priceUsd}
       maxTokens={1000}
       preflight={preflight}
+      blockReason={staleGate.enabled ? undefined : staleGate.reason}
       reviewApy={market.supplyApy}
       networkFeeUsd={0.42}
       txState={state}

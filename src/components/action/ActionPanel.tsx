@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import type { Denomination } from '#/components/ui/MoneyInput'
 import { ProjectedHealth } from '#/components/ui/ProjectedHealth'
@@ -30,6 +30,15 @@ export interface ActionPanelProps {
   projectHf?: (amountTokens: number) => number
   /** Injected revert-condition gate; blocks before the wallet opens (R18). */
   preflight?: (amountTokens: number) => PreflightResult
+  /**
+   * An amount-independent hard block, e.g. a stale price feed (R10). When set the
+   * button is disabled regardless of what is typed and the string is surfaced as a
+   * sibling caption the button references via `aria-describedby` — a native
+   * `disabled` button takes no hover or focus, so a keyboard or screen-reader user
+   * would never receive a tooltip. Each panel instance gets its own reason id, so
+   * many disabled buttons never point at one another's reason.
+   */
+  blockReason?: string
   reviewApy?: number
   networkFeeUsd?: number
   liquidation?: {
@@ -65,6 +74,7 @@ export function ActionPanel(props: ActionPanelProps) {
     currentHf,
     projectHf,
     preflight,
+    blockReason,
     reviewApy,
     networkFeeUsd,
     liquidation,
@@ -78,6 +88,9 @@ export function ActionPanel(props: ActionPanelProps) {
   const [value, setValue] = useState('')
   const [denomination, setDenomination] = useState<Denomination>('token')
   const [acknowledged, setAcknowledged] = useState(false)
+  // Row-unique id for the hard-block reason — stable across this instance's
+  // lifetime, so a stale→fresh refetch toggles the reason without remounting.
+  const reasonId = useId()
 
   const typed = value === '' ? 0 : Number(value)
   const amountTokens =
@@ -90,8 +103,9 @@ export function ActionPanel(props: ActionPanelProps) {
     projectedHf !== undefined && projectedHf < AT_RISK_ACK_FLOOR
   const gate: PreflightResult =
     preflight && validAmount ? preflight(amountTokens) : { enabled: true }
+  const hardBlocked = blockReason !== undefined && blockReason !== ''
   const blocked =
-    !validAmount || !gate.enabled || (requiresAck && !acknowledged)
+    !validAmount || !gate.enabled || (requiresAck && !acknowledged) || hardBlocked
 
   const fillWith = (tokens: number) => {
     setDenomination('token')
@@ -170,7 +184,19 @@ export function ActionPanel(props: ActionPanelProps) {
         idleLabel={idleLabel}
         disabled={blocked}
         onClick={() => onSubmit(amountTokens)}
+        aria-describedby={hardBlocked ? reasonId : undefined}
       />
+
+      {hardBlocked ? (
+        <p
+          id={reasonId}
+          role="status"
+          className="m-0 text-[0.78rem]"
+          style={{ color: 'var(--caution)' }}
+        >
+          {blockReason}
+        </p>
+      ) : null}
 
       <TxStatus state={txState} revert={revert} />
     </div>

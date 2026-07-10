@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import type { Address } from '#/lib/contracts'
+import { formatUsd } from '#/lib/format'
 import { usePools } from '#/features/markets/hooks/usePools'
 import type { PoolsResult } from '#/features/markets/hooks/usePools'
 import type { MarketView } from '#/features/markets/types'
@@ -308,6 +309,91 @@ describe('PoolTable — pagination', () => {
       screen.queryByRole('navigation', { name: /pagination/i }),
     ).toBeNull()
     expect(screen.getByText('KEEP0')).toBeTruthy()
+  })
+})
+
+// --- U9: degraded-state affordances on the row --------------------------------
+// Columns that surface money cells, so an `undefined` value renders an em dash.
+const usdColumns: PoolColumn[] = [
+  { header: 'Pool', cell: (m) => <span>{m.collateralSymbol}</span> },
+  { header: 'Price', align: 'right', cell: (m) => formatUsd(m.priceUsd) },
+  { header: 'TVL', align: 'right', cell: (m) => formatUsd(m.tvlUsd) },
+]
+
+function renderUsdTable() {
+  return render(
+    <PoolTable comparator={keepOrder} columns={usdColumns} routePrefix="/earn" />,
+  )
+}
+
+describe('PoolTable — degraded states (U9)', () => {
+  // U9 scenario 1: a stale-price pool em-dashes its USD price cell and shows the
+  // "Price stale" badge, while its size cells (price-independent) still render.
+  it('em-dashes the price cell and shows the stale badge for a stale pool', () => {
+    mockResult({
+      data: [
+        makePool({
+          collateralSymbol: 'STALE',
+          priceStale: true,
+          priceUsd: undefined,
+        }),
+      ],
+    })
+    renderUsdTable()
+    // Badge present.
+    expect(screen.getByText('Price stale')).toBeTruthy()
+    // Price cell is an em dash, not a $0.
+    const body = screen.getAllByRole('rowgroup')[1]
+    expect(within(body).getByText('—')).toBeTruthy()
+    expect(within(body).queryByText('$0.00')).toBeNull()
+    // The size cell still renders (price staleness does not blank the size).
+    expect(within(body).getByText('$1,000.00')).toBeTruthy()
+  })
+
+  // U9 scenario 7: the badge carries role="status" so it is announced, not just
+  // colored.
+  it('marks the stale badge with role="status"', () => {
+    mockResult({ data: [makePool({ priceStale: true, priceUsd: undefined })] })
+    renderUsdTable()
+    expect(screen.getByText('Price stale').getAttribute('role')).toBe('status')
+  })
+
+  // U9 scenario 5: an unknown-size pool em-dashes its size cells and carries an
+  // audible "Size unavailable" marker — a genuinely zero-supply pool shows $0 and
+  // no marker, so the two are distinguishable to a screen reader.
+  it('distinguishes an unknown-size pool from a zero-size pool', () => {
+    mockResult({
+      data: [
+        makePool({
+          collateralSymbol: 'UNKNOWN',
+          sizeKnown: false,
+          tvlUsd: undefined,
+          priceUsd: undefined,
+        }),
+        makePool({
+          collateralSymbol: 'ZERO',
+          sizeKnown: true,
+          tvlUsd: 0,
+          priceUsd: 0,
+        }),
+      ],
+    })
+    renderUsdTable()
+    // The unknown-size pool is named, exactly once.
+    expect(screen.getAllByText('Size unavailable')).toHaveLength(1)
+    // The zero pool shows a real $0, not an em dash.
+    const body = screen.getAllByRole('rowgroup')[1]
+    expect(within(body).getAllByText('$0.00').length).toBeGreaterThan(0)
+    // The unknown pool em-dashes its size cell.
+    expect(within(body).getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  // U9 scenario 6 (row half): a fully healthy pool shows neither degraded marker.
+  it('shows no degraded marker for a healthy pool', () => {
+    mockResult({ data: [makePool({ collateralSymbol: 'FINE' })] })
+    renderUsdTable()
+    expect(screen.queryByText('Price stale')).toBeNull()
+    expect(screen.queryByText('Size unavailable')).toBeNull()
   })
 })
 

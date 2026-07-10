@@ -25,6 +25,7 @@ import { usePools } from '#/features/markets/hooks/usePools'
 import type { MarketView } from '#/features/markets/types'
 import { PoolSearch } from './PoolSearch'
 import { Pagination } from './Pagination'
+import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
 /** Horizontal alignment of a column's header and cells. */
 export type ColumnAlign = 'left' | 'right'
@@ -198,12 +199,19 @@ export function PoolTable({ comparator, columns, routePrefix }: PoolTableProps) 
                     {columns.map((column, index) => (
                       <td key={index} className={cellAlignClass(column.align)}>
                         {index === 0 ? (
-                          <a
-                            href={`${routePrefix}/${market.id}`}
-                            className="inline-flex items-center gap-2 font-semibold text-[var(--sea-ink)] no-underline"
-                          >
-                            {column.cell(market)}
-                          </a>
+                          // Identity column: the linked cell body plus the
+                          // degraded-state markers (stale price / unknown size)
+                          // sit beside the symbol, not on a price cell (R9, R27).
+                          <span className="inline-flex flex-wrap items-center gap-2">
+                            <a
+                              href={`${routePrefix}/${market.id}`}
+                              className="inline-flex items-center gap-2 font-semibold text-[var(--sea-ink)] no-underline"
+                            >
+                              {column.cell(market)}
+                            </a>
+                            {market.priceStale ? <StaleBadge /> : null}
+                            {!market.sizeKnown ? <SizeUnavailableChip /> : null}
+                          </span>
                         ) : (
                           column.cell(market)
                         )}

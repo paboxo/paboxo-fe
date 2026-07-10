@@ -1,3 +1,4 @@
+import { NON_FINITE } from '#/lib/format'
 import { TONE_COLOR } from './metrics'
 import type { Tone } from './metrics'
 
@@ -19,6 +20,9 @@ export function StatTile({
   hint,
   hero = false,
 }: StatTileProps) {
+  // An em-dash value means the reading was unavailable (R9/R27). The glyph alone
+  // is silent to a screen reader, so pair it with a visually-hidden word.
+  const unavailable = value === NON_FINITE
   return (
     <div className="flex flex-col gap-0.5" data-tone={tone}>
       <span className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--sea-ink-soft)]">
@@ -33,6 +37,7 @@ export function StatTile({
         style={{ color: TONE_COLOR[tone] }}
       >
         {value}
+        {unavailable ? <span className="sr-only">Unavailable</span> : null}
       </span>
       {hint ? (
         <span className="text-[0.72rem] text-[var(--sea-ink-soft)]">
