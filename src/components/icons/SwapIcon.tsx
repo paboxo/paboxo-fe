@@ -8,10 +8,10 @@ import { IconSvg } from './IconSvg'
 export function SwapIcon({ size }: IconProps) {
   return (
     <IconSvg size={size}>
-    <path d="M4 9h13" />
-    <path d="M14 6l3 3-3 3" />
-    <path d="M20 15H7" />
-    <path d="M10 12l-3 3 3 3" />
+      <path d="M4 9h13" />
+      <path d="M14 6l3 3-3 3" />
+      <path d="M20 15H7" />
+      <path d="M10 12l-3 3 3 3" />
     </IconSvg>
   )
 }

@@ -7,9 +7,7 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 /** A minimal size-bearing pool; only the sort-relevant fields matter here. */
 function pool(
   id: `0x${string}`,
-  size:
-    | { supply: bigint; borrow: bigint }
-    | 'unknown',
+  size: { supply: bigint; borrow: bigint } | 'unknown',
 ): MarketView {
   const known = size !== 'unknown'
   return {

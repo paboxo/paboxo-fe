@@ -28,7 +28,10 @@ const PXWBTC = TOKENS.pxWBTC.address.toLowerCase()
 const PXWHSK_POOL = RAW_POOLS[0].lendingPool.toLowerCase()
 
 function indexerReturning(pools: RawPool[]): IndexerAdapter {
-  return { ...createMockIndexerAdapter(), getPools: () => Promise.resolve(pools) }
+  return {
+    ...createMockIndexerAdapter(),
+    getPools: () => Promise.resolve(pools),
+  }
 }
 
 function renderPools() {
@@ -61,9 +64,9 @@ describe('usePools — validation and degraded states', () => {
     const { result } = renderPools()
     await settled(result)
 
-    expect(result.current.data.map((m) => m.collateralAddress.toLowerCase())).not.toContain(
-      unknownCollateral,
-    )
+    expect(
+      result.current.data.map((m) => m.collateralAddress.toLowerCase()),
+    ).not.toContain(unknownCollateral)
     expect(result.current.data).toHaveLength(1)
     expect(warn.mock.calls.flat().join(' ')).toContain(unknownCollateral)
   })
@@ -190,9 +193,9 @@ describe('usePool — pool-address route identity (U6, R30)', () => {
   it('resolves a checksummed URL case-insensitively to the ready pool', async () => {
     const { result } = renderPool(getAddress(PXWHSK_POOL))
     await waitFor(() => expect(result.current.status).toBe('ready'))
-    expect(
-      result.current.status === 'ready' && result.current.market.id,
-    ).toBe(PXWHSK_POOL)
+    expect(result.current.status === 'ready' && result.current.market.id).toBe(
+      PXWHSK_POOL,
+    )
   })
 
   it('is not-found for an address the indexer never returned', async () => {

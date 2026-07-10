@@ -73,7 +73,11 @@ function cellAlignClass(align: ColumnAlign | undefined): string {
   return align === 'right' ? 'num px-4 py-3 text-right' : 'px-4 py-3 text-left'
 }
 
-export function PoolTable({ comparator, columns, routePrefix }: PoolTableProps) {
+export function PoolTable({
+  comparator,
+  columns,
+  routePrefix,
+}: PoolTableProps) {
   const { data, isLoading, error, sharedTokenFailed } = usePools()
   const [query, setQuery] = useState('')
   // The requested page; the rendered page is derived (clamped) from it so a
@@ -82,10 +86,7 @@ export function PoolTable({ comparator, columns, routePrefix }: PoolTableProps) 
   const liveRegionId = useId()
 
   // Sort, then filter — both pure derivations over the fetched array (R17).
-  const sorted = useMemo(
-    () => [...data].sort(comparator),
-    [data, comparator],
-  )
+  const sorted = useMemo(() => [...data].sort(comparator), [data, comparator])
   const normalizedQuery = query.trim().toLowerCase()
   const filtered = useMemo(() => {
     if (!normalizedQuery) return sorted

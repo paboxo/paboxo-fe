@@ -41,7 +41,9 @@ export function MarketActions({ market }: { market: MarketView }) {
                 ? 'text-[#f3faf5]'
                 : 'text-[var(--sea-ink-soft)]'
             }`}
-            style={active === tab.key ? { background: 'var(--palm)' } : undefined}
+            style={
+              active === tab.key ? { background: 'var(--palm)' } : undefined
+            }
           >
             {tab.label}
           </button>

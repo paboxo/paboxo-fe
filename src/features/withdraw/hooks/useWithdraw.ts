@@ -38,8 +38,12 @@ export function useWithdraw(market: MarketView) {
       const withdrawUsd =
         toWholeNumber(amount, market.collateralDecimals) * priceUsd
       const remainingRatio =
-        collateralUsd > 0 ? Math.max(0, (collateralUsd - withdrawUsd) / collateralUsd) : 0
-      const maxBorrowAfter = BigInt(Math.round(Number(maxBorrow) * remainingRatio))
+        collateralUsd > 0
+          ? Math.max(0, (collateralUsd - withdrawUsd) / collateralUsd)
+          : 0
+      const maxBorrowAfter = BigInt(
+        Math.round(Number(maxBorrow) * remainingRatio),
+      )
 
       await write.run({
         preflight: preflightWithdraw({
@@ -58,7 +62,13 @@ export function useWithdraw(market: MarketView) {
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
     },
-    [address, market.poolAddress, market.collateralAddress, market.collateralDecimals, write],
+    [
+      address,
+      market.poolAddress,
+      market.collateralAddress,
+      market.collateralDecimals,
+      write,
+    ],
   )
 
   const withdrawLiquidity = useCallback(
@@ -76,7 +86,10 @@ export function useWithdraw(market: MarketView) {
           shares > 0n
             ? available > 0n
               ? { enabled: true }
-              : { enabled: false, reason: 'No liquidity available to withdraw right now.' }
+              : {
+                  enabled: false,
+                  reason: 'No liquidity available to withdraw right now.',
+                }
             : { enabled: false, reason: 'Enter an amount greater than zero.' },
         send: () =>
           chain.withdrawLiquidity(market.poolAddress, shares, recipient),

@@ -112,7 +112,8 @@ export const HISTORY_FIXTURES: HistoryEvent[] = [
     tokenSymbol: 'pxWHSK',
     decimals: 18,
     timestamp: 1_720_000_000,
-    txHash: '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
+    txHash:
+      '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1',
   },
   {
     id: 'evt-2',
@@ -124,7 +125,8 @@ export const HISTORY_FIXTURES: HistoryEvent[] = [
     tokenSymbol: 'pxUSDT',
     decimals: 6,
     timestamp: 1_720_050_000,
-    txHash: '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
+    txHash:
+      '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
   },
   {
     id: 'evt-3',
@@ -136,7 +138,8 @@ export const HISTORY_FIXTURES: HistoryEvent[] = [
     tokenSymbol: 'pxUSDT',
     decimals: 6,
     timestamp: 1_720_100_000,
-    txHash: '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3',
+    txHash:
+      '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3',
   },
 ]
 

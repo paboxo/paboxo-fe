@@ -26,7 +26,9 @@ describe('supplyRateWad', () => {
     const reserve = (15n * WAD) / 100n // 15%
     const supplyRate = supplyRateWad(borrowRate, util, reserve)
     // 7% * 0.60 * 0.85 = 3.57%
-    expect(supplyRate).toBe((((borrowRate * util) / WAD) * (WAD - reserve)) / WAD)
+    expect(supplyRate).toBe(
+      (((borrowRate * util) / WAD) * (WAD - reserve)) / WAD,
+    )
     expect(supplyRate).toBeLessThan(borrowRate)
   })
 

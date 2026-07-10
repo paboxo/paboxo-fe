@@ -162,11 +162,21 @@ export const USER_HISTORY_QUERY = /* GraphQL */ `
  */
 export const PROTOCOL_AGGREGATES_QUERY = /* GraphQL */ `
   query ProtocolAggregates {
-    supplyLiquiditys { totalCount }
-    withdrawLiquiditys { totalCount }
-    borrowDebts { totalCount }
-    repayByPositions { totalCount }
-    liquidations { totalCount }
+    supplyLiquiditys {
+      totalCount
+    }
+    withdrawLiquiditys {
+      totalCount
+    }
+    borrowDebts {
+      totalCount
+    }
+    repayByPositions {
+      totalCount
+    }
+    liquidations {
+      totalCount
+    }
   }
 `
 

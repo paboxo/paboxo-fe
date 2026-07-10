@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
-import {
-  positiveAmount,
-  staleBlockReason,
-} from '#/features/markets/gates'
+import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'

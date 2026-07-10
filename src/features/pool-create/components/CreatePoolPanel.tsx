@@ -24,9 +24,8 @@ const COLLATERAL_OPTIONS: Exclude<TokenSymbol, 'pxUSDT'>[] = [
  */
 export function CreatePoolPanel({ minSeed = 1000 }: { minSeed?: number }) {
   const { state, createPool } = useCreatePool()
-  const [collateral, setCollateral] = useState<
-    Exclude<TokenSymbol, 'pxUSDT'>
-  >('pxWHSK')
+  const [collateral, setCollateral] =
+    useState<Exclude<TokenSymbol, 'pxUSDT'>>('pxWHSK')
   const [seed, setSeed] = useState('')
   const [confirmed, setConfirmed] = useState(false)
 
@@ -116,8 +115,8 @@ export function CreatePoolPanel({ minSeed = 1000 }: { minSeed?: number }) {
           id="seed-decimals-unverified"
           style={{ color: 'var(--danger)' }}
         >
-          Could not verify pxUSDT decimals on-chain. Seeding is blocked until the
-          read succeeds.
+          Could not verify pxUSDT decimals on-chain. Seeding is blocked until
+          the read succeeds.
         </p>
       ) : null}
 
@@ -125,7 +124,10 @@ export function CreatePoolPanel({ minSeed = 1000 }: { minSeed?: number }) {
         state={state}
         idleLabel="Create pool"
         disabled={
-          belowMin || !confirmed || decimalsLoading || seedDecimals === undefined
+          belowMin ||
+          !confirmed ||
+          decimalsLoading ||
+          seedDecimals === undefined
         }
         aria-describedby={
           decimalsUnverified ? 'seed-decimals-unverified' : undefined

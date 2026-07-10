@@ -80,7 +80,10 @@ function BorrowPoolPage() {
               title="Connect to borrow"
               description="Connect a wallet to supply collateral, borrow, repay, or withdraw in this pool."
             >
-              <BorrowActions market={pool.market} hasCollateral={hasCollateral} />
+              <BorrowActions
+                market={pool.market}
+                hasCollateral={hasCollateral}
+              />
             </NetworkGuard>
           </aside>
         </div>

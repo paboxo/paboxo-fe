@@ -58,17 +58,21 @@ export function IrmCurveChart({ curve }: { curve: IrmCurve }) {
             fill: 'var(--sea-ink-soft)',
           }}
         />
-        <ReferenceLine
-          x={curve.currentUtil}
-          stroke="var(--palm)"
-          strokeDasharray="4 4"
-          label={{
-            value: `Current ${curve.currentUtil.toFixed(0)}%`,
-            position: 'insideTopLeft',
-            fontSize: 11,
-            fill: 'var(--palm)',
-          }}
-        />
+        {/* An unreadable utilization draws no marker — a line at 0% would be a
+            lie, not a default. */}
+        {curve.currentUtil === undefined ? null : (
+          <ReferenceLine
+            x={curve.currentUtil}
+            stroke="var(--palm)"
+            strokeDasharray="4 4"
+            label={{
+              value: `Current ${curve.currentUtil.toFixed(0)}%`,
+              position: 'insideTopLeft',
+              fontSize: 11,
+              fill: 'var(--palm)',
+            }}
+          />
+        )}
         <Line
           type="monotone"
           dataKey="borrowApr"

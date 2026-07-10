@@ -6,7 +6,9 @@ import { usePosition } from './usePosition'
 // Covers R12, R9: the dashboard position is derived from adapter reads + math.
 describe('usePosition', () => {
   it('builds a coherent funded position for the preview user', async () => {
-    const { result } = renderHook(() => usePosition(), { wrapper: QueryWrapper })
+    const { result } = renderHook(() => usePosition(), {
+      wrapper: QueryWrapper,
+    })
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false)
     })
@@ -23,7 +25,9 @@ describe('usePosition', () => {
   })
 
   it('derives a healthy health factor and a liquidation price below spot', async () => {
-    const { result } = renderHook(() => usePosition(), { wrapper: QueryWrapper })
+    const { result } = renderHook(() => usePosition(), {
+      wrapper: QueryWrapper,
+    })
     await waitFor(() => {
       expect(result.current.data).not.toBeNull()
     })

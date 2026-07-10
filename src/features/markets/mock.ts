@@ -10,7 +10,10 @@
  */
 import { MARKETS, TOKENS } from '#/lib/contracts'
 import type { PoolSize, RawPool, TokenPrice } from '#/lib/data'
-import { POOL_FIXTURES as CHAIN_FIXTURES, PRICE_FIXTURES } from '#/lib/data/fixtures/chain'
+import {
+  POOL_FIXTURES as CHAIN_FIXTURES,
+  PRICE_FIXTURES,
+} from '#/lib/data/fixtures/chain'
 import { POOL_FIXTURES as RAW_POOLS } from '#/lib/data/fixtures/indexer'
 import { getTokenByAddress } from '#/lib/tokens/registry'
 import { assembleMarketView } from './assemble'

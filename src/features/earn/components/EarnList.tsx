@@ -5,7 +5,6 @@ import type { PoolColumn } from '#/features/markets/components/PoolTable'
 import { compactUsd, numColumn } from '#/features/markets/columns'
 import { bySupply } from '#/features/markets/sort'
 
-
 // Earn columns (R5). Index 0 is the identity column: the shell wraps its body in
 // the row link, so it returns just the glyph + symbol — handed the collateral
 // **address** so the real logo resolves (symbol alone can't tell the two pxWHSK

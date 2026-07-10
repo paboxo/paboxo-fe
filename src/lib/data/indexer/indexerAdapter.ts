@@ -35,6 +35,9 @@ import {
   USER_HISTORY_QUERY,
 } from './queries'
 
+/** A pool list that never arrives is an outage, not a permanent spinner. */
+const GET_POOLS_TIMEOUT_MS = 15_000
+
 /** Thrown by `getPools` so the UI can tell an indexer outage from a bug. */
 export class IndexerError extends Error {
   constructor(message: string) {
@@ -148,7 +151,10 @@ function toHistoryEvent(
 }
 
 /** Borrow-token activity (supply/withdraw/borrow/repay/cross-chain). */
-function activityToEvent(action: HistoryAction, raw: RawActivity): HistoryEvent {
+function activityToEvent(
+  action: HistoryAction,
+  raw: RawActivity,
+): HistoryEvent {
   return toHistoryEvent(action, {
     id: raw.id,
     pool: raw.lendingPoolAddress,
@@ -192,7 +198,13 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
         response = await fetch(url, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ query: POOLS_QUERY, variables: { chainId: 177 } }),
+          body: JSON.stringify({
+            query: POOLS_QUERY,
+            variables: { chainId: 177 },
+          }),
+          // A hanging indexer would otherwise leave the pool query pending
+          // forever — a spinner that never resolves into the error state.
+          signal: AbortSignal.timeout(GET_POOLS_TIMEOUT_MS),
         })
       } catch {
         throw new IndexerError('indexer request failed')
@@ -209,7 +221,9 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       }
       const collection = json.data?.lendingPoolCreateds
       if (!collection || !Array.isArray(collection.items)) {
-        throw new IndexerError('indexer response missing lendingPoolCreateds.items')
+        throw new IndexerError(
+          'indexer response missing lendingPoolCreateds.items',
+        )
       }
       // Reserve factors are keyed by router, latest-timestamp wins. The query
       // orders by timestamp desc, so the first row seen per router is the newest.
@@ -226,7 +240,10 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       // The page is bounded, so a pool whose only row fell off the end would
       // silently default to a 0 reserve factor — overstating its supply APY.
       // Say so rather than render a number nothing checked.
-      if (reserves?.totalCount !== undefined && reserves.totalCount > rows.length) {
+      if (
+        reserves?.totalCount !== undefined &&
+        reserves.totalCount > rows.length
+      ) {
         console.error(
           `[indexer] reserve-factor page truncated (${rows.length} of ${reserves.totalCount}); some pools may report an overstated supply APY`,
         )
@@ -238,7 +255,9 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, { user })
       if (!data) return []
       const events: HistoryEvent[] = [
-        ...items(data.supplyLiquiditys).map((e) => activityToEvent('supply', e)),
+        ...items(data.supplyLiquiditys).map((e) =>
+          activityToEvent('supply', e),
+        ),
         ...items(data.withdrawLiquiditys).map((e) =>
           activityToEvent('withdraw', e),
         ),

@@ -111,6 +111,18 @@ export const MARKETS: MarketConfig[] = [
   },
 ]
 
+/**
+ * Resolve a market by either identity in circulation.
+ *
+ * `MarketConfig.id` is a human slug (`pxwhsk`), but `MarketView.id` is now the
+ * lowercased pool address — the routable identity the indexer supplies. Callers
+ * hold one or the other depending on which layer they came from, so match both.
+ * Matching only the slug silently disabled `useMarketPosition`, which capped the
+ * Withdraw tab at zero and hid a lender's own supplied liquidity.
+ */
 export function getMarketConfig(id: string): MarketConfig | undefined {
-  return MARKETS.find((market) => market.id === id)
+  const key = id.toLowerCase()
+  return MARKETS.find(
+    (market) => market.id === id || market.pool.toLowerCase() === key,
+  )
 }

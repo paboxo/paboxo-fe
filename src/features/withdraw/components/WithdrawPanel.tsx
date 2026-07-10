@@ -1,9 +1,6 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
-import {
-  positiveAmount,
-  staleBlockReason,
-} from '#/features/markets/gates'
+import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '../hooks/useWithdraw'
 

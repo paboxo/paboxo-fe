@@ -165,7 +165,11 @@ export const mockChainAdapter: ChainAdapter = {
     for (const [token, entry] of Object.entries(TOKEN_REGISTRY)) {
       let decimals: VerifiedDecimals = { valid: true, decimals: entry.decimals }
       if (f.unreadableDecimals?.includes(token)) {
-        decimals = { valid: false, reason: 'unreadable', registry: entry.decimals }
+        decimals = {
+          valid: false,
+          reason: 'unreadable',
+          registry: entry.decimals,
+        }
       } else if (f.mismatchedDecimals?.[token] !== undefined) {
         decimals = {
           valid: false,
@@ -181,7 +185,10 @@ export const mockChainAdapter: ChainAdapter = {
           ? { available: false }
           : {
               available: true,
-              data: { price: fixturePrice, updatedAt: Math.floor(Date.now() / 1000) },
+              data: {
+                price: fixturePrice,
+                updatedAt: Math.floor(Date.now() / 1000),
+              },
             }
 
       tokenMap[token] = { decimals, price }

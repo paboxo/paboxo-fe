@@ -48,8 +48,16 @@ describe('EarnList', () => {
     // Same fixtures the Borrow suite uses: A is bigger but fully borrowed, B is
     // smaller but has free liquidity. Earn ranks by size, so A leads.
     setPools([
-      makeMarket({ id: '0xaaa', totalSupplyAssets: 100n, totalBorrowAssets: 100n }),
-      makeMarket({ id: '0xbbb', totalSupplyAssets: 50n, totalBorrowAssets: 0n }),
+      makeMarket({
+        id: '0xaaa',
+        totalSupplyAssets: 100n,
+        totalBorrowAssets: 100n,
+      }),
+      makeMarket({
+        id: '0xbbb',
+        totalSupplyAssets: 50n,
+        totalBorrowAssets: 0n,
+      }),
     ])
     render(<EarnList />)
     expect(earnLinkHrefs()).toEqual(['/earn/0xaaa', '/earn/0xbbb'])
@@ -66,7 +74,11 @@ describe('EarnList', () => {
 
   it('sorts an unknown-size pool below a genuinely zero-size pool', () => {
     setPools([
-      makeMarket({ id: '0xaaa', sizeKnown: false, totalSupplyAssets: undefined }),
+      makeMarket({
+        id: '0xaaa',
+        sizeKnown: false,
+        totalSupplyAssets: undefined,
+      }),
       makeMarket({ id: '0xbbb', sizeKnown: true, totalSupplyAssets: 0n }),
     ])
     render(<EarnList />)

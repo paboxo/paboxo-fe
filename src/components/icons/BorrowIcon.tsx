@@ -8,9 +8,9 @@ import { IconSvg } from './IconSvg'
 export function BorrowIcon({ size }: IconProps) {
   return (
     <IconSvg size={size}>
-    <path d="M13 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7" />
-    <path d="M11 12h9" />
-    <path d="M16 8l4 4-4 4" />
+      <path d="M13 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h7" />
+      <path d="M11 12h9" />
+      <path d="M16 8l4 4-4 4" />
     </IconSvg>
   )
 }

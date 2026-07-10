@@ -132,10 +132,7 @@ describe('BorrowActions — stale price disables writes (U9)', () => {
 
     // The keeper recovers: same market, price now available.
     rerender(
-      <BorrowActions
-        market={{ ...market, priceStale: false }}
-        hasCollateral
-      />,
+      <BorrowActions market={{ ...market, priceStale: false }} hasCollateral />,
     )
     const after = borrowButton()
     // Same DOM node — not a remount.

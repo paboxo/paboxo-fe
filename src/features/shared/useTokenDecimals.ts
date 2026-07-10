@@ -25,6 +25,8 @@ export function useTokenDecimals(token: Address): VerifiedDecimalsResult {
   const query = useQuery({
     queryKey: ['token-decimals'],
     queryFn: () => getAdapters().chain.enrichPools([]),
+    // A token's decimals cannot change. Refetching them is pure cost.
+    staleTime: Infinity,
   })
 
   const verdict = query.data?.tokens[token.toLowerCase()]?.decimals

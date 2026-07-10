@@ -38,7 +38,9 @@ describe('useIrmCurve', () => {
     expect(atMax?.borrowApr).toBeCloseTo(120, 1)
     // Monotonically non-decreasing.
     for (let i = 1; i < points.length; i += 1) {
-      expect(points[i].borrowApr).toBeGreaterThanOrEqual(points[i - 1].borrowApr)
+      expect(points[i].borrowApr).toBeGreaterThanOrEqual(
+        points[i - 1].borrowApr,
+      )
     }
   })
 })

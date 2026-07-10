@@ -42,7 +42,9 @@ const positiveAmount = (amount: bigint): PreflightResult =>
 
 const freshPrice = (updatedAt: number, nowSeconds: number): PreflightResult =>
   isPriceStale(updatedAt, nowSeconds)
-    ? block('Price feed is stale (older than 1h) — wait for the oracle to update')
+    ? block(
+        'Price feed is stale (older than 1h) — wait for the oracle to update',
+      )
     : OK
 
 // ---- per-action gates ----

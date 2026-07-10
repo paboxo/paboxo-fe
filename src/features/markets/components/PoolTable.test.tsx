@@ -245,9 +245,7 @@ describe('PoolTable — pagination', () => {
     renderTable()
     const body = screen.getAllByRole('rowgroup')[1] // thead, tbody
     expect(within(body).getAllByRole('row').length).toBe(10)
-    expect(
-      screen.getByRole('navigation', { name: /pagination/i }),
-    ).toBeTruthy()
+    expect(screen.getByRole('navigation', { name: /pagination/i })).toBeTruthy()
   })
 
   // Scenario 12.
@@ -282,9 +280,7 @@ describe('PoolTable — pagination', () => {
     // Typing a query that fits one page resets the page and shows the match.
     fireEvent.change(search(), { target: { value: 'zorro' } })
     expect(screen.getByText('ZORRO')).toBeTruthy()
-    expect(
-      screen.queryByRole('navigation', { name: /pagination/i }),
-    ).toBeNull()
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).toBeNull()
   })
 
   // Scenario 15. rerender (not a fresh mount) so the page-2 state survives the
@@ -302,12 +298,14 @@ describe('PoolTable — pagination', () => {
     // A background refetch removes pools while the user sits on page 2.
     mockResult({ data: many.slice(0, 4) })
     rerender(
-      <PoolTable comparator={keepOrder} columns={columns} routePrefix="/earn" />,
+      <PoolTable
+        comparator={keepOrder}
+        columns={columns}
+        routePrefix="/earn"
+      />,
     )
     // The clamp keeps the render on the only page, with rows, not a blank page.
-    expect(
-      screen.queryByRole('navigation', { name: /pagination/i }),
-    ).toBeNull()
+    expect(screen.queryByRole('navigation', { name: /pagination/i })).toBeNull()
     expect(screen.getByText('KEEP0')).toBeTruthy()
   })
 })
@@ -322,7 +320,11 @@ const usdColumns: PoolColumn[] = [
 
 function renderUsdTable() {
   return render(
-    <PoolTable comparator={keepOrder} columns={usdColumns} routePrefix="/earn" />,
+    <PoolTable
+      comparator={keepOrder}
+      columns={usdColumns}
+      routePrefix="/earn"
+    />,
   )
 }
 

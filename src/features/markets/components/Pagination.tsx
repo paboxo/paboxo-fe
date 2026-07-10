@@ -38,10 +38,7 @@ export function Pagination({ page, pageCount, onPageChange }: PaginationProps) {
       >
         <span aria-hidden="true">‹</span>
       </button>
-      <span
-        aria-current="page"
-        className="font-semibold text-[var(--sea-ink)]"
-      >
+      <span aria-current="page" className="font-semibold text-[var(--sea-ink)]">
         Page {page} of {pageCount}
       </span>
       <button

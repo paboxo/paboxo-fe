@@ -44,4 +44,24 @@ describe('markets config', () => {
   it('returns undefined for an unknown market id', () => {
     expect(getMarketConfig('nope')).toBeUndefined()
   })
+
+  it('resolves a market by its pool address, not only its slug', () => {
+    // MarketView.id is the lowercased pool address now. Matching only the slug
+    // silently disabled useMarketPosition: the Withdraw tab capped at zero and
+    // a lender could not reach their own supplied liquidity.
+    const bySlug = getMarketConfig('pxwhsk')
+    expect(bySlug).toBeDefined()
+
+    const byAddress = getMarketConfig(bySlug!.pool.toLowerCase())
+    expect(byAddress).toBe(bySlug)
+
+    const byChecksummed = getMarketConfig(bySlug!.pool)
+    expect(byChecksummed).toBe(bySlug)
+  })
+
+  it('still returns undefined for an address no market owns', () => {
+    expect(
+      getMarketConfig('0x000000000000000000000000000000000000dead'),
+    ).toBeUndefined()
+  })
 })

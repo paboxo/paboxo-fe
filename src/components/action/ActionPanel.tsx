@@ -105,7 +105,10 @@ export function ActionPanel(props: ActionPanelProps) {
     preflight && validAmount ? preflight(amountTokens) : { enabled: true }
   const hardBlocked = blockReason !== undefined && blockReason !== ''
   const blocked =
-    !validAmount || !gate.enabled || (requiresAck && !acknowledged) || hardBlocked
+    !validAmount ||
+    !gate.enabled ||
+    (requiresAck && !acknowledged) ||
+    hardBlocked
 
   const fillWith = (tokens: number) => {
     setDenomination('token')

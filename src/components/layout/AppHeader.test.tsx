@@ -50,8 +50,15 @@ const noop = () => {}
 function connectedState(chain: { name: string; unsupported?: boolean }) {
   return {
     mounted: true,
-    account: { address: '0xabcabcabcabcabcabcabcabcabcabcabcabcabca', displayName: '0xabc…abca' },
-    chain: { id: HASHKEY.id, name: chain.name, unsupported: chain.unsupported ?? false },
+    account: {
+      address: '0xabcabcabcabcabcabcabcabcabcabcabcabcabca',
+      displayName: '0xabc…abca',
+    },
+    chain: {
+      id: HASHKEY.id,
+      name: chain.name,
+      unsupported: chain.unsupported ?? false,
+    },
     openAccountModal: noop,
     openChainModal: noop,
     openConnectModal: noop,
@@ -151,7 +158,9 @@ describe('AppHeader wallet controls', () => {
     const { container } = renderHeader('/earn')
     const control = chainControl(container)
     expect(control?.textContent).toContain('Wrong network')
-    const dot = control?.querySelector('span[aria-hidden="true"]') as HTMLElement
+    const dot = control?.querySelector(
+      'span[aria-hidden="true"]',
+    ) as HTMLElement
     expect(dot.style.background).toContain('--danger')
     // The announcement lives in the live region, not on the button.
     expect(liveRegion(container)?.textContent).toBe('Wrong network')

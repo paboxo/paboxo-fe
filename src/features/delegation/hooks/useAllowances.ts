@@ -25,7 +25,11 @@ async function loadAllowances(
 ): Promise<AllowanceEntry[]> {
   const { chain } = getAdapters()
   const tokens: Omit<AllowanceEntry, 'allowance'>[] = [
-    { token: TOKENS.pxUSDT.address, symbol: 'pxUSDT', decimals: TOKENS.pxUSDT.decimals },
+    {
+      token: TOKENS.pxUSDT.address,
+      symbol: 'pxUSDT',
+      decimals: TOKENS.pxUSDT.decimals,
+    },
     {
       token: market.collateralAddress,
       symbol: market.collateralSymbol,
@@ -35,7 +39,11 @@ async function loadAllowances(
   const entries = await Promise.all(
     tokens.map(async (info) => ({
       ...info,
-      allowance: await chain.getAllowance(info.token, owner, market.poolAddress),
+      allowance: await chain.getAllowance(
+        info.token,
+        owner,
+        market.poolAddress,
+      ),
     })),
   )
   return entries.filter((entry) => entry.allowance > 0n)

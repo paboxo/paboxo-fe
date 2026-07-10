@@ -313,8 +313,7 @@ export type VerifiedDecimals =
 
 /** A feed price. Unavailable when `latestRoundData` reverts — usually `PriceStale`. */
 export type TokenPrice =
-  | { available: true; data: PriceData }
-  | { available: false }
+  { available: true; data: PriceData } | { available: false }
 
 export interface TokenEnrichment {
   decimals: VerifiedDecimals

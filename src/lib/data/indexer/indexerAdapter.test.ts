@@ -161,7 +161,9 @@ describe('createLiveIndexerAdapter', () => {
       globalThis.fetch = mockFetch({
         data: { lendingPoolCreateds: { items: [] } },
       })
-      await expect(createLiveIndexerAdapter(URL).getPools()).resolves.toEqual([])
+      await expect(createLiveIndexerAdapter(URL).getPools()).resolves.toEqual(
+        [],
+      )
     })
 
     it('rejects when fetch rejects', async () => {
@@ -313,9 +315,8 @@ describe('createLiveIndexerAdapter', () => {
         },
       },
     })
-    const status = await createLiveIndexerAdapter(URL).getCrossChainStatus(
-      '0xmsg',
-    )
+    const status =
+      await createLiveIndexerAdapter(URL).getCrossChainStatus('0xmsg')
     expect(status.status).toBe('delivered')
   })
 
@@ -323,9 +324,8 @@ describe('createLiveIndexerAdapter', () => {
     globalThis.fetch = mockFetch({
       data: { crossChainTransfers: { items: [] } },
     })
-    const status = await createLiveIndexerAdapter(URL).getCrossChainStatus(
-      '0xmsg',
-    )
+    const status =
+      await createLiveIndexerAdapter(URL).getCrossChainStatus('0xmsg')
     expect(status.status).toBe('pending')
   })
 

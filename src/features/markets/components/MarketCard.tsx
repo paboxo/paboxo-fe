@@ -20,7 +20,7 @@ export function MarketCard({ market }: { market: MarketView }) {
         </div>
       </div>
 
-      <APYValue apy={market.supplyApy ?? 0} size="lg" />
+      <APYValue apy={market.supplyApy} size="lg" />
 
       <div className="text-sm text-[var(--sea-ink-soft)]">
         Supply APY ·{' '}

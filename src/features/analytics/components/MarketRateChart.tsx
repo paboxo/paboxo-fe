@@ -10,7 +10,9 @@ export function MarketRateChart({ market }: { market: MarketView }) {
 
   return (
     <section className="island-shell flex flex-col gap-3 rounded-2xl p-5">
-      <h3 className="display-title m-0 text-base font-semibold">Rate history</h3>
+      <h3 className="display-title m-0 text-base font-semibold">
+        Rate history
+      </h3>
       {isLoading ? (
         <LoadingCard rows={2} />
       ) : error || data.length === 0 ? (

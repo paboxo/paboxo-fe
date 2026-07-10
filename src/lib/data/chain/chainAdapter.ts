@@ -91,18 +91,36 @@ async function resolveSharesToken(router: Address): Promise<Address> {
 
 // ---- batched enrichment (two phases; see enrichPools) ----
 
+/** One entry of a batched read. Kept shaped so a call site cannot omit a field. */
+interface BatchCall {
+  chainId: number
+  address: Address
+  abi: readonly unknown[]
+  functionName: string
+  args?: readonly unknown[]
+}
+
 /** `readContracts` with `allowFailure` yields this per call. */
 type BatchResult =
-  | { status: 'success'; result: unknown }
-  | { status: 'failure'; error: unknown }
+  { status: 'success'; result: unknown } | { status: 'failure'; error: unknown }
 
-/** One multicall. `allowFailure` stays at its default `true`, so a reverting
- *  call lands as `status: 'failure'` instead of collapsing the whole batch. */
-async function batch(contracts: Array<unknown>): Promise<BatchResult[]> {
-  const results = await readContracts(wagmiConfig, {
-    contracts: contracts as never,
-  })
-  return results
+/**
+ * One multicall. `allowFailure` stays at its default `true`, so a *reverting
+ * call* lands as `status: 'failure'` instead of collapsing the batch.
+ *
+ * `allowFailure` says nothing about a *dead transport*: an unreachable RPC makes
+ * `readContracts` itself reject. `enrichPools` promises never to reject, so the
+ * whole batch degrades to per-call failures here — every field then reads as
+ * unavailable, which is exactly what an unreadable chain means.
+ */
+async function batch(contracts: BatchCall[]): Promise<BatchResult[]> {
+  try {
+    return await readContracts(wagmiConfig, {
+      contracts: contracts as never,
+    })
+  } catch (error) {
+    return contracts.map(() => ({ status: 'failure' as const, error }))
+  }
 }
 
 const isAddress = (v: unknown): v is Address =>
@@ -302,7 +320,7 @@ export const liveChainAdapter: ChainAdapter = {
     )
 
     // ---- phase 2: everything else, in one batch ----
-    const contracts: Array<unknown> = []
+    const contracts: BatchCall[] = []
     for (const p of routed) {
       const router = routerCache.get(p.lendingPool.toLowerCase()) as Address
       contracts.push(
@@ -340,7 +358,7 @@ export const liveChainAdapter: ChainAdapter = {
           address: CORE.tokenDataStream,
           abi: tokenDataStreamAbi,
           functionName: 'latestRoundData',
-          args: [token as Address],
+          args: [token],
         },
       )
     }

@@ -61,8 +61,7 @@ function rawPool(pool: Address, collateral: Address): RawPool {
 }
 
 type Result =
-  | { status: 'success'; result: unknown }
-  | { status: 'failure'; error: Error }
+  { status: 'success'; result: unknown } | { status: 'failure'; error: Error }
 
 const ok = (result: unknown): Result => ({ status: 'success', result })
 const fail = (message = 'reverted'): Result => ({
@@ -92,46 +91,82 @@ interface Scenario {
   prices?: Record<string, Result>
 }
 
+/** One entry of the `contracts` array the adapter actually sends. */
+interface SentCall {
+  address: string
+  functionName: string
+  args?: unknown[]
+}
+
 /**
- * Drive the two phases. Phase 1 asks for `router()` per uncached pool; phase 2
- * asks for three calls per routed pool, then decimals + price per registry token.
+ * Answer each call by **what was asked**, never by position.
+ *
+ * The previous version rebuilt the expected phase-2 layout from its own copy of
+ * the rules and returned that array. It therefore agreed with the code by
+ * construction: reorder the contracts array and the test still passed, because
+ * it never read the contracts array. Keying the response off `(address,
+ * functionName, args)` means the adapter's own request has to line up with the
+ * result it reads back, which is the whole thing the offset arithmetic asserts.
  */
 function driveBatches(pools: RawPool[], s: Scenario) {
   mockReads.mockReset()
   mockReads.mockImplementation((_config, args) => {
-    const contracts = (args as unknown as { contracts: Array<{ address: string }> })
-      .contracts
-    // Phase 1 is the router batch: one call per pool, addressed at the pool.
-    const isPhase1 = contracts.every((c) =>
-      pools.some((p) => p.lendingPool.toLowerCase() === c.address.toLowerCase()),
-    )
-    if (isPhase1) {
-      return Promise.resolve(
-        contracts.map((c) => {
-          const pool = c.address.toLowerCase()
-          return (
-            s.routers?.[pool] ?? ok(routerFor(pool as Address))
-          ) as unknown as never
-        }),
-      )
+    const contracts = (args as unknown as { contracts: SentCall[] }).contracts
+
+    const answer = (c: SentCall): Result => {
+      const at = c.address.toLowerCase()
+
+      // `router()` is asked of the pool itself.
+      if (c.functionName === 'router') {
+        return s.routers?.[at] ?? ok(routerFor(at as Address))
+      }
+
+      // Balances are asked of a router; map back to the pool that owns it.
+      if (
+        c.functionName === 'totalSupplyAssets' ||
+        c.functionName === 'totalBorrowAssets'
+      ) {
+        const pool = pools.find(
+          (p) => routerFor(p.lendingPool).toLowerCase() === at,
+        )
+        const key = pool?.lendingPool.toLowerCase() ?? ''
+        const trio = s.balances?.[key] ?? DEFAULT_TRIO
+        return c.functionName === 'totalSupplyAssets' ? trio[0] : trio[1]
+      }
+
+      // The rate is asked of the IRM, with the router as its argument.
+      if (c.functionName === 'calculateBorrowRate') {
+        const router = String(c.args?.[0] ?? '').toLowerCase()
+        const pool = pools.find(
+          (p) => routerFor(p.lendingPool).toLowerCase() === router,
+        )
+        const key = pool?.lendingPool.toLowerCase() ?? ''
+        return (s.balances?.[key] ?? DEFAULT_TRIO)[2]
+      }
+
+      // `decimals()` is asked of the token itself.
+      if (c.functionName === 'decimals') {
+        return s.decimals?.[at] ?? ok(TOKEN_REGISTRY[at].decimals)
+      }
+
+      // The price is asked of the feed contract, with the token as its argument.
+      if (c.functionName === 'latestRoundData') {
+        const token = String(c.args?.[0] ?? '').toLowerCase()
+        return s.prices?.[token] ?? ok(roundData(100_000_000n, NOW))
+      }
+
+      throw new Error(`unexpected call: ${c.functionName} @ ${c.address}`)
     }
-    // Phase 2: routed pools first (3 each), then registry tokens (2 each).
-    const routed = pools.filter(
-      (p) => (s.routers?.[p.lendingPool.toLowerCase()]?.status ?? 'success') === 'success',
-    )
-    const out: Result[] = []
-    for (const p of routed) {
-      const key = p.lendingPool.toLowerCase()
-      const trio = s.balances?.[key] ?? [ok(1000n), ok(400n), ok(5n * 10n ** 16n)]
-      out.push(...trio)
-    }
-    for (const token of REGISTRY_TOKENS) {
-      out.push(s.decimals?.[token] ?? ok(TOKEN_REGISTRY[token].decimals))
-      out.push(s.prices?.[token] ?? ok(roundData(100_000_000n, NOW)))
-    }
-    return Promise.resolve(out as unknown as never)
+
+    return Promise.resolve(contracts.map(answer) as unknown as never)
   })
 }
+
+const DEFAULT_TRIO: [Result, Result, Result] = [
+  ok(1000n),
+  ok(400n),
+  ok(5n * 10n ** 16n),
+]
 
 beforeEach(() => {
   mockRead.mockReset()
@@ -304,5 +339,38 @@ describe('enrichPools — balance and router failures (degrade, do not drop)', (
     expect(result.tokens[PXWHSK_XC].decimals.valid).toBe(false)
     expect(result.tokens[PXWETH].price.available).toBe(false)
     expect(result.tokens[PXUSDT].decimals.valid).toBe(true)
+  })
+})
+
+describe('enrichPools — the zero-pool path CreatePoolPanel depends on', () => {
+  it('skips phase 1 and still verifies every registry token', async () => {
+    driveBatches([], {})
+    const result = await liveChainAdapter.enrichPools([])
+
+    // One batch, not two: no pool means no router to resolve.
+    expect(mockReads).toHaveBeenCalledTimes(1)
+    expect(Object.keys(result.pools)).toHaveLength(0)
+    for (const token of REGISTRY_TOKENS) {
+      expect(result.tokens[token].decimals.valid).toBe(true)
+    }
+  })
+})
+
+describe('enrichPools — a dead transport, not a reverting call', () => {
+  it('degrades to all-unavailable instead of rejecting', async () => {
+    const pool = nextPool()
+    const pools = [rawPool(pool, PXWETH)]
+    // `allowFailure` only covers a call that reverts. An unreachable RPC makes
+    // readContracts itself reject — enrichPools promises never to.
+    mockReads.mockReset()
+    mockReads.mockRejectedValue(new Error('fetch failed'))
+
+    const result = await liveChainAdapter.enrichPools(pools)
+
+    expect(result.pools[pool.toLowerCase()].size.known).toBe(false)
+    for (const token of REGISTRY_TOKENS) {
+      expect(result.tokens[token].decimals.valid).toBe(false)
+      expect(result.tokens[token].price.available).toBe(false)
+    }
   })
 })

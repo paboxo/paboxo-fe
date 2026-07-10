@@ -28,9 +28,8 @@ describe('data registry', () => {
   })
 
   it('the fallback indexer serves history without an endpoint (AE4)', async () => {
-    const history = await resolveAdapters('live').indexer.getUserHistory(
-      MOCK_USER,
-    )
+    const history =
+      await resolveAdapters('live').indexer.getUserHistory(MOCK_USER)
     expect(Array.isArray(history)).toBe(true)
   })
 

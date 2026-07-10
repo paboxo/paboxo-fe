@@ -5,10 +5,9 @@ import {
   BorrowIcon,
   EarnIcon,
   PortfolioIcon,
-  SwapIcon
-  
+  SwapIcon,
 } from '#/components/icons'
-import type {IconProps} from '#/components/icons';
+import type { IconProps } from '#/components/icons'
 import { WalletControls } from '#/components/wallet/WalletControls'
 import { DensityToggle } from './DensityToggle'
 

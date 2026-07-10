@@ -35,7 +35,9 @@ describe('MarketActions', () => {
 
   it('defaults to the Supply action', () => {
     renderActions()
-    expect(screen.getByRole('tab', { name: 'Supply' }).getAttribute('aria-selected')).toBe('true')
+    expect(
+      screen.getByRole('tab', { name: 'Supply' }).getAttribute('aria-selected'),
+    ).toBe('true')
   })
 
   it('switches the panel when a different action tab is chosen', () => {

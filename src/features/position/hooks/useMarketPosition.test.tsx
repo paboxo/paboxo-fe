@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useAccount } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
+import { MARKETS } from '#/lib/contracts'
 import { useMarketPosition } from './usePosition'
 
 vi.mock('wagmi', () => ({ useAccount: vi.fn() }))
@@ -20,6 +21,28 @@ beforeEach(() => setConnected(true))
 
 // Covers R5, R7, R9.
 describe('useMarketPosition', () => {
+  it('resolves by the pool address, which is what MarketView.id now holds', async () => {
+    // Production passes `market.id` — a lowercased pool address since the pool
+    // list became indexer-sourced. Every test here used to pass a slug, so the
+    // suite stayed green while the Withdraw tab silently capped at zero.
+    const { result } = renderHook(
+      () => useMarketPosition(MARKETS[0].pool.toLowerCase()),
+      { wrapper: QueryWrapper },
+    )
+    await waitFor(() => expect(result.current.data).not.toBeNull())
+    expect(
+      result.current.data?.supplies.some((r) => r.symbol === 'pxUSDT'),
+    ).toBe(true)
+  })
+
+  it('resolves a checksummed pool address too', async () => {
+    const { result } = renderHook(() => useMarketPosition(MARKETS[0].pool), {
+      wrapper: QueryWrapper,
+    })
+    await waitFor(() => expect(result.current.data).not.toBeNull())
+    expect(result.current.data).not.toBeNull()
+  })
+
   it("returns one pool's supplied balance, collateral, debt, and health for a known id", async () => {
     const { result } = renderHook(() => useMarketPosition('pxwhsk'), {
       wrapper: QueryWrapper,

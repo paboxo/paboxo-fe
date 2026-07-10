@@ -49,9 +49,7 @@ vi.mock('#/features/position/hooks/usePosition', () => ({
   useMarketPosition: () => ({ data: { supplies: [] } }),
 }))
 
-const { BorrowPanel } = await import(
-  '#/features/borrow/components/BorrowPanel'
-)
+const { BorrowPanel } = await import('#/features/borrow/components/BorrowPanel')
 const { RepayPanel } = await import('#/features/repay/components/RepayPanel')
 
 /** pxUSDT is 6dp. A market whose verified borrow decimals say so. */
@@ -83,7 +81,9 @@ function market(borrowDecimals: number): MarketView {
 }
 
 async function typeAmountAndSubmit(label: RegExp, amount: string) {
-  fireEvent.change(screen.getByLabelText('Amount'), { target: { value: amount } })
+  fireEvent.change(screen.getByLabelText('Amount'), {
+    target: { value: amount },
+  })
   await act(async () => {
     fireEvent.click(screen.getByRole('button', { name: label }))
   })
@@ -119,7 +119,10 @@ describe('write forms use the verified borrow decimals', () => {
 })
 
 describe('CreatePoolPanel has no market, so it verifies decimals itself', () => {
-  async function renderCreatePool(decimals: number | undefined, isLoading = false) {
+  async function renderCreatePool(
+    decimals: number | undefined,
+    isLoading = false,
+  ) {
     vi.doMock('#/features/shared/useTokenDecimals', () => ({
       useTokenDecimals: () => ({ decimals, isLoading, error: null }),
     }))
@@ -127,9 +130,8 @@ describe('CreatePoolPanel has no market, so it verifies decimals itself', () => 
       useCreatePool: () => ({ state: 'idle', createPool }),
     }))
     vi.resetModules()
-    const { CreatePoolPanel } = await import(
-      '#/features/pool-create/components/CreatePoolPanel'
-    )
+    const { CreatePoolPanel } =
+      await import('#/features/pool-create/components/CreatePoolPanel')
     return render(<CreatePoolPanel minSeed={1000} />, { wrapper: QueryWrapper })
   }
 
@@ -153,14 +155,15 @@ describe('CreatePoolPanel has no market, so it verifies decimals itself', () => 
   it('blocks submission and explains why when decimals() cannot be read', async () => {
     await renderCreatePool(undefined)
     await fillAndConfirm('1000')
-    expect(screen.getByRole('alert').textContent).toMatch(
-      /could not verify pxusdt decimals/i,
-    )
     const button = screen.getByRole('button', { name: /create pool/i })
     expect((button as HTMLButtonElement).disabled).toBe(true)
-    expect(button.getAttribute('aria-describedby')).toBe(
-      'seed-decimals-unverified',
-    )
+
+    // Resolve the id to its element: asserting the attribute value and the
+    // alert's text separately would pass even if they pointed at nothing.
+    const describedBy = button.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    const reason = document.getElementById(describedBy as string)
+    expect(reason?.textContent).toMatch(/could not verify pxusdt decimals/i)
     expect(createPool).not.toHaveBeenCalled()
   })
 
@@ -177,16 +180,21 @@ describe('CreatePoolPanel has no market, so it verifies decimals itself', () => 
 describe('no write form parses an amount with a registry constant', () => {
   const PANELS = [
     'src/features/supply/components/SupplyLiquidityPanel.tsx',
+    'src/features/supply/components/SupplyPanel.tsx',
     'src/features/borrow/components/BorrowPanel.tsx',
     'src/features/repay/components/RepayPanel.tsx',
+    'src/features/withdraw/components/WithdrawPanel.tsx',
     'src/features/pool-create/components/CreatePoolPanel.tsx',
   ]
 
-  it.each(PANELS)('%s never reads decimals from the registry constant', async (path) => {
-    const { readFileSync } = await import('node:fs')
-    const source = readFileSync(path, 'utf8')
-    // `TOKENS.pxUSDT.address` stays fine — an address is deployment config.
-    // `TOKENS.pxUSDT.decimals` is the unverified number R8 exists to distrust.
-    expect(source).not.toMatch(/TOKENS\.\w+\.decimals/)
-  })
+  it.each(PANELS)(
+    '%s never reads decimals from the registry constant',
+    async (path) => {
+      const { readFileSync } = await import('node:fs')
+      const source = readFileSync(path, 'utf8')
+      // `TOKENS.pxUSDT.address` stays fine — an address is deployment config.
+      // `TOKENS.pxUSDT.decimals` is the unverified number R8 exists to distrust.
+      expect(source).not.toMatch(/TOKENS\.\w+\.decimals/)
+    },
+  )
 })

@@ -38,8 +38,16 @@ describe('BorrowList', () => {
     // B is smaller but has free liquidity (free 50). Borrow ranks by free
     // liquidity, so B leads — the opposite of Earn's order on these fixtures.
     setPools([
-      makeMarket({ id: '0xaaa', totalSupplyAssets: 100n, totalBorrowAssets: 100n }),
-      makeMarket({ id: '0xbbb', totalSupplyAssets: 50n, totalBorrowAssets: 0n }),
+      makeMarket({
+        id: '0xaaa',
+        totalSupplyAssets: 100n,
+        totalBorrowAssets: 100n,
+      }),
+      makeMarket({
+        id: '0xbbb',
+        totalSupplyAssets: 50n,
+        totalBorrowAssets: 0n,
+      }),
     ])
     render(<BorrowList />)
     expect(borrowLinkHrefs()).toEqual(['/borrow/0xbbb', '/borrow/0xaaa'])
@@ -47,8 +55,16 @@ describe('BorrowList', () => {
 
   it('breaks an identical liquidity signal by ascending pool address', () => {
     setPools([
-      makeMarket({ id: '0xbbb', totalSupplyAssets: 100n, totalBorrowAssets: 0n }),
-      makeMarket({ id: '0xaaa', totalSupplyAssets: 100n, totalBorrowAssets: 0n }),
+      makeMarket({
+        id: '0xbbb',
+        totalSupplyAssets: 100n,
+        totalBorrowAssets: 0n,
+      }),
+      makeMarket({
+        id: '0xaaa',
+        totalSupplyAssets: 100n,
+        totalBorrowAssets: 0n,
+      }),
     ])
     render(<BorrowList />)
     expect(borrowLinkHrefs()).toEqual(['/borrow/0xaaa', '/borrow/0xbbb'])
@@ -62,7 +78,12 @@ describe('BorrowList', () => {
         totalSupplyAssets: undefined,
         totalBorrowAssets: undefined,
       }),
-      makeMarket({ id: '0xbbb', sizeKnown: true, totalSupplyAssets: 0n, totalBorrowAssets: 0n }),
+      makeMarket({
+        id: '0xbbb',
+        sizeKnown: true,
+        totalSupplyAssets: 0n,
+        totalBorrowAssets: 0n,
+      }),
     ])
     render(<BorrowList />)
     // A known zero-liquidity pool is still knowable; unknown always sinks last.
