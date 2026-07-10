@@ -101,13 +101,23 @@ export const PRICE_FEEDS: Record<string, FeedInfo> = {
 }
 
 export interface CrossChainAddresses {
-  /** Paboxo's own Burn&Mint bridge token (pxWHSK) — a different contract per chain. */
+  /** Paboxo's own Burn&Mint bridge token (pxWHSK) — a different contract per chain. Cross-chain SUPPLY. */
   bridgeToken: { hashkey: Address; base: Address }
   burnMintTokenPool: { hashkey: Address; base: Address }
   /** Base-side sender: user calls supplyToHashKey / quote here to supply cross-chain. */
   baseSender: Address
   /** True once the Base sender is deployed AND allowlisted on the HashKey receiver. */
   baseSenderDeployed: boolean
+  /**
+   * Cross-chain BORROW rail: the borrow asset (pxUSDT) now has a CCIP burn&mint pool on both chains, so
+   * `LendingPool.borrow` with `chainId=8453` bridges the borrowed pxUSDT to the user's EOA on Base.
+   * `hashkey` = the market borrow asset; `base` = its bridged counterpart minted on Base.
+   */
+  borrowBridge: {
+    token: { hashkey: Address; base: Address }
+    burnMintTokenPool: { hashkey: Address; base: Address }
+    enabled: boolean
+  }
 }
 
 export const CROSS_CHAIN: CrossChainAddresses = {
@@ -122,4 +132,16 @@ export const CROSS_CHAIN: CrossChainAddresses = {
   // Owner = deployer (authority model). Sender allowlisted on receiver 0x8ab3…66Ae.
   baseSender: '0x54d50F364Da0c1C913B433299b3Ae6D1cD7D356A',
   baseSenderDeployed: true,
+  // Cross-chain borrow rail (pxUSDT), live 2026-07-10. Lane HashKey↔Base wired both ways.
+  borrowBridge: {
+    token: {
+      hashkey: '0x4852Bc014401415C4CE4788A04cAB019d1527aAa',
+      base: '0xB428c1FeB0208DbF4184aC7a788c4ba8a1daB314',
+    },
+    burnMintTokenPool: {
+      hashkey: '0xfaDe11Ae9d9365D7892BEDa4e23975937307c178',
+      base: '0x4224CdF58ECFA22b3b628965149FcB997E1aFC77',
+    },
+    enabled: true,
+  },
 }
