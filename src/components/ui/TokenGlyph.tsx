@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Address } from '#/lib/contracts'
 import { getTokenByAddress } from '#/lib/tokens/registry'
 
@@ -15,15 +16,19 @@ export function TokenGlyph({
   size?: number
 }) {
   const entry = address ? getTokenByAddress(address) : undefined
+  // A registry path can still 404 at runtime (renamed / not-yet-deployed asset);
+  // fall back to the initials circle instead of a broken-image icon.
+  const [failed, setFailed] = useState(false)
 
   // The 1.5px cutout border is what separates the front token from the one
   // tucked 40% behind it in TokenPairGlyph — the logo must keep it too.
-  if (entry) {
+  if (entry && !failed) {
     return (
       <img
         src={entry.logo}
         alt=""
         aria-hidden="true"
+        onError={() => setFailed(true)}
         className="inline-block flex-shrink-0"
         style={{
           width: size,

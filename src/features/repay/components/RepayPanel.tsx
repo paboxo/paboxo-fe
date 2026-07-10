@@ -91,6 +91,7 @@ export function RepayPanel({ market }: { market: MarketView }) {
         title={`Repay ${market.borrowSymbol}`}
         idleLabel="Repay"
         symbol={option.symbol}
+        tokenAddress={option.address}
         decimals={option.decimals}
         priceUsd={option.priceUsd}
         maxTokens={1000}

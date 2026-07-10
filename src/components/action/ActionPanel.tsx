@@ -4,8 +4,11 @@ import type { Denomination } from '#/components/ui/MoneyInput'
 import { ProjectedHealth } from '#/components/ui/ProjectedHealth'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
 import { ActionButton } from '#/components/ui/ActionButton'
+import { TokenGlyph } from '#/components/ui/TokenGlyph'
+import { NetworkBadge } from '#/components/ui/NetworkBadge'
 import { TxStatus, TxStepper } from '#/components/ui/TxStatus'
 import type { TxStep } from '#/components/ui/TxStatus'
+import type { Address } from '#/lib/contracts'
 import type { TxState } from '#/lib/tx/txState'
 import type { NormalizedRevert } from '#/lib/tx/revertReason'
 import { ReviewBlock } from './ReviewBlock'
@@ -20,6 +23,8 @@ export interface ActionPanelProps {
   title: string
   idleLabel: string
   symbol: string
+  /** When set and known to the registry, the token logo renders in the header. */
+  tokenAddress?: Address
   decimals: number
   priceUsd?: number
   balance?: bigint
@@ -66,6 +71,7 @@ export function ActionPanel(props: ActionPanelProps) {
     title,
     idleLabel,
     symbol,
+    tokenAddress,
     decimals,
     priceUsd,
     balance,
@@ -130,7 +136,13 @@ export function ActionPanel(props: ActionPanelProps) {
 
   return (
     <div className="island-shell flex flex-col gap-3 rounded-2xl p-4">
-      <h3 className="display-title m-0 text-base font-semibold">{title}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="display-title m-0 flex items-center gap-2 text-base font-semibold">
+          <TokenGlyph symbol={symbol} address={tokenAddress} size={22} />
+          {title}
+        </h3>
+        <NetworkBadge />
+      </div>
 
       <MoneyInput
         symbol={symbol}

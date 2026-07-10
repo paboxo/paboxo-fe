@@ -27,6 +27,7 @@ export function WithdrawPanel({ market }: { market: MarketView }) {
       title={`Withdraw ${market.collateralSymbol}`}
       idleLabel="Withdraw"
       symbol={market.collateralSymbol}
+      tokenAddress={market.collateralAddress}
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
       maxTokens={1000}

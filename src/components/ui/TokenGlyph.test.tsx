@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { TokenGlyph } from './TokenGlyph'
 import { TokenPairGlyph } from './TokenPairGlyph'
 import { getTokenByAddress } from '#/lib/tokens/registry'
@@ -55,6 +55,15 @@ describe('TokenGlyph', () => {
     const { container } = render(
       <TokenGlyph symbol="pxWETH" address={unknown} />,
     )
+    expect(container.querySelector('img')).toBeNull()
+    expect(container.textContent).toBe('WET')
+  })
+
+  it('falls back to initials when the registry logo 404s at runtime', () => {
+    const { container } = render(
+      <TokenGlyph symbol="pxWETH" address={PXWETH} />,
+    )
+    fireEvent.error(container.querySelector('img')!)
     expect(container.querySelector('img')).toBeNull()
     expect(container.textContent).toBe('WET')
   })

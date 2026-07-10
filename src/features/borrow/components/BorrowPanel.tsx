@@ -25,6 +25,7 @@ export function BorrowPanel({ market }: { market: MarketView }) {
       title={`Borrow ${market.borrowSymbol}`}
       idleLabel="Borrow"
       symbol={market.borrowSymbol}
+      tokenAddress={market.borrowAddress}
       decimals={market.borrowDecimals}
       priceUsd={1}
       maxTokens={1000}

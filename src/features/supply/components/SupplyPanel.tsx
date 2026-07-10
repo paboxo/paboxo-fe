@@ -21,6 +21,7 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       title={`Supply ${market.collateralSymbol}`}
       idleLabel="Supply"
       symbol={market.collateralSymbol}
+      tokenAddress={market.collateralAddress}
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
       maxTokens={1000}

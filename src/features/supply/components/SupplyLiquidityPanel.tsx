@@ -86,6 +86,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           title={`Supply ${market.borrowSymbol}`}
           idleLabel="Supply"
           symbol={market.borrowSymbol}
+          tokenAddress={market.borrowAddress}
           decimals={decimals}
           priceUsd={1}
           balance={wallet}
@@ -104,6 +105,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           title={`Withdraw ${market.borrowSymbol}`}
           idleLabel="Withdraw"
           symbol={market.borrowSymbol}
+          tokenAddress={market.borrowAddress}
           decimals={decimals}
           priceUsd={1}
           balance={suppliedBalance}
