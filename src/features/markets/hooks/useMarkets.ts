@@ -9,10 +9,9 @@
  * their `mockReturnValue` test doubles) are unaffected by the `sharedTokenFailed`
  * signal `usePools` adds.
  */
-import type { Address } from '#/lib/contracts'
 import type { QueryResult } from '#/features/shared/query'
 import type { MarketView } from '../types'
-import { usePool, usePools } from './usePools'
+import { usePools } from './usePools'
 
 export function useMarkets(): QueryResult<MarketView[]> {
   const { data, isLoading, error } = usePools()
@@ -20,11 +19,14 @@ export function useMarkets(): QueryResult<MarketView[]> {
 }
 
 /**
- * Legacy single-pool selector. New identity is the pool address; U6 switches the
- * routes onto `usePool(address)`. Matching is case-insensitive against the
- * pool-address id, so a legacy slug simply resolves to `undefined` here.
+ * Legacy single-pool selector, kept as a narrow `QueryResult`. U6 moved the
+ * detail routes onto `usePool`'s discriminated result, so this shim now selects
+ * straight off `usePools()` rather than through `usePool` — matching is
+ * case-insensitive against the pool-address id, so a legacy slug simply resolves
+ * to `undefined` here.
  */
 export function useMarket(id: string): QueryResult<MarketView | undefined> {
-  const { data, isLoading, error } = usePool(id as Address)
-  return { data, isLoading, error }
+  const { data, isLoading, error } = usePools()
+  const target = id.toLowerCase()
+  return { data: data.find((market) => market.id === target), isLoading, error }
 }

@@ -11,8 +11,9 @@ import {
 import { createMockIndexerAdapter } from '#/lib/data/indexer/indexerAdapter.mock'
 import { POOL_FIXTURES as RAW_POOLS } from '#/lib/data/fixtures/indexer'
 import type * as DataModule from '#/lib/data'
+import { getAddress } from 'viem'
 import { assembleMarketView } from '../assemble'
-import { usePools } from './usePools'
+import { usePool, usePools } from './usePools'
 
 // A controllable adapter pair — each test swaps `adapters` before rendering.
 let adapters: { chain: typeof mockChainAdapter; indexer: IndexerAdapter }
@@ -171,6 +172,65 @@ describe('usePools — result contract', () => {
     ;[...result.current.data].sort((a, b) => b.id.localeCompare(a.id))
 
     expect(getPools).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('usePool — pool-address route identity (U6, R30)', () => {
+  function renderPool(address: string) {
+    return renderHook(() => usePool(address as `0x${string}`), {
+      wrapper: QueryWrapper,
+    })
+  }
+
+  it('is pending while the shared query loads, never not-found', () => {
+    const { result } = renderPool(PXWHSK_POOL)
+    expect(result.current.status).toBe('pending')
+  })
+
+  it('resolves a checksummed URL case-insensitively to the ready pool', async () => {
+    const { result } = renderPool(getAddress(PXWHSK_POOL))
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(
+      result.current.status === 'ready' && result.current.market.id,
+    ).toBe(PXWHSK_POOL)
+  })
+
+  it('is not-found for an address the indexer never returned', async () => {
+    const { result } = renderPool('0xabc0000000000000000000000000000000000abc')
+    await waitFor(() => expect(result.current.status).not.toBe('pending'))
+    expect(result.current.status).toBe('not-found')
+  })
+
+  it('is unavailable for a pool the indexer returned but validation removed', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // The indexer returns this pool, but its collateral token is unknown, so
+    // validation drops it — the address stays in `indexerPools`.
+    const unknownPool: RawPool = {
+      ...RAW_POOLS[1],
+      collateralToken: '0xdead00000000000000000000000000000000beef',
+    }
+    adapters.indexer = indexerReturning([RAW_POOLS[0], unknownPool])
+
+    const { result } = renderPool(unknownPool.lendingPool)
+    await waitFor(() => expect(result.current.status).not.toBe('pending'))
+    expect(result.current.status).toBe('unavailable')
+  })
+
+  it('is unavailable (not not-found) when the shared borrow token failed and every pool disappeared', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    setMockEnrichFailures({ unreadableDecimals: [PXUSDT] })
+
+    const { result } = renderPool(PXWHSK_POOL)
+    await waitFor(() => expect(result.current.status).not.toBe('pending'))
+    expect(result.current.status).toBe('unavailable')
+  })
+
+  it('is unavailable rather than not-found when the query rejects', async () => {
+    adapters.indexer = createMockIndexerAdapter({ failPools: true })
+
+    const { result } = renderPool(PXWHSK_POOL)
+    await waitFor(() => expect(result.current.status).not.toBe('pending'))
+    expect(result.current.status).toBe('unavailable')
   })
 })
 

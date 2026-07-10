@@ -34,7 +34,30 @@ export interface PoolsResult extends QueryResult<MarketView[]> {
 interface PoolLoad {
   views: MarketView[]
   sharedTokenFailed: boolean
+  /** Lowercased addresses of every pool the indexer returned **before**
+   *  validation. `usePool` needs this to tell "the indexer returned this pool
+   *  but validation removed it" (unavailable) from "the indexer never returned
+   *  this address" (not-found) — the validated `views` alone cannot. */
+  indexerPools: string[]
 }
+
+/**
+ * One pool's terminal state for a detail route (U6, R30). A discriminated union
+ * so a route renders four distinguishable outcomes and nothing else:
+ *   - `pending`      — the shared query is still loading.
+ *   - `unavailable`  — the indexer returned this pool but validation removed it
+ *                      (unknown token, unverifiable decimals, or the shared
+ *                      borrow token failing so every pool disappeared); a query
+ *                      fault also reads as unavailable, since we then cannot say
+ *                      the pool does not exist. R30's "why we can't show it".
+ *   - `not-found`    — the indexer never returned this address at all.
+ *   - `ready`        — the validated pool to render.
+ */
+export type PoolResult =
+  | { status: 'pending' }
+  | { status: 'unavailable' }
+  | { status: 'not-found' }
+  | { status: 'ready'; market: MarketView }
 
 /** R11: warn once per unknown token address, in development only. */
 const warnedUnknown = new Set<string>()
@@ -68,6 +91,11 @@ async function loadPools(): Promise<PoolLoad> {
   // 1. May reject on an indexer fault — let React Query surface `isError` (R32).
   const raw = await indexer.getPools()
 
+  // Every address the indexer knew, before any validation drops it. `usePool`
+  // reads this to distinguish an omitted pool (unavailable) from an address the
+  // indexer never returned (not-found).
+  const indexerPools = raw.map((p) => p.lendingPool.toLowerCase())
+
   // 2. R11: drop pools whose collateral OR borrow token the registry doesn't know.
   const known = raw.filter((p) => {
     const collateral = getTokenByAddress(p.collateralToken)
@@ -93,7 +121,7 @@ async function loadPools(): Promise<PoolLoad> {
   const sharedTokenFailed =
     known.length > 0 && !enrichment.tokens[SHARED_BORROW_TOKEN].decimals.valid
 
-  return { views, sharedTokenFailed }
+  return { views, sharedTokenFailed, indexerPools }
 }
 
 /** Assemble one pool, or `null` when a token's decimals can't be verified.
@@ -123,9 +151,15 @@ function toView(pool: RawPool, enrichment: PoolsEnrichment): MarketView | null {
   )
 }
 
+/** The one pool query. `usePools` and `usePool` both read it under the same key,
+ *  so React Query dedupes to a single fetch — the detail page never refetches. */
+function usePoolsQuery() {
+  return useQuery({ queryKey: ['pools'], queryFn: loadPools })
+}
+
 /** The one pool query. Search/sort/pagination memoize over `data` (R17). */
 export function usePools(): PoolsResult {
-  const query = useQuery({ queryKey: ['pools'], queryFn: loadPools })
+  const query = usePoolsQuery()
   return {
     data: query.data?.views ?? [],
     isLoading: query.isLoading,
@@ -134,13 +168,33 @@ export function usePools(): PoolsResult {
   }
 }
 
-/** Select one pool from the shared query result — no second fetch. */
-export function usePool(address: Address): QueryResult<MarketView | undefined> {
-  const { data, isLoading, error } = usePools()
+/**
+ * Resolve one pool from the shared query result — no second fetch (U6, R30).
+ *
+ * The raw `address` is only ever compared, never handed to a contract call: a
+ * malformed `$id` simply misses the case-insensitive lookup and reads as
+ * not-found, so the route needs no address-format validation. Only the matched
+ * pool's own `poolAddress` reaches the write paths downstream.
+ */
+export function usePool(address: Address): PoolResult {
+  const query = usePoolsQuery()
   const target = address.toLowerCase()
-  return {
-    data: data.find((market) => market.id === target),
-    isLoading,
-    error,
+
+  if (query.isLoading) return { status: 'pending' }
+
+  const load = query.data
+  const market = load?.views.find((view) => view.id === target)
+  if (market) return { status: 'ready', market }
+
+  // Not in the validated list. The indexer either knew this address and
+  // validation removed it, or the shared borrow token failed so every pool
+  // disappeared (both → unavailable, R30), or it never returned it (not-found).
+  // A query fault leaves us unable to claim the pool does not exist, so it too
+  // reads as unavailable rather than the misleading not-found.
+  const indexerKnew = load?.indexerPools.includes(target) ?? false
+  const sharedTokenFailed = load?.sharedTokenFailed ?? false
+  if (query.error != null || sharedTokenFailed || indexerKnew) {
+    return { status: 'unavailable' }
   }
+  return { status: 'not-found' }
 }
