@@ -5,7 +5,7 @@ import { AppHeader } from './AppHeader'
 /**
  * The full-height app column: header, content, footer.
  *
- * This must sit *inside* the providers. `RainbowKitProvider` renders an
+ * This must sit *inside* the providers. A provider layer can render an
  * unstyled `<div>` between `<body>` and its children, so a flex column declared
  * on `<body>` never reaches the header/main/footer — the `flex-1` chain broke
  * there and the footer floated ~300px above the viewport bottom.

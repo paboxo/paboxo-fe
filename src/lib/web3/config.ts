@@ -1,15 +1,21 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import type { AppKitNetwork } from '@reown/appkit/networks'
 import { PROJECT_ID } from '#/lib/config/env'
-import { chains } from './chains'
+import { hashkey } from './chains'
 
 // A non-empty placeholder keeps the config buildable in preview (no project id);
-// real connect needs a WalletConnect Cloud project id (VITE_REOWN_PROJECT_ID).
-const projectId = PROJECT_ID || 'paboxo-preview'
+// real connect needs a Reown/WalletConnect Cloud project id (VITE_REOWN_PROJECT_ID).
+export const projectId = PROJECT_ID || 'paboxo-preview'
 
-/** wagmi config built by RainbowKit — bundled wallets + SSR cookie storage. */
-export const wagmiConfig = getDefaultConfig({
-  appName: 'Paboxo',
+// HashKey 177 is the only active network — the whole money market lives there.
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [hashkey]
+
+/** wagmi v3 config, built by the Reown AppKit wagmi adapter (replaces RainbowKit's
+ *  getDefaultConfig). `createAppKit` in Web3Provider wires the modal to this. */
+export const wagmiAdapter = new WagmiAdapter({
   projectId,
-  chains,
+  networks,
   ssr: true,
 })
+
+export const wagmiConfig = wagmiAdapter.wagmiConfig

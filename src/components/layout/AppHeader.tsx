@@ -45,7 +45,7 @@ const NAV: Array<{
 /**
  * The app shell header (U9, U11, R6, R7). Two-plane nav with an active
  * indicator and hand-drawn inline icons, and the wallet controls (one chain
- * chip + one account chip) rendered through RainbowKit. The Simple/Pro density
+ * chip + one account chip) rendered through Reown AppKit. The Simple/Pro density
  * toggle lives in the page header.
  */
 export function AppHeader() {
