@@ -3,6 +3,7 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import type { PreflightResult } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
+import { STALE_PRICE_REASON } from '#/features/markets/components/PoolBadges'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '#/features/withdraw/hooks/useWithdraw'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
@@ -22,11 +23,15 @@ const positiveAmount = (amountTokens: number): PreflightResult =>
     : { enabled: false, reason: 'Enter an amount greater than zero.' }
 
 /**
- * Earn-side liquidity action host (U2, R6, AE1). Supplies pxUSDT *liquidity* to
- * the pool and withdraws it. The Supply tab caps at the user's wallet pxUSDT
- * balance; the Withdraw tab caps at what the user has supplied in *this* pool
- * (read from the pool via `useMarketPosition`), so they can only pull out what
- * they put in. Reuses the existing hooks unchanged (no new write logic).
+ * Earn-side liquidity action host. Supplies pxUSDT *liquidity* to the pool and
+ * withdraws it. The Supply tab caps at the user's wallet pxUSDT balance; the
+ * Withdraw tab caps at what the user has supplied in *this* pool.
+ *
+ * A stale collateral price blocks **Supply** but not **Withdraw** (R10 says
+ * "write actions"; this narrows it deliberately). Supplying adds exposure to a
+ * pool whose collateral cannot be valued. Withdrawing only removes it, and
+ * `withdrawLiquidity` makes no on-chain oracle call at all (AS8) — blocking it
+ * would trap a lender's own funds behind a feed they never depended on.
  */
 export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
   const [active, setActive] = useState<LiquidityAction>('supply')
@@ -93,6 +98,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           maxTokens={toNumber(wallet, decimals)}
           maxLabel="Wallet balance"
           preflight={positiveAmount}
+          blockReason={market.priceStale ? STALE_PRICE_REASON : undefined}
           reviewApy={market.supplyApy}
           networkFeeUsd={0.42}
           txState={supplyLiquidity.state}
