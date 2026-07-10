@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryWrapper } from '#/test/utils'
 import { MOCK_MARKETS } from '#/features/markets/mock'
 import { LiquidatePanel } from './components/LiquidatePanel'
@@ -47,7 +47,7 @@ describe('LiquidatePanel', () => {
 })
 
 describe('CreatePoolPanel', () => {
-  it('blocks a below-minimum seed and enables at/above the minimum once acknowledged', () => {
+  it('blocks a below-minimum seed and enables at/above the minimum once acknowledged', async () => {
     render(
       <QueryWrapper>
         <CreatePoolPanel minSeed={1000} />
@@ -62,6 +62,9 @@ describe('CreatePoolPanel', () => {
 
     fireEvent.change(seed, { target: { value: '2000' } })
     fireEvent.click(screen.getByRole('checkbox'))
-    expect(button.hasAttribute('disabled')).toBe(false)
+
+    // The seed amount cannot be scaled until decimals() is verified on-chain
+    // (R31), so the button stays disabled while that read is in flight.
+    await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false))
   })
 })
