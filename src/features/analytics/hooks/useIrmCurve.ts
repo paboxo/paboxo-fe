@@ -58,7 +58,7 @@ export function useIrmCurve(market: MarketView): QueryResult<IrmCurve | null> {
       }
     : null
   return {
-    data: params ? buildCurve(params, market.utilization) : null,
+    data: params ? buildCurve(params, market.utilization ?? 0) : null,
     isLoading: query.isLoading,
     error: query.error,
   }

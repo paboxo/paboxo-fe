@@ -69,7 +69,7 @@ export function MarketDetail({ market }: { market: MarketView }) {
           </div>
         </div>
 
-        <APYBreakdown base={market.supplyApy} rewards={market.rewardsApy} />
+        <APYBreakdown base={market.supplyApy} />
 
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <StatTile

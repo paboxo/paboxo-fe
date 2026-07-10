@@ -12,7 +12,15 @@
  * (chain adapter), so protocol TVL/utilization never come from these queries.
  */
 
-/** The live lending markets (`lendingPoolCreateds`). Drives `getPools`. */
+/**
+ * The live lending markets (`lendingPoolCreateds`). Drives `getPools`.
+ *
+ * The reserve factor is NOT on `lendingPoolCreated`; it lives in
+ * `tokenReserveFactorSets`, keyed by the pool's **router** address (that table's
+ * `lendingPool` field actually holds the router), WAD-scaled, latest-timestamp
+ * wins. Selected in the same document so `getPools` still issues one request and
+ * keeps its reject-on-fault contract.
+ */
 export const POOLS_QUERY = /* GraphQL */ `
   query Pools($chainId: Int = 177) {
     lendingPoolCreateds(where: { contractChainId: $chainId }) {
@@ -34,6 +42,13 @@ export const POOLS_QUERY = /* GraphQL */ `
         sharesToken
         router
         contractChainId
+      }
+    }
+    tokenReserveFactorSets(orderBy: "timestamp", orderDirection: "desc") {
+      items {
+        lendingPool
+        reserveFactor
+        timestamp
       }
     }
   }

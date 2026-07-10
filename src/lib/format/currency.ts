@@ -9,8 +9,13 @@ export interface UsdOptions {
   compact?: boolean
 }
 
-export function formatUsd(value: number, options: UsdOptions = {}): string {
-  if (!Number.isFinite(value)) return NON_FINITE
+export function formatUsd(
+  value: number | undefined,
+  options: UsdOptions = {},
+): string {
+  // `undefined` means "unavailable" (an enrichment read failed) — an em dash,
+  // never a formatted zero. Non-finite is treated the same.
+  if (value === undefined || !Number.isFinite(value)) return NON_FINITE
   if (value === 0) return '$0.00'
   const abs = Math.abs(value)
   if (abs < 0.01) return '< $0.01'
@@ -21,8 +26,9 @@ export function formatUsd(value: number, options: UsdOptions = {}): string {
   return `${sign}$${body}`
 }
 
-export function formatPercent(value: number, dp = 2): string {
-  if (!Number.isFinite(value)) return NON_FINITE
+export function formatPercent(value: number | undefined, dp = 2): string {
+  // `undefined` means "unavailable" — an em dash, never a formatted zero.
+  if (value === undefined || !Number.isFinite(value)) return NON_FINITE
   return `${formatNumber(value, { maxFractionDigits: dp, minFractionDigits: dp })}%`
 }
 

@@ -200,6 +200,7 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       }
       const json = (await response.json()) as GraphQLResponse<{
         lendingPoolCreateds?: Page<RawPoolRow>
+        tokenReserveFactorSets?: Page<RawReserveFactorRow>
       }>
       if (json.errors) {
         throw new IndexerError('indexer returned GraphQL errors')
@@ -208,7 +209,17 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
       if (!collection || !Array.isArray(collection.items)) {
         throw new IndexerError('indexer response missing lendingPoolCreateds.items')
       }
-      return collection.items.map(mapRawPool)
+      // Reserve factors are keyed by router, latest-timestamp wins. The query
+      // orders by timestamp desc, so the first row seen per router is the newest.
+      // A missing/absent collection is not fatal — pools default to `0n`.
+      const reserveByRouter = new Map<string, bigint>()
+      for (const row of json.data?.tokenReserveFactorSets?.items ?? []) {
+        const key = row.lendingPool.toLowerCase()
+        if (!reserveByRouter.has(key)) {
+          reserveByRouter.set(key, BigInt(row.reserveFactor || '0'))
+        }
+      }
+      return collection.items.map((r) => mapRawPool(r, reserveByRouter))
     },
 
     async getUserHistory(user) {
@@ -302,7 +313,17 @@ interface RawPoolRow {
   contractChainId: number
 }
 
-function mapRawPool(r: RawPoolRow): RawPool {
+/** Raw `tokenReserveFactorSets` row — `lendingPool` here holds the router. */
+interface RawReserveFactorRow {
+  lendingPool: string
+  reserveFactor: string
+  timestamp: number | string
+}
+
+function mapRawPool(
+  r: RawPoolRow,
+  reserveByRouter: Map<string, bigint>,
+): RawPool {
   return {
     lendingPool: r.lendingPool as Address,
     collateralToken: r.collateralToken as Address,
@@ -319,6 +340,7 @@ function mapRawPool(r: RawPoolRow): RawPool {
     liquidationBonus: BigInt(r.liquidationBonus || '0'),
     sharesToken: r.sharesToken as Address,
     router: r.router as Address,
+    reserveFactorWad: reserveByRouter.get(r.router.toLowerCase()) ?? 0n,
     contractChainId: r.contractChainId,
   }
 }

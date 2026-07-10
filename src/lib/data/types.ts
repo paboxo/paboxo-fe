@@ -288,6 +288,12 @@ export interface RawPool {
   sharesToken: Address
   /** The accounting router for this market (`LendingPool(pool).router()`). */
   router: Address
+  /**
+   * Reserve factor, WAD (1e18 = 100%). Not emitted on `lendingPoolCreated` — it
+   * comes from the `tokenReserveFactorSets` table keyed by the pool's *router*
+   * (latest-timestamp-wins), and feeds `supplyRateWad`. `0n` when no row exists.
+   */
+  reserveFactorWad: bigint
   contractChainId: number
 }
 

@@ -55,6 +55,7 @@ function rawPool(pool: Address, collateral: Address): RawPool {
     liquidationBonus: 0n,
     sharesToken: PXUSDT,
     router: routerFor(pool),
+    reserveFactorWad: 0n,
     contractChainId: 177,
   }
 }

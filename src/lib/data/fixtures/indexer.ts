@@ -42,6 +42,8 @@ export const POOL_FIXTURES: RawPool[] = [
     borrowTokenFormatted: 'pxUSDT',
     sharesToken: '0xe9d61d5f19fb2326cba5d092eb610c964371c505',
     router: '0xe2ee3ce542c887b8878fea3e7420f912b7b8c0cf',
+    // router 0xe2ee3ce5… → 15%
+    reserveFactorWad: 150_000_000_000_000_000n,
     ...SHARED_POOL_PARAMS,
   },
   {
@@ -52,6 +54,8 @@ export const POOL_FIXTURES: RawPool[] = [
     borrowTokenFormatted: 'pxUSDT',
     sharesToken: '0xc03f145deee64c51d05617a6954f71c7ec54db9c',
     router: '0x641a6150a0f39ec84af0c56953f759d81c431285',
+    // router 0x641a6150… → 10%
+    reserveFactorWad: 100_000_000_000_000_000n,
     ...SHARED_POOL_PARAMS,
   },
   {
@@ -62,6 +66,8 @@ export const POOL_FIXTURES: RawPool[] = [
     borrowTokenFormatted: 'pxUSDT',
     sharesToken: '0x6d66b34f8cb6aeefd605844b2a24b6a8a1cd4dc0',
     router: '0x029cfd8b55a6fbc1fb56a53b271815ec68d2ef11',
+    // router 0x029cfd8b… → 15%
+    reserveFactorWad: 150_000_000_000_000_000n,
     ...SHARED_POOL_PARAMS,
   },
   {
@@ -72,6 +78,8 @@ export const POOL_FIXTURES: RawPool[] = [
     borrowTokenFormatted: 'pxUSDT',
     sharesToken: '0x6bdb310ed88dc50c5c7e08f8faeba915dbca158b',
     router: '0x6670100a3c8425468d88c83e110621000f48dcc4',
+    // router 0x6670100a… → 10%
+    reserveFactorWad: 100_000_000_000_000_000n,
     ...SHARED_POOL_PARAMS,
   },
 ]
