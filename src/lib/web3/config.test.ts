@@ -11,14 +11,14 @@ describe('web3 config (RainbowKit)', () => {
   })
 
   it('declares Multicall3 so batched reads batch instead of falling back', () => {
-    expect(hashkey.contracts?.multicall3?.address).toBe(
+    expect(hashkey.contracts.multicall3.address).toBe(
       '0xcA11bde05977b3631167028862bE2a173976CA11',
     )
   })
 
   it('keeps the rpc and explorer config intact alongside the contracts entry', () => {
     expect(hashkey.rpcUrls.default.http[0]).toMatch(/^https?:\/\//)
-    expect(hashkey.blockExplorers?.default.name).toBe('HashKey Explorer')
+    expect(hashkey.blockExplorers.default.name).toBe('HashKey Explorer')
   })
 
   it('requireProjectId throws a clear error when the env var is missing', () => {
