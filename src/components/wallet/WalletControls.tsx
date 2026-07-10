@@ -15,8 +15,9 @@ import { HASHKEY } from '#/lib/contracts'
  *   `sm` (the phone header needs the room for the account chip and toggles).
  * - The account chip never collapses.
  *
- * A `mounted` gate keeps wallet state off the server so the header does not
- * shift or mismatch on hydration.
+ * A mount gate keeps the AppKit hooks out of SSR: `createAppKit` runs only in
+ * the browser, so the inner component (which calls the hooks) must not render on
+ * the server. The outer component renders an inert placeholder until mounted.
  */
 
 // Shared height/shape contract — no display utility here, so each control can
@@ -28,26 +29,41 @@ const CONNECT_CLASS =
   'rounded-full px-3 py-1.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60'
 const CONNECT_STYLE = { background: 'var(--palm)', color: '#f3faf5' }
 
+/** Invisible, inert placeholder for SSR / pre-mount so the header does not
+ *  shift and no wallet hook runs on the server. */
+function ConnectPlaceholder() {
+  return (
+    <button
+      type="button"
+      disabled
+      aria-hidden="true"
+      className={CONNECT_CLASS}
+      style={{ ...CONNECT_STYLE, opacity: 0 }}
+    >
+      Connect
+    </button>
+  )
+}
+
 export function WalletControls() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <ConnectPlaceholder />
+  return <WalletControlsInner />
+}
+
+function WalletControlsInner() {
   const { open } = useAppKit()
   const { address, isConnected } = useAppKitAccount()
   const { chainId } = useAppKitNetwork()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
 
-  const connected = mounted && isConnected && address
-
-  if (!connected) {
-    // Not mounted yet: keep an invisible, inert placeholder so the header does
-    // not shift when the wallet becomes ready.
+  if (!isConnected || !address) {
     return (
       <button
         type="button"
-        disabled={!mounted}
-        aria-hidden={mounted ? undefined : 'true'}
-        onClick={mounted ? () => open({ view: 'Connect' }) : undefined}
+        onClick={() => open({ view: 'Connect' })}
         className={CONNECT_CLASS}
-        style={mounted ? CONNECT_STYLE : { ...CONNECT_STYLE, opacity: 0 }}
+        style={CONNECT_STYLE}
       >
         Connect
       </button>

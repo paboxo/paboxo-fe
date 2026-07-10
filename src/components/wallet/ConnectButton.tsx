@@ -12,31 +12,38 @@ const BUTTON_CLASS =
 const CONNECT_STYLE = { background: 'var(--palm)', color: '#f3faf5' }
 const WRONG_NETWORK_STYLE = { background: 'var(--danger)', color: '#fff' }
 
+/** Invisible, inert placeholder for SSR / pre-mount so no wallet hook runs on
+ *  the server (createAppKit is browser-only). */
+function ConnectPlaceholder() {
+  return (
+    <button
+      type="button"
+      disabled
+      aria-hidden="true"
+      className={BUTTON_CLASS}
+      style={{ ...CONNECT_STYLE, opacity: 0 }}
+    >
+      Connect
+    </button>
+  )
+}
+
 /**
  * Wallet connect entry. Opens Reown AppKit's connect/account/network views while
- * keeping the app's coastal styling + the AccountPill. A `mounted` gate avoids
- * running wallet state on the server (no SSR hydration mismatch).
+ * keeping the app's coastal styling + the AccountPill. A mount gate keeps the
+ * AppKit hooks out of SSR (see WalletControls).
  */
 export default function ConnectButton() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <ConnectPlaceholder />
+  return <ConnectButtonInner />
+}
+
+function ConnectButtonInner() {
   const { open } = useAppKit()
   const { address, isConnected } = useAppKitAccount()
   const { chainId, caipNetwork } = useAppKitNetwork()
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
-  if (!mounted) {
-    return (
-      <button
-        type="button"
-        disabled
-        aria-hidden="true"
-        className={BUTTON_CLASS}
-        style={{ ...CONNECT_STYLE, opacity: 0 }}
-      >
-        Connect
-      </button>
-    )
-  }
 
   if (!isConnected || !address) {
     return (
