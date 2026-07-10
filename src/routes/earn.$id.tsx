@@ -45,7 +45,7 @@ function EarnPoolPage() {
       ) : isLoading || !data ? (
         <LoadingCard />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
           <PoolInfo market={data} context="earn" />
           <aside className="h-fit lg:sticky lg:top-20">
             <NetworkGuard
