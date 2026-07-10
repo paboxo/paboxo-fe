@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AppShell } from '../components/layout/AppShell'
 import { DensityProvider } from '../components/density/DensityProvider'
+import { ToastProvider } from '../components/ui/ToastProvider'
 import { Web3Provider } from '../lib/web3/Web3Provider'
 
 import appCss from '../styles.css?url'
@@ -42,9 +43,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
         <Web3Provider>
-          <DensityProvider>
-            <AppShell>{children}</AppShell>
-          </DensityProvider>
+          <ToastProvider>
+            <DensityProvider>
+              <AppShell>{children}</AppShell>
+            </DensityProvider>
+          </ToastProvider>
         </Web3Provider>
         <TanStackDevtools
           config={{

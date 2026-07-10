@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { QueryKey } from '@tanstack/react-query'
 import { HASHKEY } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
+import { useToast } from '#/components/ui/ToastProvider'
 import { getAdapters } from '#/lib/data'
 import type { Hash } from '#/lib/data'
 import type { PreflightResult } from './preflight'
@@ -44,6 +45,10 @@ export interface WriteActionInput {
 export interface UseWriteAction {
   state: TxState
   revert: NormalizedRevert | null
+  /** Mutation-style surface (R6): in-flight (approving/signing/pending). */
+  isPending: boolean
+  /** Mutation-style surface (R6): the last run ended in error or on-chain revert. */
+  isError: boolean
   /** Resolves `true` only when the tx confirmed — lets a caller run a follow-up
    *  (e.g. reset a liquidation over-approval) exactly on success. */
   run: (input: WriteActionInput) => Promise<boolean>
@@ -57,6 +62,7 @@ export function useWriteAction(
   const { address, chainId, isConnected } = useAccount()
   const { switchChainAsync } = useSwitchChain()
   const queryClient = useQueryClient()
+  const showToast = useToast()
   const [state, setState] = useState<TxState>('idle')
   const [revert, setRevert] = useState<NormalizedRevert | null>(null)
 
@@ -72,15 +78,16 @@ export function useWriteAction(
       if (!isConnected || !address) {
         setState('error')
         setRevert({ message: 'Connect your wallet to continue.' })
+        showToast({ tone: 'danger', title: 'Connect your wallet to continue.' })
         return false
       }
 
       if (input.preflight && !input.preflight.enabled) {
+        const message =
+          input.preflight.reason ?? 'This action is not available right now.'
         setState('error')
-        setRevert({
-          message:
-            input.preflight.reason ?? 'This action is not available right now.',
-        })
+        setRevert({ message })
+        showToast({ tone: 'danger', title: message })
         return false
       }
 
@@ -93,8 +100,10 @@ export function useWriteAction(
         if (isUserRejection(error)) {
           setState('rejected')
         } else {
+          const message = 'Switch to the required network to continue.'
           setState('error')
-          setRevert({ message: 'Switch to the required network to continue.' })
+          setRevert({ message })
+          showToast({ tone: 'danger', title: message })
         }
         return false
       }
@@ -127,13 +136,16 @@ export function useWriteAction(
         // The send returns on broadcast; wait for the receipt before confirming.
         await chain.waitForReceipt(hash)
         setState('confirmed')
+        showToast({ tone: 'positive', title: 'Transaction confirmed' })
       } catch (error) {
         if (isUserRejection(error)) {
           setState('rejected')
           return false
         }
+        const normalized = normalizeRevertReason(error)
         setState('reverted')
-        setRevert(normalizeRevertReason(error))
+        setRevert(normalized)
+        showToast({ tone: 'danger', title: normalized.message })
         return false
       }
 
@@ -155,8 +167,13 @@ export function useWriteAction(
       requiredChainId,
       switchChainAsync,
       queryClient,
+      showToast,
     ],
   )
 
-  return { state, revert, run, reset }
+  const isPending =
+    state === 'approving' || state === 'signing' || state === 'pending'
+  const isError = state === 'error' || state === 'reverted'
+
+  return { state, revert, isPending, isError, run, reset }
 }
