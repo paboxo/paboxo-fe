@@ -27,6 +27,8 @@ export interface MoneyInputProps {
   onMax?: () => void
   onQuickFill?: (fraction: number) => void
   maxLabel?: string
+  /** Label for the balance line (e.g. "Your Balance", "Supplied"). */
+  balanceLabel?: string
   /** Externally supplied validation message (overrides the built-in insufficient check). */
   error?: string
   autoFocus?: boolean
@@ -50,6 +52,7 @@ export function MoneyInput({
   onMax,
   onQuickFill,
   maxLabel = 'Max',
+  balanceLabel = 'Your Balance',
   error,
   autoFocus = false,
 }: MoneyInputProps) {
@@ -94,20 +97,22 @@ export function MoneyInput({
       ? Math.max(0, Math.min(1, tokenAmount / maxTokens))
       : 0
   const canFill = onQuickFill !== undefined && (maxTokens ?? 0) > 0
+  // The balance line reads "Your Balance" by default (matching the mockup);
+  // callers can override `balanceLabel` (e.g. "Supplied" on withdraw). The token
+  // symbol is already in the panel header, so it is not repeated on the left.
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-[0.75rem] text-[var(--sea-ink-soft)]">
-        <span className="font-bold text-[var(--sea-ink)]">{symbol}</span>
-        {balanceTokens !== undefined ? (
-          <span>
-            Balance:{' '}
-            <span className="num">
-              {formatTokenAmount(balance!, decimals)} {symbol}
-            </span>
+      {balanceTokens !== undefined ? (
+        <div className="flex items-center justify-between px-1 text-[0.75rem]">
+          <span className="font-bold text-[var(--sea-ink)]">
+            {balanceLabel}
           </span>
-        ) : null}
-      </div>
+          <span className="num text-[var(--sea-ink-soft)]">
+            {formatTokenAmount(balance!, decimals)} {symbol}
+          </span>
+        </div>
+      ) : null}
 
       <NetworkBadge />
 

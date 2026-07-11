@@ -30,4 +30,14 @@ describe('AmountSlider', () => {
     render(<AmountSlider value={0} onChange={() => {}} disabled />)
     expect(screen.getByLabelText<HTMLInputElement>(LABEL).disabled).toBe(true)
   })
+
+  it('is a native range carrying the .amount-slider a11y contract', () => {
+    // The ≥44px hit area (WCAG 2.5.5) and the :focus-visible ring live on the
+    // `.amount-slider` rule in styles.css — not measurable in jsdom, so assert
+    // the element is a native range input carrying that class (its contract).
+    render(<AmountSlider value={0.25} onChange={() => {}} />)
+    const slider = screen.getByLabelText<HTMLInputElement>(LABEL)
+    expect(slider.getAttribute('type')).toBe('range')
+    expect(slider.classList.contains('amount-slider')).toBe(true)
+  })
 })
