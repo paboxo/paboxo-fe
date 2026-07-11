@@ -168,8 +168,8 @@ export interface ProtectionConfig {
 }
 
 export const PROTECTION: ProtectionConfig = {
-  agentKeeper: '0x0000000000000000000000000000000000000000', // TODO: AI keeper wallet
-  feeTreasury: '0x0000000000000000000000000000000000000000', // TODO: buyback/fee-sink wallet
+  agentKeeper: '0x1840A5a5AE7D0F70674C434f3BFf4a7e529c9F0b', // REBALANCE_KEEPER / AGENT_ADDRESS (keeper docs AI-REBALANCE-FRONTEND.md §delegasi)
+  feeTreasury: '0x63b9679e3A253920161B51A79D122EAad1c19baF', // buyback / fee-sink wallet
   feeToken: TOKENS.pxUSDT.address,
   feeAmount: 1_000_000n, // 1 pxUSDT (6dp) demo fee
 }
