@@ -28,13 +28,21 @@ export const CORE: CoreAddresses = {
 }
 
 /**
- * Not fixed addresses (do not invent):
- * - Each market's accounting `router` = `LendingPool(pool).router()`, resolved
- *   at runtime (two-address rule: writes -> pool, state reads -> router).
- * - `HelperUtils` (getMaxBorrowAmount / getCollateralValue / getAddressPosition
- *   / isLiquidatable) is discovered via the factory / broadcast logs.
+ * `HelperUtils` — deployed on HashKey 177 (DeployCore broadcast). Read-only
+ * helper. Used here for the cross-chain BORROW fee quote: `getFee(BorrowParams,
+ * onBehalf)` returns the native-gas CCIP fee for a `chainId != 177` borrow.
+ *
+ * If the deployed `getFee` reverts `CrossChainDisabled` (an older build) the
+ * chain adapter falls back to a revert-probe of `LendingPool.borrowDebt`, so a
+ * swap of this address is a config change, not a code edit. Leave `undefined`
+ * to force the probe path.
+ *
+ * Not a fixed address (do not invent): each market's accounting `router` =
+ * `LendingPool(pool).router()`, resolved at runtime (two-address rule: writes
+ * -> pool, state reads -> router).
  */
-export const HELPER_UTILS: Address | undefined = undefined
+export const HELPER_UTILS: Address | undefined =
+  '0x02a66b51fc24e08535a6cfe1e11e532d8a089212'
 
 export interface TokenInfo {
   address: Address
