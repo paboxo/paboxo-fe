@@ -47,8 +47,8 @@ The gateway interface mirrors HSP's real API 1:1 so swapping in `@hsp/sdk` later
 
 | Field | What | Status |
 |---|---|---|
-| `agentKeeper` | AI keeper wallet that receives rebalance-delegation | **TODO** (zero-address) — candidate `0x6f8FF91db6664cEe49D3d9fa55052A5773bBc0F9`, confirm |
-| `feeTreasury` | Fee recipient — buyback / fee-sink wallet | **TODO** (zero-address) |
+| `agentKeeper` | AI keeper wallet that receives rebalance-delegation | ✅ `0x1840A5a5AE7D0F70674C434f3BFf4a7e529c9F0b` — the **REBALANCE_KEEPER / `AGENT_ADDRESS`** (keeper `docs/AI-REBALANCE-FRONTEND.md`), NOT the market-maker wallet |
+| `feeTreasury` | Fee recipient — buyback / fee-sink wallet | **TODO** (zero-address) — product decision, pending |
 | `feeToken` | Fee stablecoin | ✅ pxUSDT |
 | `feeAmount` | Fee in base units | ✅ `1_000_000n` (1 pxUSDT) |
 
