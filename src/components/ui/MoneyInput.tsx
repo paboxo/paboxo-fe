@@ -6,7 +6,6 @@ import {
   toNumber,
 } from '#/lib/format'
 import { AmountSlider } from './AmountSlider'
-import { NetworkBadge } from './NetworkBadge'
 
 export type Denomination = 'token' | 'usd'
 
@@ -113,8 +112,6 @@ export function MoneyInput({
           </span>
         </div>
       ) : null}
-
-      <NetworkBadge />
 
       <div
         className="flex items-center gap-2 rounded-xl border px-3 py-2.5"

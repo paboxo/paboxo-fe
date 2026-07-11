@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
@@ -13,7 +14,13 @@ import { useBorrow } from '../hooks/useBorrow'
  * constant is never used here: a pool whose decimals could not be verified is
  * dropped upstream, so a rendered market always carries a trusted number.
  */
-export function BorrowPanel({ market }: { market: MarketView }) {
+export function BorrowPanel({
+  market,
+  belowSlider,
+}: {
+  market: MarketView
+  belowSlider?: ReactNode
+}) {
   const { state, revert, borrow } = useBorrow(market)
 
   const onSubmit = (amountTokens: number) => {
@@ -35,6 +42,7 @@ export function BorrowPanel({ market }: { market: MarketView }) {
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}
+      belowSlider={belowSlider}
       onSubmit={onSubmit}
     />
   )

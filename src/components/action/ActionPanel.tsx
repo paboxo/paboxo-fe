@@ -1,5 +1,7 @@
 import { useId, useState } from 'react'
+import type { ReactNode } from 'react'
 import { MoneyInput } from '#/components/ui/MoneyInput'
+import { NetworkBadge } from '#/components/ui/NetworkBadge'
 import type { Denomination } from '#/components/ui/MoneyInput'
 import { ProjectedHealth } from '#/components/ui/ProjectedHealth'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
@@ -54,6 +56,9 @@ export interface ActionPanelProps {
   activeStep?: number
   txState?: TxState
   revert?: NormalizedRevert
+  /** Extra content rendered inside the card, below the slider (e.g. the borrow
+   *  "Your position" block). Sits above the network line and the review. */
+  belowSlider?: ReactNode
   onSubmit: (amountTokens: number) => void
 }
 
@@ -87,6 +92,7 @@ export function ActionPanel(props: ActionPanelProps) {
     activeStep = 0,
     txState = 'idle',
     revert,
+    belowSlider,
     onSubmit,
   } = props
 
@@ -156,6 +162,12 @@ export function ActionPanel(props: ActionPanelProps) {
         maxLabel={maxLabel}
         error={gate.enabled ? undefined : gate.reason}
       />
+
+      {/* Optional block below the slider (e.g. the borrow "Your position"). */}
+      {belowSlider}
+
+      {/* Network moved below the slider (mockup). */}
+      <NetworkBadge />
 
       {currentHf !== undefined && projectedHf !== undefined ? (
         <ProjectedHealth currentHf={currentHf} projectedHf={projectedHf} />

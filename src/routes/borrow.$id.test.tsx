@@ -53,8 +53,19 @@ vi.mock('#/features/markets/components/PoolInfo', () => ({
   ),
 }))
 vi.mock('#/features/borrow/components/BorrowActions', () => ({
-  BorrowActions: ({ hasCollateral }: { hasCollateral: boolean }) => (
-    <div data-testid="borrow-actions" data-has-collateral={String(hasCollateral)} />
+  BorrowActions: ({
+    hasCollateral,
+    positionCard,
+  }: {
+    hasCollateral: boolean
+    positionCard?: ReactNode
+  }) => (
+    <div
+      data-testid="borrow-actions"
+      data-has-collateral={String(hasCollateral)}
+    >
+      {positionCard}
+    </div>
   ),
 }))
 vi.mock('#/components/ui/HealthMeter', () => ({

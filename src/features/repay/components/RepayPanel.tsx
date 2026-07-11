@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
@@ -53,7 +54,13 @@ function buildRepayOptions(market: MarketView): RepayOption[] {
  * or another wallet token (swapped on-chain). The hook converts the entered
  * amount to live debt shares and sizes the approval / slippage floor per source.
  */
-export function RepayPanel({ market }: { market: MarketView }) {
+export function RepayPanel({
+  market,
+  belowSlider,
+}: {
+  market: MarketView
+  belowSlider?: ReactNode
+}) {
   const { state, revert, repay } = useRepay(market)
   const options = useMemo(() => buildRepayOptions(market), [market])
   const [selectedAddress, setSelectedAddress] = useState<Address>(
@@ -100,6 +107,7 @@ export function RepayPanel({ market }: { market: MarketView }) {
         networkFeeUsd={0.42}
         txState={state}
         revert={revert ?? undefined}
+        belowSlider={belowSlider}
         onSubmit={onSubmit}
       />
     </div>

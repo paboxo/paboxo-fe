@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { SupplyPanel } from '#/features/supply/components/SupplyPanel'
 import { RepayPanel } from '#/features/repay/components/RepayPanel'
 import { WithdrawPanel } from '#/features/withdraw/components/WithdrawPanel'
@@ -44,21 +45,27 @@ function SupplyCollateralFirst({ onSupply }: { onSupply: () => void }) {
 export function BorrowActions({
   market,
   hasCollateral,
+  positionCard,
 }: {
   market: MarketView
   hasCollateral: boolean
+  /** The "Your position" block, rendered inside each panel below the slider. */
+  positionCard?: ReactNode
 }) {
   const [active, setActive] = useState<ActionKey>('borrow')
 
   const renderPanel = () => {
-    if (active === 'supply') return <SupplyPanel market={market} />
+    if (active === 'supply')
+      return <SupplyPanel market={market} belowSlider={positionCard} />
     // Borrow / repay / withdraw all require existing collateral.
     if (!hasCollateral) {
       return <SupplyCollateralFirst onSupply={() => setActive('supply')} />
     }
-    if (active === 'borrow') return <BorrowPanel market={market} />
-    if (active === 'repay') return <RepayPanel market={market} />
-    return <WithdrawPanel market={market} />
+    if (active === 'borrow')
+      return <BorrowPanel market={market} belowSlider={positionCard} />
+    if (active === 'repay')
+      return <RepayPanel market={market} belowSlider={positionCard} />
+    return <WithdrawPanel market={market} belowSlider={positionCard} />
   }
 
   return (

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
@@ -15,7 +16,13 @@ import { useWithdraw } from '../hooks/useWithdraw'
  * who has repaid can always retrieve their collateral — blocking on a stale
  * feed would trap those funds behind a price the withdrawal never consults.
  */
-export function WithdrawPanel({ market }: { market: MarketView }) {
+export function WithdrawPanel({
+  market,
+  belowSlider,
+}: {
+  market: MarketView
+  belowSlider?: ReactNode
+}) {
   const { state, revert, withdrawCollateral } = useWithdraw(market)
   // Max is the collateral the user actually holds in this pool position.
   const { balance } = usePositionTokenBalance(
@@ -45,6 +52,7 @@ export function WithdrawPanel({ market }: { market: MarketView }) {
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}
+      belowSlider={belowSlider}
       onSubmit={onSubmit}
     />
   )

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
@@ -11,7 +12,13 @@ import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
  * through the shared write wrapper; the on-chain pre-flight runs inside the hook
  * (live reads), this lightweight check only guards a non-positive amount.
  */
-export function SupplyPanel({ market }: { market: MarketView }) {
+export function SupplyPanel({
+  market,
+  belowSlider,
+}: {
+  market: MarketView
+  belowSlider?: ReactNode
+}) {
   const { state, revert, supply } = useSupplyCollateral(market)
   // Supplying collateral spends the wallet — Max is the wallet balance.
   const { balance } = useTokenBalance(market.collateralAddress)
@@ -37,6 +44,7 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}
+      belowSlider={belowSlider}
       onSubmit={onSubmit}
     />
   )
