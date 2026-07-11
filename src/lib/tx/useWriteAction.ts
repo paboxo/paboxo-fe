@@ -136,7 +136,12 @@ export function useWriteAction(
         // The send returns on broadcast; wait for the receipt before confirming.
         await chain.waitForReceipt(hash)
         setState('confirmed')
-        showToast({ tone: 'positive', title: 'Transaction confirmed' })
+        showToast({
+          tone: 'positive',
+          title: 'Transaction confirmed',
+          actionLabel: 'View tx',
+          actionHref: `${HASHKEY.explorerUrl}/tx/${hash}`,
+        })
       } catch (error) {
         if (isUserRejection(error)) {
           setState('rejected')

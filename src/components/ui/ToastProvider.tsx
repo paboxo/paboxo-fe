@@ -12,6 +12,9 @@ import type { ToastTone } from './TxToast'
 export interface ToastInput {
   tone?: ToastTone
   title: string
+  /** Optional trailing link (e.g. "View tx" → block explorer). */
+  actionLabel?: string
+  actionHref?: string
 }
 
 type ShowToast = (toast: ToastInput) => void
@@ -55,7 +58,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         aria-label="Notifications"
       >
         {toasts.map((toast) => (
-          <TxToast key={toast.id} tone={toast.tone} title={toast.title} />
+          <TxToast
+            key={toast.id}
+            tone={toast.tone}
+            title={toast.title}
+            actionLabel={toast.actionLabel}
+            actionHref={toast.actionHref}
+          />
         ))}
       </div>
     </ToastContext.Provider>
