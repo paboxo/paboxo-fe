@@ -45,7 +45,7 @@ describe('estimateAmountOut', () => {
 
 // Swap collateral within the position — trade pxWHSK → pxUSDT.
 describe('useSwapCollateral', () => {
-  it('derives a non-zero slippage floor and swaps with the DEX fee tier', async () => {
+  it('swaps with the DEX fee tier and a 0 min-out (pool prices it, senja parity)', async () => {
     const swapSpy = vi.spyOn(mockChainAdapter, 'swapCollateral')
     const { result } = renderHook(() => useSwapCollateral(market.pool), {
       wrapper: QueryWrapper,
@@ -68,8 +68,9 @@ describe('useSwapCollateral', () => {
     expect(params.fee).toBe(SWAP_FEE_TIER)
     expect(params.tokenIn).toBe(market.collateralAddress)
     expect(params.tokenOut).toBe(TOKENS.pxUSDT.address)
-    // 50 pxUSDT * (1 - 0.5%) = 49.75 pxUSDT — never 0.
-    expect(params.amountOutMinimum).toBe(49_750_000n)
+    // Sent as 0 — the pool prices the swap; an oracle-derived floor rejected
+    // real fills when the feed diverged from the pool.
+    expect(params.amountOutMinimum).toBe(0n)
     expect(result.current.state).toBe('confirmed')
     swapSpy.mockRestore()
   })

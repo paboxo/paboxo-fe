@@ -8,7 +8,7 @@
 import { useCallback } from 'react'
 import type { Address } from '#/lib/contracts'
 import { getAdapters } from '#/lib/data'
-import { mulDiv, pow10 } from '#/lib/math'
+import { pow10 } from '#/lib/math'
 import { preflightSwap, unixNow } from '#/lib/tx/preflight'
 import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
@@ -52,34 +52,21 @@ export function useSwapCollateral(pool: Address) {
         chain.getPrice(input.tokenOut),
       ])
 
-      const expectedOut = estimateAmountOut(
-        input.amountIn,
-        priceIn.price,
-        priceOut.price,
-        input.tokenInDecimals,
-        input.tokenOutDecimals,
-      )
-      // amountOutMinimum = expectedOut * (1 - slippage).
-      const slippageBps = BigInt(Math.round(input.slippagePct * 100))
-      const amountOutMinimum = mulDiv(
-        expectedOut,
-        10_000n - slippageBps,
-        10_000n,
-      )
-
       await write.run({
         preflight: preflightSwap({
           amountIn: input.amountIn,
-          amountOutMinimum,
           priceUpdatedAt: Math.min(priceIn.updatedAt, priceOut.updatedAt),
           nowSeconds: unixNow(),
         }),
+        // amountOutMinimum: 0n — the pool prices the swap (senja parity). An
+        // oracle-derived floor rejected real fills when the feed diverged from
+        // the pool ("too little received" revert).
         send: () =>
           chain.swapCollateral(pool, {
             tokenIn: input.tokenIn,
             tokenOut: input.tokenOut,
             amountIn: input.amountIn,
-            amountOutMinimum,
+            amountOutMinimum: 0n,
             fee: SWAP_FEE_TIER,
           }),
         invalidateKeys: WRITE_INVALIDATE_KEYS,
