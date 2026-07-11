@@ -8,7 +8,7 @@ import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import { TOKENS, TOKEN_SYMBOLS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
-import { formatTokenAmount, toNumber } from '#/lib/format'
+import { formatNumber, formatTokenAmount, toNumber } from '#/lib/format'
 import {
   useTokenBalance,
   useTokenBalances,
@@ -106,7 +106,7 @@ function RepayTokenSelect({
           <div
             role="listbox"
             aria-label="Repay with token"
-            className="island-shell absolute right-0 z-20 mt-1 flex max-h-64 w-56 flex-col gap-0.5 overflow-auto rounded-xl p-1"
+            className="island-shell absolute right-0 z-20 mt-1 flex max-h-72 w-64 flex-col gap-0.5 overflow-auto rounded-xl p-1"
           >
             {options.map((o) => {
               const bal = balanceByAddress.get(o.address.toLowerCase())
@@ -120,20 +120,22 @@ function RepayTokenSelect({
                     onSelect(o.address)
                     setOpen(false)
                   }}
-                  className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--surface)]"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--surface)]"
                 >
-                  <span className="flex items-center gap-2 text-sm font-bold text-[var(--sea-ink)]">
-                    <TokenGlyph symbol={o.symbol} address={o.address} size={20} />
+                  <TokenGlyph symbol={o.symbol} address={o.address} size={20} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[var(--sea-ink)]">
                     {o.symbol}
-                    {o.isCollateral ? (
-                      <span className="text-[0.6rem] font-medium uppercase tracking-[0.06em] text-[var(--sea-ink-soft)]">
-                        collateral
-                      </span>
-                    ) : null}
                   </span>
+                  {o.isCollateral ? (
+                    <span className="shrink-0 whitespace-nowrap rounded bg-[var(--surface)] px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.04em] text-[var(--sea-ink-soft)]">
+                      collateral
+                    </span>
+                  ) : null}
+                  {/* Compact (K/M) in the list; the full amount shows on the
+                      "Your Balance" line once the token is selected. */}
                   {bal !== undefined ? (
-                    <span className="num text-xs text-[var(--sea-ink-soft)]">
-                      {formatTokenAmount(bal, o.decimals)}
+                    <span className="num shrink-0 text-xs text-[var(--sea-ink-soft)]">
+                      {formatTokenAmount(bal, o.decimals, { compact: true })}
                     </span>
                   ) : null}
                 </button>
@@ -191,6 +193,22 @@ export function RepayPanel({
     })
   }
 
+  // Repaying with a non-borrow token is swapped on-chain — surface the rate so
+  // the user can size the input. Borrow token (pxUSDT ≈ $1) needs no rate.
+  const isBorrowToken =
+    option.address.toLowerCase() === market.borrowAddress.toLowerCase()
+  const rateNode =
+    !isBorrowToken && option.priceUsd !== undefined ? (
+      <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+        <span>Exchange rate</span>
+        <span className="num text-[var(--sea-ink)]">
+          1 {option.symbol} ≈{' '}
+          {formatNumber(option.priceUsd, { maxFractionDigits: 2 })}{' '}
+          {market.borrowSymbol}
+        </span>
+      </div>
+    ) : null
+
   return (
     <ActionPanel
       title={`Repay ${market.borrowSymbol}`}
@@ -206,7 +224,16 @@ export function RepayPanel({
       networkFeeUsd={0.42}
       txState={state}
       revert={revert ?? undefined}
-      belowSlider={belowSlider}
+      belowSlider={
+        rateNode ? (
+          <>
+            {rateNode}
+            {belowSlider}
+          </>
+        ) : (
+          belowSlider
+        )
+      }
       headerRight={
         <RepayTokenSelect
           options={options}
