@@ -233,10 +233,17 @@ function verifyDecimals(
 
 /**
  * Broadcast a write with an explicit legacy `gasPrice`. HashKey enforces a
- * minimum gas price that viem's default fee estimation undershoots ("transaction
- * gas price below minimum"), so read the RPC's suggested price (which respects
- * the floor) and bump it 25% to clear it on a busy block. A present `gasPrice`
- * also forces a legacy (type-0) transaction.
+ * minimum gas price ("transaction gas price below minimum") that viem's default
+ * fee estimation — and even the RPC's suggested price on a busy block — can
+ * undershoot. A present `gasPrice` forces a legacy (type-0) tx.
+ *
+ * Rather than hardcode one buffer, we let the chain dictate: read its suggested
+ * price and, if the node rejects it as below the floor, re-read and escalate,
+ * resubmitting until the node accepts (or the attempts run out). A rejected tx
+ * never entered the mempool, so retrying is safe — no double broadcast. Only the
+ * floor rejection is retried; every other error (user rejection, real revert)
+ * propagates immediately. Gas on HashKey is cheap, so overpaying to clear a
+ * spiking floor costs a negligible amount.
  */
 interface WriteArgs {
   address: Address
@@ -244,13 +251,44 @@ interface WriteArgs {
   functionName: string
   args?: readonly unknown[]
 }
+
+/** Escalating multipliers (percent of the RPC's suggested price) across attempts. */
+const GAS_ATTEMPT_PCT = [125n, 200n, 320n] as const
+
+/** The node's "gas price below minimum" floor rejection, matched leniently. */
+function isGasPriceBelowMinimum(error: unknown): boolean {
+  const e = error as {
+    shortMessage?: string
+    details?: string
+    message?: string
+  } | null
+  const message = String(
+    e?.shortMessage ?? e?.details ?? e?.message ?? error,
+  ).toLowerCase()
+  return (
+    message.includes('below minimum') ||
+    message.includes('gas price too low') ||
+    message.includes('underpriced') ||
+    message.includes('fee too low')
+  )
+}
+
 async function writeWithGas(params: WriteArgs): Promise<Hash> {
-  const gasPrice = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
-  // A present gasPrice forces a legacy (type-0) tx that clears HashKey's floor.
-  return writeContract(wagmiConfig, {
-    ...params,
-    gasPrice: (gasPrice * 125n) / 100n,
-  })
+  let lastError: unknown
+  for (const pct of GAS_ATTEMPT_PCT) {
+    try {
+      const suggested = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
+      return await writeContract(wagmiConfig, {
+        ...params,
+        gasPrice: (suggested * pct) / 100n,
+      })
+    } catch (error) {
+      lastError = error
+      // Only the floor rejection is retriable; anything else is final.
+      if (!isGasPriceBelowMinimum(error)) throw error
+    }
+  }
+  throw lastError
 }
 
 export const liveChainAdapter: ChainAdapter = {

@@ -275,6 +275,32 @@ describe('liveChainAdapter writes', () => {
     )
     expect((params as { args: readonly unknown[] }).args).toEqual([USER])
   })
+
+  it('retries the "gas price below minimum" floor with a higher price, then succeeds', async () => {
+    // The node rejects the first (floor) attempt; the retry escalates the price.
+    mockWrite.mockReset()
+    mockWrite
+      .mockRejectedValueOnce(new Error('transaction gas price below minimum'))
+      .mockResolvedValueOnce(HASH)
+
+    const hash = await liveChainAdapter.supplyLiquidity(nextPool(), USER, 1n)
+
+    expect(hash).toBe(HASH)
+    expect(mockWrite).toHaveBeenCalledTimes(2)
+    const g1 = (mockWrite.mock.calls[0][1] as { gasPrice: bigint }).gasPrice
+    const g2 = (mockWrite.mock.calls[1][1] as { gasPrice: bigint }).gasPrice
+    expect(g2).toBeGreaterThan(g1) // escalated on the rejection
+  })
+
+  it('does not retry a non-floor error (e.g. a real revert)', async () => {
+    mockWrite.mockReset()
+    mockWrite.mockRejectedValueOnce(new Error('execution reverted: nope'))
+
+    await expect(
+      liveChainAdapter.supplyLiquidity(nextPool(), USER, 1n),
+    ).rejects.toThrow(/execution reverted/)
+    expect(mockWrite).toHaveBeenCalledOnce()
+  })
 })
 
 describe('liveChainAdapter disabled paths', () => {
