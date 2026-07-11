@@ -23,8 +23,9 @@ export interface TokenEntry {
 }
 
 /**
- * The five known Paboxo tokens, keyed by lowercased address.
- * Addresses mirror `TOKENS` / `CROSS_CHAIN` in src/lib/contracts/addresses.ts.
+ * The known display tokens, keyed by lowercased address: the five Paboxo tokens
+ * (addresses mirror `TOKENS` / `CROSS_CHAIN` in src/lib/contracts/addresses.ts)
+ * plus USDC.e — the HSP-pinned protection-fee stablecoin (`PROTECTION.feeToken`).
  */
 export const TOKEN_REGISTRY: Readonly<Record<string, TokenEntry>> =
   Object.freeze({
@@ -52,6 +53,13 @@ export const TOKEN_REGISTRY: Readonly<Record<string, TokenEntry>> =
       label: 'pxWHSK-xc',
       decimals: 18,
       logo: '/tokens/whsx-xc.webp',
+    },
+    // USDC.e on HashKey mainnet 177 — the HSP protection-fee token. Reuses the
+    // USDT logo (both are $-pegged stablecoins; no dedicated USDC.e asset yet).
+    '0x054ed45810dbbab8b27668922d110669c9d88d0a': {
+      label: 'USDC.e',
+      decimals: 6,
+      logo: '/tokens/usdt.webp',
     },
   })
 

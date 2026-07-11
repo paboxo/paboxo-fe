@@ -57,9 +57,19 @@ describe('mock payment gateway', () => {
   })
 })
 
+// The real HSP gateway is wired but fails loudly without creds + a live wallet
+// (neither exists in the test env), and its explorer link is pure string-building.
+// A genuine on-chain pay/verify is a manual live test — see docs/HSP-PROTECTION.md.
 describe('hsp payment gateway', () => {
-  it('throws until the HSP sandbox ships', () => {
-    expect(() => hspPaymentGateway.pay(REQ)).toThrow(/HSP gateway not wired/)
-    expect(() => hspPaymentGateway.explorerUrl('x')).toThrow(/HSP gateway not wired/)
+  it('rejects pay() without HSP creds / a connected wallet', async () => {
+    await expect(hspPaymentGateway.pay(REQ)).rejects.toThrow(
+      /VITE_HSP_API_KEY|Connect your wallet/,
+    )
+  })
+
+  it('builds a coordinator explorer link for a payment id', () => {
+    expect(hspPaymentGateway.explorerUrl('0xabc')).toMatch(
+      /\/explorer\?id=0xabc$/,
+    )
   })
 })

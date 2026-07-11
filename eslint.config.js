@@ -20,6 +20,8 @@ export default [
       'prettier.config.js',
       'src/lib/contracts/abis/**',
       'references/**',
+      // Vendored HSP SDK source — upstream style; transpiled, not linted here.
+      'vendor/**',
     ],
   },
 ]

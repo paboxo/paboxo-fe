@@ -40,7 +40,7 @@ export function ProtectionPanel({ market }: { market: MarketView }) {
   const feeLabel = `${formatTokenAmount(
     PROTECTION.feeAmount,
     feeToken?.decimals ?? 6,
-  )} ${feeToken?.label ?? 'pxUSDT'}`
+  )} ${feeToken?.label ?? 'USDC.e'}`
 
   const unconfigured = PROTECTION_UNCONFIGURED(PROTECTION)
   const running = phase !== 'idle'
