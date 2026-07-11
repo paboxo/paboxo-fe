@@ -138,6 +138,8 @@ export interface ChainAdapter {
     spender: Address,
   ) => Promise<bigint>
   getTokenBalance: (token: Address, user: Address) => Promise<bigint>
+  /** Native-gas balance (wei) — the wallet's HSK, to cover a cross-chain fee. */
+  getNativeBalance: (user: Address) => Promise<bigint>
   getBorrowDelegation: (
     pool: Address,
     owner: Address,

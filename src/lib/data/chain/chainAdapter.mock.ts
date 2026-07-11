@@ -138,6 +138,9 @@ export const mockChainAdapter: ChainAdapter = {
   getTokenBalance(token) {
     return resolve(BALANCE_FIXTURES[key(token)] ?? 0n)
   },
+  getNativeBalance() {
+    return resolve(100n * 10n ** 18n) // 100 HSK — ample for any mock fee
+  },
 
   enrichPools(pools): Promise<PoolsEnrichment> {
     const f = enrichFailures

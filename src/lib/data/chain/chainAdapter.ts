@@ -20,6 +20,7 @@
  * CCIP sender (quote / supplyToHashKey) which is not deployed yet.
  */
 import {
+  getBalance,
   getGasPrice,
   readContract,
   readContracts,
@@ -781,6 +782,14 @@ export const liveChainAdapter: ChainAdapter = {
       functionName: 'balanceOf',
       args: [user],
     })
+  },
+
+  async getNativeBalance(user) {
+    const { value } = await getBalance(wagmiConfig, {
+      chainId: CHAIN_ID,
+      address: user,
+    })
+    return value
   },
 
   async getBorrowDelegation(pool, owner, delegate) {
