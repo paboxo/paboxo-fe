@@ -5,8 +5,8 @@
  *  - another wallet token (e.g. WETH) — approved, then swapped on-chain.
  *
  * The entered amount is converted to live debt shares so accrued interest is
- * covered (senja `useBorrowActions.ts:444-470`). Swap paths carry the Uniswap
- * 0.3% fee tier and a non-zero `amountOutMinimum` so the swap can't be
+ * covered (senja `useBorrowActions.ts:444-470`). Swap paths carry the deployed
+ * 0.1% DEX fee tier and a non-zero `amountOutMinimum` so the swap can't be
  * sandwiched to ~0.
  */
 import { useCallback } from 'react'
@@ -22,8 +22,11 @@ import type { MarketView } from '#/features/markets/types'
 
 /** Oracle price decimals (matches the chain adapter / position hooks). */
 const PRICE_DECIMALS = 8
-/** DEX fee tier for swap-repay paths (Uniswap 0.3%), matching senja. */
-const SWAP_FEE_TIER = 3000
+/** DEX fee tier for swap-repay paths — 1000 = 0.1%, the fee the pools are
+ *  actually deployed at on HashKey (per the SC integration docs, same as
+ *  `useSwapCollateral`). 3000 routed through an empty 0.3% pool, so the swap
+ *  returned ~0 and the repay reverted InsufficientBalance. */
+const SWAP_FEE_TIER = 1000
 /** Slippage floor for swap-repay: reject worse than 0.5% adverse execution. */
 const SWAP_SLIPPAGE_BPS = 50n
 

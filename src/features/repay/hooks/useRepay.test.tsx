@@ -68,7 +68,7 @@ describe('useRepay', () => {
     repay.mockRestore()
   })
 
-  // Covers R5, AE3: swap paths carry fee 3000 + a non-zero slippage floor.
+  // Covers R5, AE3: swap paths carry fee 1000 + a non-zero slippage floor.
   async function expectedSwap(tokenAddress: `0x${string}`, decimals: number, assets: bigint) {
     const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
     const tokenPrice = (await mockChainAdapter.getPrice(tokenAddress)).price
@@ -95,7 +95,7 @@ describe('useRepay', () => {
     }
   }
 
-  it('repays from collateral via swap: no approval, fromPosition, fee 3000, min-out floor', async () => {
+  it('repays from collateral via swap: no approval, fromPosition, fee 1000, min-out floor', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const assets = 1_000n * 10n ** 18n // 1000 pxWHSK
@@ -123,7 +123,7 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum,
       fromPosition: true,
-      fee: 3000,
+      fee: 1000,
     })
     expect(amountOutMinimum).toBeGreaterThan(0n)
     expect(result.current.state).toBe('confirmed')
@@ -131,7 +131,7 @@ describe('useRepay', () => {
     repay.mockRestore()
   })
 
-  it('repays with another wallet token (WETH): approves that token, fee 3000, min-out floor', async () => {
+  it('repays with another wallet token (WETH): approves that token, fee 1000, min-out floor', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const weth = TOKENS.pxWETH
@@ -160,7 +160,7 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum,
       fromPosition: false,
-      fee: 3000,
+      fee: 1000,
     })
     expect(amountOutMinimum).toBeGreaterThan(0n)
     expect(result.current.state).toBe('confirmed')
