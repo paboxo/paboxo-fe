@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
 import type { MarketView } from '#/features/markets/types'
@@ -45,7 +46,7 @@ export function BorrowPanel({
       preflight={positiveAmount}
       blockReason={staleBlockReason(market)}
       reviewApy={market.borrowApr}
-      networkFeeUsd={0.42}
+      networkFeeHsk={NETWORK_FEE_HSK}
       txState={state}
       revert={revert ?? undefined}
       belowSlider={belowSlider}

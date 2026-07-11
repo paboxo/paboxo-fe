@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import { NetworkBadge } from '#/components/ui/NetworkBadge'
+import { formatNumber } from '#/lib/format'
 import type { Denomination } from '#/components/ui/MoneyInput'
 import { ProjectedHealth } from '#/components/ui/ProjectedHealth'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
@@ -48,7 +49,8 @@ export interface ActionPanelProps {
    */
   blockReason?: string
   reviewApy?: number
-  networkFeeUsd?: number
+  /** Estimated on-chain fee in HSK (gas x gasPrice), shown in the review block. */
+  networkFeeHsk?: number
   liquidation?: {
     asset: string
     currentPrice: number
@@ -91,7 +93,7 @@ export function ActionPanel(props: ActionPanelProps) {
     preflight,
     blockReason,
     reviewApy,
-    networkFeeUsd,
+    networkFeeHsk,
     liquidation,
     steps,
     activeStep = 0,
@@ -140,8 +142,13 @@ export function ActionPanel(props: ActionPanelProps) {
     ...(reviewApy !== undefined
       ? [{ label: 'APY', value: `${reviewApy.toFixed(2)}%` }]
       : []),
-    ...(networkFeeUsd !== undefined
-      ? [{ label: 'Network fee', value: `$${networkFeeUsd.toFixed(2)}` }]
+    ...(networkFeeHsk !== undefined
+      ? [
+          {
+            label: 'Network fee',
+            value: `${formatNumber(networkFeeHsk, { maxFractionDigits: 8 })} HSK`,
+          },
+        ]
       : []),
   ]
 

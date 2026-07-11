@@ -3,7 +3,8 @@ import { parseUnits } from 'viem'
 import { ChevronDown } from 'lucide-react'
 import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
-import { formatTokenAmount } from '#/lib/format'
+import { formatNumber, formatTokenAmount } from '#/lib/format'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { ActionButton } from '#/components/ui/ActionButton'
 import { useSwapCollateral } from '../hooks/useSwapCollateral'
@@ -224,7 +225,9 @@ export function SwapPanel() {
         </div>
         <div className="flex items-center justify-between">
           <span>Network Fee</span>
-          <span className="num text-[var(--sea-ink)]">~$0.42</span>
+          <span className="num text-[var(--sea-ink)]">
+            ~{formatNumber(NETWORK_FEE_HSK, { maxFractionDigits: 8 })} HSK
+          </span>
         </div>
         <div className="flex items-center justify-between">
           <span>Slippage Tolerance</span>

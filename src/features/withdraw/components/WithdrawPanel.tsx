@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { toNumber } from '#/lib/format'
 import { positiveAmount } from '#/features/markets/gates'
 import { useTokenBalance } from '#/features/shared/useTokenBalances'
@@ -54,7 +55,7 @@ export function WithdrawPanel({
       maxTokens={toNumber(collateral, market.collateralDecimals)}
       maxLabel="Supplied"
       preflight={positiveAmount}
-      networkFeeUsd={0.42}
+      networkFeeHsk={NETWORK_FEE_HSK}
       txState={state}
       revert={revert ?? undefined}
       belowSlider={belowSlider}

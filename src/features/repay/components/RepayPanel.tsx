@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ChevronDown } from 'lucide-react'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
@@ -221,7 +222,7 @@ export function RepayPanel({
       maxTokens={toNumber(wallet, option.decimals)}
       preflight={positiveAmount}
       blockReason={staleBlockReason(market)}
-      networkFeeUsd={0.42}
+      networkFeeHsk={NETWORK_FEE_HSK}
       txState={state}
       revert={revert ?? undefined}
       belowSlider={
