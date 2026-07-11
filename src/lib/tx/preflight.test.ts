@@ -3,7 +3,9 @@ import {
   PRICE_MAX_AGE_SECONDS,
   isPriceStale,
   preflightBorrow,
+  preflightCrossChainBorrow,
   preflightLiquidate,
+  preflightNativeFee,
   preflightSupply,
   preflightWithdraw,
 } from './preflight'
@@ -108,6 +110,69 @@ describe('preflightBorrow', () => {
         nowSeconds: NOW,
       }).enabled,
     ).toBe(true)
+  })
+})
+
+// Covers R9: cross-chain borrow native-gas sufficiency.
+describe('preflightNativeFee', () => {
+  it('blocks when native balance is below fee + gas headroom', () => {
+    const result = preflightNativeFee({
+      nativeBalance: 1_000n,
+      fee: 900n,
+      gasHeadroom: 200n, // needs 1100, has 1000
+    })
+    expect(result.enabled).toBe(false)
+    expect(result.reason).toMatch(/HSK/)
+  })
+
+  it('allows when native balance covers fee + gas headroom', () => {
+    expect(
+      preflightNativeFee({
+        nativeBalance: 1_200n,
+        fee: 900n,
+        gasHeadroom: 200n,
+      }).enabled,
+    ).toBe(true)
+  })
+})
+
+describe('preflightCrossChainBorrow', () => {
+  const borrow = {
+    amount: 100_000_000n,
+    maxBorrowAmount: 1_000_000_000n,
+    availableLiquidity: 1_000_000_000n,
+    priceUpdatedAt: FRESH,
+    nowSeconds: NOW,
+  }
+
+  it('passes when both the borrow gates and native gas are satisfied', () => {
+    expect(
+      preflightCrossChainBorrow(borrow, {
+        nativeBalance: 10_000n,
+        fee: 900n,
+        gasHeadroom: 200n,
+      }).enabled,
+    ).toBe(true)
+  })
+
+  it('lets a borrow-gate block take precedence over the native-gas block', () => {
+    // Over max-borrow AND insufficient native — the borrow reason must win.
+    const result = preflightCrossChainBorrow(
+      { ...borrow, amount: 2_000_000_000n },
+      { nativeBalance: 0n, fee: 900n, gasHeadroom: 200n },
+    )
+    expect(result.enabled).toBe(false)
+    expect(result.reason).toMatch(/borrowing power/)
+  })
+
+  it('blocks on native gas when the borrow itself is valid', () => {
+    const result = preflightCrossChainBorrow(borrow, {
+      nativeBalance: 100n,
+      fee: 900n,
+      gasHeadroom: 200n,
+    })
+    expect(result.enabled).toBe(false)
+    expect(result.reason).toMatch(/HSK/)
   })
 })
 
