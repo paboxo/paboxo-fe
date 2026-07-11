@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { formatUnits, parseUnits } from 'viem'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { QueryWrapper } from '#/test/utils'
 import { TOKENS } from '#/lib/contracts'
@@ -28,15 +27,15 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useSwitchChain>)
 })
 
-// Covers R20 (mode A), R9: repay sizes debt shares from live totals.
+// The amount is always the debt to clear (borrow token, 6dp). Two paths.
 describe('useRepay', () => {
-  it('approves assets plus a drift buffer and repays in mode A with live shares', async () => {
+  it('path A: approves the debt (+drift buffer) and pays from wallet, fee 0', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
-    const assets = 500_000_000n // 500 pxUSDT
-    const expectedShares = debtSharesForAssets(
-      assets,
+    const debtAssets = 500_000_000n // 500 pxUSDT
+    const shares = debtSharesForAssets(
+      debtAssets,
       totals.totalBorrowAssets,
       totals.totalBorrowShares,
     )
@@ -45,73 +44,47 @@ describe('useRepay', () => {
       wrapper: QueryWrapper,
     })
     await act(async () => {
-      await result.current.repay(assets)
+      await result.current.repay(debtAssets)
     })
 
-    // Approves a small buffer over `assets` (0.1% + 1) so interest accrued
-    // before execution never leaves the allowance a few units short.
+    // Approves the debt plus a 0.1% + 1 drift buffer (interest accrues pre-mine).
     expect(approve).toHaveBeenCalledWith(
       TOKENS.pxUSDT.address,
       market.poolAddress,
-      assets + assets / 1000n + 1n,
+      debtAssets + debtAssets / 1000n + 1n,
     )
     expect(repay).toHaveBeenCalledWith(market.poolAddress, {
       user: USER,
       token: TOKENS.pxUSDT.address,
-      shares: expectedShares,
+      shares,
       amountOutMinimum: 0n,
       fromPosition: false,
-      fee: 1000,
+      fee: 0,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
     repay.mockRestore()
   })
 
-  // Covers R5, AE3: swap paths — fee 1000 (paboxo pools), amountOutMinimum 0 (senja),
-  // shares from the full borrow-equivalent.
-  async function expectedSwap(tokenAddress: `0x${string}`, decimals: number, assets: bigint) {
-    const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
-    const tokenPrice = (await mockChainAdapter.getPrice(tokenAddress)).price
-    const borrowPrice = (await mockChainAdapter.getPrice(market.borrowAddress)).price
-    const inputUsd =
-      Number(formatUnits(assets, decimals)) *
-      Number(formatUnits(tokenPrice, 8))
-    const borrowTokens = inputUsd / Number(formatUnits(borrowPrice, 8))
-    const borrowAmount = parseUnits(
-      borrowTokens.toFixed(market.borrowDecimals),
-      market.borrowDecimals,
-    )
-    return {
-      shares: debtSharesForAssets(
-        borrowAmount,
-        totals.totalBorrowAssets,
-        totals.totalBorrowShares,
-      ),
-    }
-  }
-
-  it('repays from collateral via swap: no approval, fromPosition, fee 1000, no min-out (paboxo pools)', async () => {
+  it('path C: sells the collateral (fromPosition, no approval), fee 1000', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
-    const assets = 1_000n * 10n ** 18n // 1000 pxWHSK
-    const { shares } = await expectedSwap(
-      market.collateralAddress,
-      market.collateralDecimals,
-      assets,
+    const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
+    const debtAssets = 10_000_000n // 10 pxUSDT of debt
+    const shares = debtSharesForAssets(
+      debtAssets,
+      totals.totalBorrowAssets,
+      totals.totalBorrowShares,
     )
 
     const { result } = renderHook(() => useRepay(market), {
       wrapper: QueryWrapper,
     })
     await act(async () => {
-      await result.current.repay(assets, {
-        address: market.collateralAddress,
-        decimals: market.collateralDecimals,
-        isCollateral: true,
-      })
+      await result.current.repay(debtAssets, true)
     })
 
+    // Selling collateral needs no wallet approval.
     expect(approve).not.toHaveBeenCalled()
     expect(repay).toHaveBeenCalledWith(market.poolAddress, {
       user: USER,
@@ -119,42 +92,6 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum: 0n,
       fromPosition: true,
-      fee: 1000,
-    })
-    expect(result.current.state).toBe('confirmed')
-    approve.mockRestore()
-    repay.mockRestore()
-  })
-
-  it('repays with another wallet token (WETH): approves that token, fee 1000, no min-out (paboxo pools)', async () => {
-    const approve = vi.spyOn(mockChainAdapter, 'approve')
-    const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
-    const weth = TOKENS.pxWETH
-    const assets = 1n * 10n ** 18n // 1 WETH
-    const { shares } = await expectedSwap(
-      weth.address,
-      weth.decimals,
-      assets,
-    )
-
-    const { result } = renderHook(() => useRepay(market), {
-      wrapper: QueryWrapper,
-    })
-    await act(async () => {
-      await result.current.repay(assets, {
-        address: weth.address,
-        decimals: weth.decimals,
-        isCollateral: false,
-      })
-    })
-
-    expect(approve).toHaveBeenCalledWith(weth.address, market.poolAddress, assets)
-    expect(repay).toHaveBeenCalledWith(market.poolAddress, {
-      user: USER,
-      token: weth.address,
-      shares,
-      amountOutMinimum: 0n,
-      fromPosition: false,
       fee: 1000,
     })
     expect(result.current.state).toBe('confirmed')
