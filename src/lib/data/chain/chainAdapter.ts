@@ -23,15 +23,23 @@ import {
   getGasPrice,
   readContract,
   readContracts,
+  simulateContract,
   waitForTransactionReceipt,
   writeContract,
 } from '@wagmi/core'
-import { formatUnits, parseUnits, zeroAddress } from 'viem'
-import { CORE, HASHKEY } from '#/lib/contracts'
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  formatUnits,
+  parseUnits,
+  zeroAddress,
+} from 'viem'
+import { CORE, HASHKEY, HELPER_UTILS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
 import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import {
   erc20Abi,
+  helperUtilsAbi,
   interestRateModelAbi,
   isHealthyAbi,
   lendingPoolAbi,
@@ -251,6 +259,8 @@ interface WriteArgs {
   abi: readonly unknown[]
   functionName: string
   args?: readonly unknown[]
+  /** Native value (wei) for a payable call, e.g. the CCIP fee on a cross-chain borrow. */
+  value?: bigint
 }
 
 /** HashKey's enforced floor in wei — a confirmed-good tx paid exactly this
@@ -288,10 +298,12 @@ async function writeWithGas(params: WriteArgs): Promise<Hash> {
       const suggested = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
       // Clamp to the real floor: eth_gasPrice on HashKey undershoots it.
       const base = suggested > MIN_GAS_PRICE ? suggested : MIN_GAS_PRICE
+      // The loose WriteArgs (incl. optional payable `value`) doesn't line up with
+      // writeContract's abi-inferred overload union; cast the merged call params.
       return await writeContract(wagmiConfig, {
         ...params,
         gasPrice: (base * pct) / 100n,
-      })
+      } as unknown as Parameters<typeof writeContract>[1])
     } catch (error) {
       lastError = error
       // Only the floor rejection is retriable; anything else is final.
@@ -299,6 +311,41 @@ async function writeWithGas(params: WriteArgs): Promise<Hash> {
     }
   }
   throw lastError
+}
+
+/** The on-chain `BorrowParams` tuple (destGasLimit widened to bigint for uint128). */
+function borrowParamsTuple(params: BorrowParams) {
+  return {
+    amount: params.amount,
+    chainId: params.chainId,
+    destGasLimit: BigInt(params.destGasLimit),
+  }
+}
+
+/** The decoded custom-error revert inside a viem/wagmi contract error, if any. */
+function revertedError(
+  error: unknown,
+): ContractFunctionRevertedError | undefined {
+  if (error instanceof BaseError) {
+    const revert = error.walk((e) => e instanceof ContractFunctionRevertedError)
+    if (revert instanceof ContractFunctionRevertedError) return revert
+  }
+  return undefined
+}
+
+/** True when a call reverted `CrossChainDisabled()` (an older/guarded build). */
+function isCrossChainDisabled(error: unknown): boolean {
+  return revertedError(error)?.data?.errorName === 'CrossChainDisabled'
+}
+
+/** The `required` fee from an `InsufficientFee(required, provided)` revert, if that's the cause. */
+function insufficientFeeRequired(error: unknown): bigint | undefined {
+  const revert = revertedError(error)
+  if (revert?.data?.errorName === 'InsufficientFee') {
+    const required = revert.data.args?.[0]
+    if (typeof required === 'bigint') return required
+  }
+  return undefined
 }
 
 export const liveChainAdapter: ChainAdapter = {
@@ -788,19 +835,14 @@ export const liveChainAdapter: ChainAdapter = {
     return hash
   },
 
-  async borrowDebt(pool, params: BorrowParams, onBehalf) {
+  async borrowDebt(pool, params: BorrowParams, onBehalf, value) {
     const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'borrowDebt',
-      args: [
-        {
-          amount: params.amount,
-          chainId: params.chainId,
-          destGasLimit: BigInt(params.destGasLimit),
-        },
-        onBehalf,
-      ],
+      args: [borrowParamsTuple(params), onBehalf],
+      // Cross-chain borrow is payable: the CCIP fee rides as msg.value.
+      ...(value !== undefined ? { value } : {}),
     })
     return hash
   },
@@ -923,5 +965,46 @@ export const liveChainAdapter: ChainAdapter = {
     return Promise.reject(
       new Error('Cross-chain sender is not deployed on Base yet'),
     )
+  },
+
+  /**
+   * Real cross-chain borrow fee, two tiers (KTD1). Tier 1: `HelperUtils.getFee`
+   * when configured and enabled. Tier 2 (fallback, or on `CrossChainDisabled`):
+   * simulate `borrowDebt` with `value: 0` and read `required` from the
+   * `InsufficientFee(required, provided)` revert. A simulate that does not revert
+   * on the fee means no cross-chain fee applies (0n). A non-fee revert (invalid
+   * borrow) rethrows so callers can distinguish "not quotable yet" from "no fee".
+   */
+  async quoteCrossChainBorrow(pool, params: BorrowParams, onBehalf) {
+    if (HELPER_UTILS) {
+      try {
+        return await readContract(wagmiConfig, {
+          chainId: CHAIN_ID,
+          address: HELPER_UTILS,
+          abi: helperUtilsAbi,
+          functionName: 'getFee',
+          args: [borrowParamsTuple(params), onBehalf],
+        })
+      } catch (error) {
+        if (!isCrossChainDisabled(error)) throw error
+        // else: older build — fall through to the revert-probe.
+      }
+    }
+    try {
+      await simulateContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: pool,
+        abi: lendingPoolAbi,
+        functionName: 'borrowDebt',
+        args: [borrowParamsTuple(params), onBehalf],
+        account: onBehalf,
+        value: 0n,
+      })
+      return 0n
+    } catch (error) {
+      const required = insufficientFeeRequired(error)
+      if (required !== undefined) return required
+      throw error
+    }
   },
 }

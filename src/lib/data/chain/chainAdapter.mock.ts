@@ -213,7 +213,12 @@ export const mockChainAdapter: ChainAdapter = {
   supplyCollateral(_pool: Address, _onBehalf: Address, _amount: bigint) {
     return resolve(MOCK_TX_HASH)
   },
-  borrowDebt(_pool: Address, _params: BorrowParams, _onBehalf: Address) {
+  borrowDebt(
+    _pool: Address,
+    _params: BorrowParams,
+    _onBehalf: Address,
+    _value?: bigint,
+  ) {
     return resolve(MOCK_TX_HASH)
   },
   repayWithSelectedToken(_pool: Address, _params: RepayParams) {
@@ -258,5 +263,8 @@ export const mockChainAdapter: ChainAdapter = {
   },
   supplyToHashKey() {
     return resolve(MOCK_TX_HASH)
+  },
+  quoteCrossChainBorrow() {
+    return resolve(500_000_000_000_000n) // 0.0005 HSK mock fee
   },
 }

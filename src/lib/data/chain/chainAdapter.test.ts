@@ -2,16 +2,24 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import {
   getGasPrice,
   readContract,
+  simulateContract,
   waitForTransactionReceipt,
   writeContract,
 } from '@wagmi/core'
-import { zeroAddress } from 'viem'
+import {
+  ContractFunctionRevertedError,
+  encodeErrorResult,
+  zeroAddress,
+} from 'viem'
+import { BASE } from '#/lib/contracts'
+import { lendingPoolAbi } from '#/lib/contracts/abis'
 import { liveChainAdapter } from './chainAdapter'
 
 // No live RPC — mock @wagmi/core so we can assert the adapter's call shape.
 vi.mock('@wagmi/core', () => ({
   readContract: vi.fn(),
   writeContract: vi.fn(),
+  simulateContract: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
   getGasPrice: vi.fn().mockResolvedValue(1_000_000_000n),
 }))
@@ -20,7 +28,35 @@ vi.mock('#/lib/web3/config', () => ({ wagmiConfig: { mock: true } }))
 
 const mockRead = vi.mocked(readContract)
 const mockWrite = vi.mocked(writeContract)
+const mockSimulate = vi.mocked(simulateContract)
 const mockWait = vi.mocked(waitForTransactionReceipt)
+
+/** Wrap encoded revert data as the viem error the adapter's helpers decode. */
+function reverted(data: `0x${string}`) {
+  return new ContractFunctionRevertedError({
+    abi: lendingPoolAbi,
+    data,
+    functionName: 'borrowDebt',
+  })
+}
+
+/** `CrossChainDisabled()` — an older/guarded build's getFee revert. */
+function crossChainDisabled() {
+  return reverted(
+    encodeErrorResult({ abi: lendingPoolAbi, errorName: 'CrossChainDisabled' }),
+  )
+}
+
+/** `InsufficientFee(required, provided)` — the revert-probe's fee signal. */
+function insufficientFee(required: bigint, provided: bigint) {
+  return reverted(
+    encodeErrorResult({
+      abi: lendingPoolAbi,
+      errorName: 'InsufficientFee',
+      args: [required, provided],
+    }),
+  )
+}
 
 const ROUTER = '0xR0000000000000000000000000000000000000ee' as const
 const SHARES = '0x5000000000000000000000000000000000000000' as const
@@ -334,5 +370,80 @@ describe('liveChainAdapter disabled paths', () => {
     await expect(
       liveChainAdapter.supplyToHashKey(nextPool(), 1, USER, 0n, 0, 0n),
     ).rejects.toThrow(/not deployed/)
+  })
+})
+
+// Covers R4, R5, R8, KTD1: the real two-tier cross-chain borrow fee quote and
+// the payable send.
+describe('liveChainAdapter cross-chain borrow', () => {
+  const params = { amount: 100_000000n, chainId: BigInt(BASE.id), destGasLimit: 300_000 }
+
+  it('quotes the fee from HelperUtils.getFee (primary path)', async () => {
+    mockRead.mockResolvedValueOnce(777_000_000_000_000n)
+    const fee = await liveChainAdapter.quoteCrossChainBorrow(
+      nextPool(),
+      params,
+      USER,
+    )
+    expect(fee).toBe(777_000_000_000_000n)
+    // Primary succeeded — no need to probe the pool.
+    expect(mockSimulate).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the revert-probe and decodes InsufficientFee.required', async () => {
+    // Older build: getFee is guarded off.
+    mockRead.mockRejectedValueOnce(crossChainDisabled())
+    // Probe reverts InsufficientFee(required, provided) with value 0.
+    mockSimulate.mockRejectedValueOnce(insufficientFee(4242n, 0n))
+
+    const fee = await liveChainAdapter.quoteCrossChainBorrow(
+      nextPool(),
+      params,
+      USER,
+    )
+    expect(fee).toBe(4242n)
+    const [, sim] = mockSimulate.mock.calls[0]
+    expect((sim as unknown as { value: bigint }).value).toBe(0n)
+    expect((sim as { functionName: string }).functionName).toBe('borrowDebt')
+  })
+
+  it('returns 0n when the probe does not revert on a fee', async () => {
+    mockRead.mockRejectedValueOnce(crossChainDisabled())
+    mockSimulate.mockResolvedValueOnce({} as never)
+    const fee = await liveChainAdapter.quoteCrossChainBorrow(
+      nextPool(),
+      params,
+      USER,
+    )
+    expect(fee).toBe(0n)
+  })
+
+  it('rethrows a non-fee revert (an invalid borrow) instead of a bogus fee', async () => {
+    mockRead.mockRejectedValueOnce(crossChainDisabled())
+    mockSimulate.mockRejectedValueOnce(new Error('exceeds borrowing power'))
+    await expect(
+      liveChainAdapter.quoteCrossChainBorrow(nextPool(), params, USER),
+    ).rejects.toThrow(/borrowing power/)
+  })
+
+  it('borrowDebt forwards the CCIP fee as msg.value with chainId=Base', async () => {
+    const pool = nextPool()
+    await liveChainAdapter.borrowDebt(pool, params, USER, 555n)
+    const [, write] = mockWrite.mock.calls[0]
+    expect((write as { functionName: string }).functionName).toBe('borrowDebt')
+    expect((write as unknown as { value: bigint }).value).toBe(555n)
+    const tuple = (write as unknown as { args: readonly [{ chainId: bigint }] })
+      .args[0]
+    expect(tuple.chainId).toBe(BigInt(BASE.id))
+  })
+
+  it('omits value for a same-chain borrow (no fee)', async () => {
+    await liveChainAdapter.borrowDebt(
+      nextPool(),
+      { amount: 1n, chainId: 177n, destGasLimit: 0 },
+      USER,
+    )
+    const [, write] = mockWrite.mock.calls[0]
+    expect((write as unknown as { value?: bigint }).value).toBeUndefined()
   })
 })
