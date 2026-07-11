@@ -145,3 +145,35 @@ export const CROSS_CHAIN: CrossChainAddresses = {
     enabled: true,
   },
 }
+
+/** The zero address — an unset placeholder in the protection config. */
+const ZERO: Address = '0x0000000000000000000000000000000000000000'
+
+/**
+ * AI "agent protection" config (HSP-gated). The user pays a small stablecoin
+ * fee via HSP; on ACCEPT the FE grants rebalance-delegation to `agentKeeper`, so
+ * the keeper may `rebalancePosition` to protect the position. Injected config —
+ * the keeper/treasury are set once the real wallets exist (a config swap, not a
+ * code edit), guarded by `PROTECTION_UNCONFIGURED` until then.
+ */
+export interface ProtectionConfig {
+  /** AI rebalance keeper that receives rebalance-delegation. TODO: set to the real keeper wallet. */
+  agentKeeper: Address
+  /** Fee recipient — the buyback / fee-sink wallet. TODO: set to the real treasury. */
+  feeTreasury: Address
+  /** Stablecoin the protection fee is paid in. */
+  feeToken: Address
+  /** Fee amount in feeToken base units. */
+  feeAmount: bigint
+}
+
+export const PROTECTION: ProtectionConfig = {
+  agentKeeper: '0x0000000000000000000000000000000000000000', // TODO: AI keeper wallet
+  feeTreasury: '0x0000000000000000000000000000000000000000', // TODO: buyback/fee-sink wallet
+  feeToken: TOKENS.pxUSDT.address,
+  feeAmount: 1_000_000n, // 1 pxUSDT (6dp) demo fee
+}
+
+/** True until both the keeper and treasury wallets are set — the UI/hook guard. */
+export const PROTECTION_UNCONFIGURED = (c: ProtectionConfig): boolean =>
+  c.agentKeeper === ZERO || c.feeTreasury === ZERO

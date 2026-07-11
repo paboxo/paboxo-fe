@@ -202,6 +202,9 @@ export const mockChainAdapter: ChainAdapter = {
   getWithdrawDelegation() {
     return resolve(false)
   },
+  getRebalanceDelegation() {
+    return resolve(false)
+  },
 
   // ---- writes (stubbed) ----
   approve(_token: Address, _spender: Address, _amount: bigint) {
@@ -235,6 +238,13 @@ export const mockChainAdapter: ChainAdapter = {
     return resolve(MOCK_TX_HASH)
   },
   approveWithdrawDelegation(
+    _pool: Address,
+    _delegate: Address,
+    _allowed: boolean,
+  ) {
+    return resolve(MOCK_TX_HASH)
+  },
+  approveRebalanceDelegation(
     _pool: Address,
     _delegate: Address,
     _allowed: boolean,

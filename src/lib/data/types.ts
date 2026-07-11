@@ -148,6 +148,12 @@ export interface ChainAdapter {
     owner: Address,
     delegate: Address,
   ) => Promise<boolean>
+  /** Whether `delegate` may `rebalancePosition` for `owner` (AI agent protection). */
+  getRebalanceDelegation: (
+    pool: Address,
+    owner: Address,
+    delegate: Address,
+  ) => Promise<boolean>
 
   // writes — plain awaitable methods; real impl uses @wagmi/core (KTD10)
   approve: (token: Address, spender: Address, amount: bigint) => Promise<Hash>
@@ -186,6 +192,12 @@ export interface ChainAdapter {
     amount: bigint,
   ) => Promise<Hash>
   approveWithdrawDelegation: (
+    pool: Address,
+    delegate: Address,
+    allowed: boolean,
+  ) => Promise<Hash>
+  /** Grant/revoke `delegate`'s right to `rebalancePosition` (AI agent protection). */
+  approveRebalanceDelegation: (
     pool: Address,
     delegate: Address,
     allowed: boolean,

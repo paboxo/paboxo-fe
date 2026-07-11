@@ -4,6 +4,7 @@ import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { truncateAddress } from '#/components/ui/wallet/AccountPill'
 import { HASHKEY, TOKENS } from '#/lib/contracts'
+import { ProtectionPanel } from '#/features/protection/components/ProtectionPanel'
 import { APYBreakdown } from './APYBreakdown'
 import { MarketActions } from './MarketActions'
 import type { MarketView } from '../types'
@@ -104,8 +105,10 @@ export function MarketDetail({ market }: { market: MarketView }) {
         </div>
       </section>
 
-      <aside className="h-fit lg:sticky lg:top-20">
+      <aside className="flex h-fit flex-col gap-4 lg:sticky lg:top-20">
         <MarketActions market={market} />
+        {/* Opt-in HSP-gated AI agent protection for this market. */}
+        <ProtectionPanel market={market} />
       </aside>
     </div>
   )
