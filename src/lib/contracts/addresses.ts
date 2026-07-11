@@ -170,8 +170,11 @@ export interface ProtectionConfig {
 export const PROTECTION: ProtectionConfig = {
   agentKeeper: '0x1840A5a5AE7D0F70674C434f3BFf4a7e529c9F0b', // REBALANCE_KEEPER / AGENT_ADDRESS (keeper docs AI-REBALANCE-FRONTEND.md §delegasi)
   feeTreasury: '0x63b9679e3A253920161B51A79D122EAad1c19baF', // buyback / fee-sink wallet
-  feeToken: TOKENS.pxUSDT.address,
-  feeAmount: 1_000_000n, // 1 pxUSDT (6dp) demo fee
+  // USDC.e on HashKey mainnet 177 — the HSP-pinned stablecoin. In hsp mode the
+  // real payment moves this token (HSP pay() uses the chain-pinned stablecoin);
+  // mock mode just uses it for the fee label. Display metadata: tokens/registry.ts.
+  feeToken: '0x054ed45810DbBAb8B27668922D110669c9D88D0a',
+  feeAmount: 1_000_000n, // 1 USDC.e (6dp) demo fee
 }
 
 /** True until both the keeper and treasury wallets are set — the UI/hook guard. */
