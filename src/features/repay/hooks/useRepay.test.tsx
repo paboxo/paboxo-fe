@@ -61,14 +61,14 @@ describe('useRepay', () => {
       shares: expectedShares,
       amountOutMinimum: 0n,
       fromPosition: false,
-      fee: 3000,
+      fee: 1000,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
     repay.mockRestore()
   })
 
-  // Covers R5, AE3: swap paths mirror senja — fee 3000, amountOutMinimum 0,
+  // Covers R5, AE3: swap paths — fee 1000 (paboxo pools), amountOutMinimum 0 (senja),
   // shares from the full borrow-equivalent.
   async function expectedSwap(tokenAddress: `0x${string}`, decimals: number, assets: bigint) {
     const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
@@ -91,7 +91,7 @@ describe('useRepay', () => {
     }
   }
 
-  it('repays from collateral via swap: no approval, fromPosition, fee 3000, no min-out (senja)', async () => {
+  it('repays from collateral via swap: no approval, fromPosition, fee 1000, no min-out (paboxo pools)', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const assets = 1_000n * 10n ** 18n // 1000 pxWHSK
@@ -119,14 +119,14 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum: 0n,
       fromPosition: true,
-      fee: 3000,
+      fee: 1000,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
     repay.mockRestore()
   })
 
-  it('repays with another wallet token (WETH): approves that token, fee 3000, no min-out (senja)', async () => {
+  it('repays with another wallet token (WETH): approves that token, fee 1000, no min-out (paboxo pools)', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const weth = TOKENS.pxWETH
@@ -155,7 +155,7 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum: 0n,
       fromPosition: false,
-      fee: 3000,
+      fee: 1000,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()

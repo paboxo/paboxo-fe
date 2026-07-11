@@ -5,9 +5,9 @@
  *  - another wallet token (e.g. WETH) — approved, then swapped on-chain.
  *
  * The entered amount is converted to live debt shares so accrued interest is
- * covered (senja `useBorrowActions.ts:444-470`). Swap paths mirror senja's args
- * exactly: fee tier 3000 and `amountOutMinimum` = 0 (the pool prices the swap; a
- * non-zero value caps the swap input and reverts InsufficientBalance).
+ * covered (senja `useBorrowActions.ts:444-470`). Swap paths use `amountOutMinimum`
+ * = 0 (senja parity — a non-zero value caps the swap input and reverts
+ * InsufficientBalance) and paboxo's deployed 0.1% fee tier (same as the swap panel).
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
@@ -22,9 +22,11 @@ import type { MarketView } from '#/features/markets/types'
 
 /** Oracle price decimals (matches the chain adapter / position hooks). */
 const PRICE_DECIMALS = 8
-/** DEX fee tier for swap-repay paths — 3000, matching senja's working
- *  `repayWithSelectedToken` call (`useBorrowActions.ts:514`). */
-const SWAP_FEE_TIER = 3000
+/** DEX fee tier for swap-repay paths — 1000 (0.1%), the tier paboxo's pools are
+ *  deployed at, same as the working swap panel (`useSwapCollateral`). senja uses
+ *  3000 on its own deployment, but the fee is per-deployment; what mattered from
+ *  senja was `amountOutMinimum = 0` (a non-zero value caps the swap input). */
+const SWAP_FEE_TIER = 1000
 
 export interface RepayToken {
   address: Address
