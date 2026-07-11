@@ -1,6 +1,8 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { toNumber } from '#/lib/format'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
 import type { MarketView } from '#/features/markets/types'
 import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
 
@@ -11,6 +13,9 @@ import { useSupplyCollateral } from '../hooks/useSupplyCollateral'
  */
 export function SupplyPanel({ market }: { market: MarketView }) {
   const { state, revert, supply } = useSupplyCollateral(market)
+  // Supplying collateral spends the wallet — Max is the wallet balance.
+  const { balance } = useTokenBalance(market.collateralAddress)
+  const wallet = balance ?? 0n
 
   const onSubmit = (amountTokens: number) => {
     void supply(parseUnits(amountTokens.toString(), market.collateralDecimals))
@@ -24,7 +29,8 @@ export function SupplyPanel({ market }: { market: MarketView }) {
       tokenAddress={market.collateralAddress}
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
-      maxTokens={1000}
+      balance={wallet}
+      maxTokens={toNumber(wallet, market.collateralDecimals)}
       preflight={positiveAmount}
       blockReason={staleBlockReason(market)}
       reviewApy={market.supplyApy}

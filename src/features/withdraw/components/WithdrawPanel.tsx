@@ -1,6 +1,8 @@
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { toNumber } from '#/lib/format'
 import { positiveAmount } from '#/features/markets/gates'
+import { usePositionTokenBalance } from '#/features/position/hooks/usePositionTokenBalance'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '../hooks/useWithdraw'
 
@@ -15,6 +17,12 @@ import { useWithdraw } from '../hooks/useWithdraw'
  */
 export function WithdrawPanel({ market }: { market: MarketView }) {
   const { state, revert, withdrawCollateral } = useWithdraw(market)
+  // Max is the collateral the user actually holds in this pool position.
+  const { balance } = usePositionTokenBalance(
+    market.poolAddress,
+    market.collateralAddress,
+  )
+  const collateral = balance ?? 0n
 
   const onSubmit = (amountTokens: number) => {
     void withdrawCollateral(
@@ -30,7 +38,9 @@ export function WithdrawPanel({ market }: { market: MarketView }) {
       tokenAddress={market.collateralAddress}
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
-      maxTokens={1000}
+      balance={collateral}
+      maxTokens={toNumber(collateral, market.collateralDecimals)}
+      maxLabel="Supplied"
       preflight={positiveAmount}
       networkFeeUsd={0.42}
       txState={state}
