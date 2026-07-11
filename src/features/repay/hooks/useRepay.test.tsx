@@ -111,7 +111,7 @@ describe('useRepay', () => {
       await result.current.repay(assets, {
         address: market.collateralAddress,
         decimals: market.collateralDecimals,
-        isCollateral: true,
+        fromPosition: true,
       })
     })
 
@@ -143,7 +143,7 @@ describe('useRepay', () => {
       await result.current.repay(assets, {
         address: weth.address,
         decimals: weth.decimals,
-        isCollateral: false,
+        fromPosition: false,
       })
     })
 
