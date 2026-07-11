@@ -104,10 +104,13 @@ describe('write forms use the verified borrow decimals', () => {
   it('repay submits 1.5 pxUSDT as 1500000 when the verified value is 6', async () => {
     render(<RepayPanel market={market(6)} />, { wrapper: QueryWrapper })
     await typeAmountAndSubmit(/repay/i, '1.5')
-    // Amount is the debt in the borrow token (6dp); default source is the wallet
-    // (fromCollateral = false).
+    // Default source is the wallet borrow token; the amount scales by the market's
+    // verified borrow decimals (6) and the token option carries isCollateral: false.
     await waitFor(() =>
-      expect(repay).toHaveBeenCalledWith(1_500_000n, false),
+      expect(repay).toHaveBeenCalledWith(
+        1_500_000n,
+        expect.objectContaining({ decimals: 6, isCollateral: false }),
+      ),
     )
   })
 
