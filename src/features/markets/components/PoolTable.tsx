@@ -18,7 +18,7 @@
  */
 import { useId, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { LoadingCard } from '#/components/ui/states/Loading'
+import { Skeleton } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { usePools } from '#/features/markets/hooks/usePools'
@@ -109,11 +109,68 @@ export function PoolTable({
   }
 
   // --- 1. loading -----------------------------------------------------------
+  // Shaped like the real list — the search+tabs header over a table with the
+  // same columns — so nothing reflows when the pools resolve.
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <LoadingCard />
-        <LoadingCard />
+      <div className="flex flex-col gap-4">
+        <div
+          className="island-shell overflow-hidden rounded-lg"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading pools"
+        >
+          <div className="flex flex-col gap-3 border-b border-[var(--line)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton width="16rem" height="2.25rem" className="rounded-md" />
+            <Skeleton width="13rem" height="2.25rem" className="rounded-full" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--line)]">
+                  {columns.map((column, index) => (
+                    <th key={index} className={cellAlignClass(column.align)}>
+                      <Skeleton
+                        width="60%"
+                        height="0.7rem"
+                        className={column.align === 'right' ? 'ml-auto' : ''}
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, row) => (
+                  <tr
+                    key={row}
+                    className="border-b border-[var(--line)] last:border-0"
+                  >
+                    {columns.map((column, col) => (
+                      <td key={col} className={cellAlignClass(column.align)}>
+                        {col === 0 ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Skeleton
+                              width="2.4rem"
+                              height="1.4rem"
+                              className="rounded-full"
+                            />
+                            <Skeleton width="5rem" height="0.9rem" />
+                          </span>
+                        ) : (
+                          <Skeleton
+                            width="60%"
+                            height="0.9rem"
+                            className={column.align === 'right' ? 'ml-auto' : ''}
+                          />
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     )
   }
