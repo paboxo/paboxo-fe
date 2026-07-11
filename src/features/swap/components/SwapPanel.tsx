@@ -6,7 +6,6 @@ import type { TokenSymbol } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
 import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { ActionButton } from '#/components/ui/ActionButton'
-import { useTokenBalances } from '#/features/shared/useTokenBalances'
 import { useSwapCollateral } from '../hooks/useSwapCollateral'
 import {
   usePositionBalances,
@@ -39,12 +38,11 @@ export function SwapPanel() {
   const sell = TOKENS[sellSymbol]
   const buy = TOKENS[buySymbol]
 
-  // Sell balances come from the POSITION (collateral held in the pool); Buy-side
-  // balances are the wallet's (informational).
+  // Both sides read the POSITION balances: swap-collateral trades tokens inside
+  // the position, so the wallet is irrelevant — Sell decreases and Buy increases
+  // the position's holding of that token.
   const { balances: positionBalances, isLoading: positionLoading } =
     usePositionBalances(market.pool)
-  const { balances: walletBalances, isLoading: walletLoading } =
-    useTokenBalances()
 
   const amountIn = (() => {
     try {
@@ -192,9 +190,12 @@ export function SwapPanel() {
           <span>Buy</span>
           <span className="num">
             Balance:{' '}
-            {walletLoading
+            {positionLoading
               ? '…'
-              : formatTokenAmount(walletBalances[buySymbol] ?? 0n, buy.decimals)}{' '}
+              : formatTokenAmount(
+                  positionBalances[buySymbol] ?? 0n,
+                  buy.decimals,
+                )}{' '}
             {buySymbol}
           </span>
         </div>
@@ -277,8 +278,8 @@ export function SwapPanel() {
           if (picker === 'sell') setSellSymbol(symbol)
           else setBuySymbol(symbol)
         }}
-        balances={picker === 'sell' ? positionBalances : walletBalances}
-        isLoading={picker === 'sell' ? positionLoading : walletLoading}
+        balances={positionBalances}
+        isLoading={positionLoading}
         disabledSymbol={picker === 'sell' ? buySymbol : sellSymbol}
       />
     </div>
