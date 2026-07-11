@@ -1,26 +1,26 @@
 /**
- * Repay (U12, R20). One entry point, three on-chain shapes of
- * `repayWithSelectedToken` — selected by the chosen pay token:
+ * Repay (U12, R20). One entry point over `repayWithSelectedToken`. Two orthogonal
+ * choices: the pay `token` (any token) and where it comes from (`fromPosition`).
  *
- *  - **Path A — borrow token from wallet:** `token = borrowToken`,
- *    `fromPosition: false`, `fee: 0`, no swap. Exact-amount approval with a small
- *    interest-drift buffer.
- *  - **Path B — another wallet token (swapped):** `token = <wallet token>`,
- *    `fromPosition: false`, `fee: SWAP_FEE_TIER`. The entered amount is USD-
- *    normalized to a borrow-token amount, then to live debt shares; the pool pulls
- *    the token from the wallet and swaps it. Needs an exact-amount approval.
- *  - **Path C — sell position collateral:** `token = collateral`,
- *    `fromPosition: true`, `fee: SWAP_FEE_TIER`. The pool sells the borrower's own
- *    collateral — no wallet funds, no approval.
+ *  - **token = borrow token:** paid directly, no swap.
+ *  - **token = anything else:** the entered amount is USD-normalized to a borrow
+ *    amount, then to live debt shares; the pool swaps the token via DODO.
+ *
+ *  - **fromPosition = false (wallet):** the token is charged to the wallet and
+ *    needs an exact-amount approval.
+ *  - **fromPosition = true (position):** the token is taken from the user's own
+ *    position holdings and swapped/applied there — no wallet funds, no approval.
+ *    The position can hold any token (the user can swap collateral inside it), so
+ *    this is not limited to the market's original collateral asset.
  *
  * `amountOutMinimum` is 0 on the swap paths: the pool floors the swap output at the
  * borrow amount itself (LendingPool `_repayWithSelectedTokenTransfer`); a non-zero
- * value here caps the swap input and reverts InsufficientBalance.
+ * value here caps the swap input and reverts InsufficientBalance. `fee` is 0 — DODO
+ * routes by token-pair and ignores the field (it is not a Uniswap V3 fee tier).
  *
- * Note (contract): paths B and C can still revert on-chain until the contract's
- * collateral-needed math buffers for the DEX fee — B mis-scales
- * `_calculateCollateralNeeded` (InsufficientBalance), and C's swap output can fall
- * a hair under the debt (InsufficientOutputAmount). The frontend call is correct.
+ * Swap cost: the swap paths route through DODO (~0.3% fee) and the contract
+ * over-provisions the input by ~1% so the output fully covers the debt, so the
+ * user spends ~1% more than the spot value of the debt (surfaced in the panel).
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
@@ -33,19 +33,24 @@ import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
 import type { MarketView } from '#/features/markets/types'
 
-/** DEX fee tier for the swap-repay paths (B and C) — 1000 (0.1%), the tier
- *  paboxo's pools are deployed at (same as the swap panel). Unused on path A. */
-const SWAP_FEE_TIER = 1000
+/** DEX `fee` field for the swap params — 0. DODO's adapter routes by token-pair
+ *  and ignores this field (it is not a Uniswap V3 fee tier), so the value is inert;
+ *  0 matches the SC integration docs. Not a slippage control. */
+const SWAP_FEE_TIER = 0
 
 /** Oracle price decimals (8dp USD), matching the chain adapter / price hooks. */
 const PRICE_DECIMALS = 8
 
-/** A pay token for repay. `isCollateral` selects path C (`fromPosition: true`,
- *  sold from the position); otherwise the token is charged to the wallet. */
+/** The contract over-provisions the swap input by ~1% (covering DODO's ~0.3% fee)
+ *  so the output fully clears the debt — the user spends ~1% over the spot value. */
+export const SWAP_COST_PCT = 1
+
+/** A pay token for repay. `fromPosition` selects the source: the user's position
+ *  holdings (sold there, no approval) when true, otherwise the wallet. */
 export interface RepayToken {
   address: Address
   decimals: number
-  isCollateral: boolean
+  fromPosition: boolean
 }
 
 export function useRepay(market: MarketView) {
@@ -54,9 +59,9 @@ export function useRepay(market: MarketView) {
 
   const repay = useCallback(
     /**
-     * @param assets  Amount in the pay token's own units (path A/B: the wallet
-     *   token; path C: the collateral). Converted to live debt shares.
-     * @param token   Pay token; defaults to the borrow token (path A).
+     * @param assets  Amount in the pay token's own units. Converted to live debt
+     *   shares (directly for the borrow token, via oracle prices otherwise).
+     * @param token   Pay token + source; defaults to the borrow token from wallet.
      */
     async (assets: bigint, token?: RepayToken, user?: Address) => {
       const target = user ?? address
@@ -67,30 +72,32 @@ export function useRepay(market: MarketView) {
       const repayToken: RepayToken = token ?? {
         address: market.borrowAddress,
         decimals: market.borrowDecimals,
-        isCollateral: false,
+        fromPosition: false,
       }
       const isBorrowToken =
         repayToken.address.toLowerCase() === market.borrowAddress.toLowerCase()
 
       if (isBorrowToken) {
-        // Path A: pay the borrow token directly — no swap.
+        // Borrow token: applied directly, no swap.
         const shares = debtSharesForAssets(
           assets,
           totals.totalBorrowAssets,
           totals.totalBorrowShares,
         )
-        // The pool pulls sharesToAssets(shares) at *execution* time, which drifts
-        // a few units above the entered `assets` as interest accrues between this
-        // read and the mined tx — a repay reverted ERC20InsufficientAllowance
-        // (needed 10,000,003 vs approved 10,000,000). Approve a small buffer above
-        // `assets` (0.1% + 1 unit) so that drift never leaves the allowance short.
-        const approvalAmount = assets + assets / 1000n + 1n
+        // From the wallet the pool pulls sharesToAssets(shares) at *execution*
+        // time, which drifts a few units above the entered `assets` as interest
+        // accrues before the tx mines (a repay reverted ERC20InsufficientAllowance:
+        // needed 10,000,003 vs approved 10,000,000). Approve a small buffer
+        // (0.1% + 1) so that drift never leaves the allowance short. From the
+        // position there is no wallet approval at all.
         await write.run({
-          approval: {
-            token: market.borrowAddress,
-            spender: market.poolAddress,
-            amount: approvalAmount,
-          },
+          approval: repayToken.fromPosition
+            ? undefined
+            : {
+                token: market.borrowAddress,
+                spender: market.poolAddress,
+                amount: assets + assets / 1000n + 1n,
+              },
           preflight: preflightRepay({ amount: assets, shares }),
           send: () =>
             chain.repayWithSelectedToken(market.poolAddress, {
@@ -98,7 +105,7 @@ export function useRepay(market: MarketView) {
               token: market.borrowAddress,
               shares,
               amountOutMinimum: 0n,
-              fromPosition: false,
+              fromPosition: repayToken.fromPosition,
               fee: 0,
             }),
           invalidateKeys: WRITE_INVALIDATE_KEYS,
@@ -106,8 +113,8 @@ export function useRepay(market: MarketView) {
         return
       }
 
-      // Paths B/C (swap): USD-normalize the entered amount to a borrow-token
-      // amount, then to live debt shares (senja parity).
+      // Swap path (any non-borrow token): USD-normalize the entered amount to a
+      // borrow-token amount, then to live debt shares (senja parity).
       const [tokenPrice, borrowPrice] = await Promise.all([
         chain.getPrice(repayToken.address),
         chain.getPrice(market.borrowAddress),
@@ -130,9 +137,9 @@ export function useRepay(market: MarketView) {
       )
 
       await write.run({
-        // Path C (collateral) is sold from the position — no wallet approval.
-        // Path B (another wallet token) needs an exact-amount approval.
-        approval: repayToken.isCollateral
+        // From the position the token is already there — no wallet approval. From
+        // the wallet the pool pulls it, so approve the exact amount.
+        approval: repayToken.fromPosition
           ? undefined
           : {
               token: repayToken.address,
@@ -146,7 +153,7 @@ export function useRepay(market: MarketView) {
             token: repayToken.address,
             shares,
             amountOutMinimum: 0n,
-            fromPosition: repayToken.isCollateral,
+            fromPosition: repayToken.fromPosition,
             fee: SWAP_FEE_TIER,
           }),
         invalidateKeys: WRITE_INVALIDATE_KEYS,

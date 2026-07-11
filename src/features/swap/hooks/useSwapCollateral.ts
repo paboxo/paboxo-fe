@@ -13,8 +13,11 @@ import { preflightSwap, unixNow } from '#/lib/tx/preflight'
 import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
 
-/** DEX fee tier — 1000 = 0.1% (from the SC integration docs). */
-export const SWAP_FEE_TIER = 1000
+/** DEX `fee` field for the swap params. paboxo routes swaps through DODO, whose
+ *  adapter routes by token-pair and IGNORES this field (unlike Uniswap V3 fee
+ *  tiers) — so the value is inert. We pass 0 per the SC integration docs. Do NOT
+ *  read this as a slippage control; it does nothing. */
+export const SWAP_FEE_TIER = 0
 
 export interface SwapInput {
   pool: Address

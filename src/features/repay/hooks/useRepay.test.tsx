@@ -94,7 +94,7 @@ describe('useRepay', () => {
     )
   }
 
-  it('path C: repays from collateral (no approval, fromPosition, fee 1000)', async () => {
+  it('path C: repays from collateral (no approval, fromPosition, fee 0)', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const assets = 1_000n * 10n ** 18n // 1000 pxWHSK collateral
@@ -111,7 +111,7 @@ describe('useRepay', () => {
       await result.current.repay(assets, {
         address: market.collateralAddress,
         decimals: market.collateralDecimals,
-        isCollateral: true,
+        fromPosition: true,
       })
     })
 
@@ -122,14 +122,14 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum: 0n,
       fromPosition: true,
-      fee: 1000,
+      fee: 0,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
     repay.mockRestore()
   })
 
-  it('path B: repays with another wallet token (WETH) — approves it, fee 1000', async () => {
+  it('path B: repays with another wallet token (WETH) — approves it, fee 0', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const weth = TOKENS.pxWETH
@@ -143,7 +143,7 @@ describe('useRepay', () => {
       await result.current.repay(assets, {
         address: weth.address,
         decimals: weth.decimals,
-        isCollateral: false,
+        fromPosition: false,
       })
     })
 
@@ -154,7 +154,7 @@ describe('useRepay', () => {
       shares,
       amountOutMinimum: 0n,
       fromPosition: false,
-      fee: 1000,
+      fee: 0,
     })
     expect(result.current.state).toBe('confirmed')
     approve.mockRestore()
