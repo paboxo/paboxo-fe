@@ -5,6 +5,9 @@
   "imports": {
     "#/*": "./src/*"
   },
+  "workspaces": [
+    "vendor/hsp/*"
+  ],
   "scripts": {
     "dev": "vite dev --port 3000",
     "generate-routes": "tsr generate",
@@ -17,6 +20,8 @@
     "check": "prettier --check ."
   },
   "dependencies": {
+    "@hsp/core": "workspace:*",
+    "@hsp/sdk": "workspace:*",
     "@reown/appkit": "1.8.22",
     "@reown/appkit-adapter-wagmi": "1.8.22",
     "@tailwindcss/vite": "^4.1.18",

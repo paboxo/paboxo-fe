@@ -1,0 +1,16 @@
+{
+  "name": "@hsp/sdk",
+  "version": "0.1.0",
+  "description": "HSP developer SDK (vendored from github.com/project-hsp/hsp). Raw-TS, transpiled by Vite; see vendor/hsp/README.md.",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@hsp/core": "*",
+    "viem": "^2.54.6"
+  }
+}

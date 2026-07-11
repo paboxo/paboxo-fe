@@ -1,0 +1,15 @@
+{
+  "name": "@hsp/core",
+  "version": "0.1.0",
+  "description": "HSP protocol core (vendored from github.com/project-hsp/hsp). Raw-TS, transpiled by Vite; see vendor/hsp/README.md.",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "viem": "^2.54.6"
+  }
+}
