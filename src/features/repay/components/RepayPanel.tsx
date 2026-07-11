@@ -16,6 +16,7 @@ import {
 } from '#/features/shared/useTokenBalances'
 import type { MarketView } from '#/features/markets/types'
 import { useRepay } from '../hooks/useRepay'
+import { useTokenUsdPrice } from '../hooks/useTokenUsdPrice'
 
 interface RepayOption {
   address: Address
@@ -170,10 +171,20 @@ export function RepayPanel({
   )
   const option =
     options.find((o) => o.address === selectedAddress) ?? options[0]
+  const isBorrowToken =
+    option.address.toLowerCase() === market.borrowAddress.toLowerCase()
 
   // Wallet balance of the selected pay-token drives the balance line + MAX.
   const { balance: selectedBalance } = useTokenBalance(option.address)
   const wallet = selectedBalance ?? 0n
+
+  // The pay-token's USD price: on the market view for the borrow token / collateral,
+  // otherwise fetched from the oracle (e.g. pxWETH). Drives the exchange rate and
+  // the ~$ equivalent of the entered amount, so the user can size the repay.
+  const { priceUsd: fetchedPrice } = useTokenUsdPrice(
+    !isBorrowToken && option.priceUsd === undefined ? option.address : undefined,
+  )
+  const rateUsd = option.priceUsd ?? fetchedPrice
 
   // Per-row balances for the picker, keyed by lowercased token address.
   const { balances } = useTokenBalances()
@@ -196,15 +207,13 @@ export function RepayPanel({
 
   // Repaying with a non-borrow token is swapped on-chain — surface the rate so
   // the user can size the input. Borrow token (pxUSDT ≈ $1) needs no rate.
-  const isBorrowToken =
-    option.address.toLowerCase() === market.borrowAddress.toLowerCase()
   const rateNode =
-    !isBorrowToken && option.priceUsd !== undefined ? (
+    !isBorrowToken && rateUsd !== undefined ? (
       <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
         <span>Exchange rate</span>
         <span className="num text-[var(--sea-ink)]">
           1 {option.symbol} ≈{' '}
-          {formatNumber(option.priceUsd, { maxFractionDigits: 2 })}{' '}
+          {formatNumber(rateUsd, { maxFractionDigits: 2 })}{' '}
           {market.borrowSymbol}
         </span>
       </div>
@@ -217,7 +226,7 @@ export function RepayPanel({
       symbol={option.symbol}
       tokenAddress={option.address}
       decimals={option.decimals}
-      priceUsd={option.priceUsd}
+      priceUsd={rateUsd}
       balance={wallet}
       maxTokens={toNumber(wallet, option.decimals)}
       preflight={positiveAmount}
