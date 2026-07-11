@@ -22,7 +22,7 @@ export function CrossChainSupplyPanel({
 }) {
   const [value, setValue] = useState('')
   const { state, supply } = useCrossChainSupply(market)
-  const { transfer, start, update, clear } = useCrossChainTransfer()
+  const { transfer, start, update, clear } = useCrossChainTransfer('supply')
 
   const submit = async () => {
     start({
