@@ -44,6 +44,7 @@ vi.mock('#/features/withdraw/hooks/useWithdraw', () => ({
 }))
 vi.mock('#/features/shared/useTokenBalances', () => ({
   useTokenBalance: () => ({ balance: 10_000_000_000n }),
+  useTokenBalances: () => ({ balances: {}, isLoading: false, isError: false }),
 }))
 vi.mock('#/features/position/hooks/usePosition', () => ({
   useMarketPosition: () => ({ data: { supplies: [] } }),
