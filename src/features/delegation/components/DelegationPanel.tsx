@@ -6,7 +6,6 @@ import { DelegationFlow } from '#/components/ui/DelegationFlow'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import type { Address } from '#/lib/contracts'
 import type { MarketView } from '#/features/markets/types'
-import { ProtectionPanel } from '#/features/protection/components/ProtectionPanel'
 import { useAllowances } from '../hooks/useAllowances'
 import { useDelegation } from '../hooks/useDelegation'
 
@@ -76,9 +75,6 @@ export function DelegationPanel({ market }: { market: MarketView }) {
           </p>
         )}
       </section>
-
-      {/* Rebalance delegation (HSP-gated AI agent protection) — same market. */}
-      <ProtectionPanel market={market} />
     </div>
   )
 }
