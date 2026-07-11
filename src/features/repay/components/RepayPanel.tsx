@@ -13,7 +13,7 @@ import type { TokenBalances } from '#/features/shared/useTokenBalances'
 import { useTokenBalances } from '#/features/shared/useTokenBalances'
 import { usePositionBalances } from '#/features/swap/hooks/useSwapCollateralData'
 import type { MarketView } from '#/features/markets/types'
-import { useRepay } from '../hooks/useRepay'
+import { SWAP_COST_PCT, useRepay } from '../hooks/useRepay'
 import { useTokenUsdPrice } from '../hooks/useTokenUsdPrice'
 
 interface RepayOption {
@@ -181,18 +181,29 @@ export function RepayPanel({
     })
   }
 
-  // Non-borrow tokens are swapped on-chain — surface the rate so the user can size
-  // the input. The borrow token (≈$1) needs none.
-  const rateNode =
-    !isBorrowToken && rateUsd !== undefined ? (
+  // Non-borrow tokens are swapped on-chain (DODO) — surface the rate AND the swap
+  // cost so the user can size the input and isn't surprised by the debited amount.
+  // The contract over-provisions the input ~1% so the output clears the debt. The
+  // borrow token (≈$1, no swap) needs neither line.
+  const rateNode = !isBorrowToken ? (
+    <>
+      {rateUsd !== undefined ? (
+        <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+          <span>Exchange rate</span>
+          <span className="num text-[var(--sea-ink)]">
+            1 {option.symbol} ≈ {formatNumber(rateUsd, { maxFractionDigits: 2 })}{' '}
+            {market.borrowSymbol}
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
-        <span>Exchange rate</span>
+        <span>Swap cost (max)</span>
         <span className="num text-[var(--sea-ink)]">
-          1 {option.symbol} ≈ {formatNumber(rateUsd, { maxFractionDigits: 2 })}{' '}
-          {market.borrowSymbol}
+          ~{SWAP_COST_PCT}% over debt value
         </span>
       </div>
-    ) : null
+    </>
+  ) : null
 
   return (
     <ActionPanel

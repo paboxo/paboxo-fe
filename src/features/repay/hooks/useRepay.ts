@@ -2,9 +2,9 @@
  * Repay (U12, R20). One entry point over `repayWithSelectedToken`. Two orthogonal
  * choices: the pay `token` (any token) and where it comes from (`fromPosition`).
  *
- *  - **token = borrow token:** paid directly, no swap, `fee: 0`.
+ *  - **token = borrow token:** paid directly, no swap.
  *  - **token = anything else:** the entered amount is USD-normalized to a borrow
- *    amount, then to live debt shares; the pool swaps the token, `fee: SWAP_FEE_TIER`.
+ *    amount, then to live debt shares; the pool swaps the token via DODO.
  *
  *  - **fromPosition = false (wallet):** the token is charged to the wallet and
  *    needs an exact-amount approval.
@@ -15,13 +15,12 @@
  *
  * `amountOutMinimum` is 0 on the swap paths: the pool floors the swap output at the
  * borrow amount itself (LendingPool `_repayWithSelectedTokenTransfer`); a non-zero
- * value here caps the swap input and reverts InsufficientBalance.
+ * value here caps the swap input and reverts InsufficientBalance. `fee` is 0 — DODO
+ * routes by token-pair and ignores the field (it is not a Uniswap V3 fee tier).
  *
- * Note (contract): the swap paths can still revert on-chain until the contract's
- * collateral-needed math buffers for the DEX fee — a wallet swap mis-scales
- * `_calculateCollateralNeeded` (InsufficientBalance), and a position swap's output
- * can fall a hair under the debt (InsufficientOutputAmount). The frontend call is
- * correct.
+ * Swap cost: the swap paths route through DODO (~0.3% fee) and the contract
+ * over-provisions the input by ~1% so the output fully covers the debt, so the
+ * user spends ~1% more than the spot value of the debt (surfaced in the panel).
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
@@ -34,12 +33,17 @@ import { useWriteAction } from '#/lib/tx/useWriteAction'
 import { WRITE_INVALIDATE_KEYS } from '#/features/shared/writeKeys'
 import type { MarketView } from '#/features/markets/types'
 
-/** DEX fee tier for the swap-repay paths — 1000 (0.1%), the tier paboxo's pools
- *  are deployed at (same as the swap panel). Unused when paying the borrow token. */
-const SWAP_FEE_TIER = 1000
+/** DEX `fee` field for the swap params — 0. DODO's adapter routes by token-pair
+ *  and ignores this field (it is not a Uniswap V3 fee tier), so the value is inert;
+ *  0 matches the SC integration docs. Not a slippage control. */
+const SWAP_FEE_TIER = 0
 
 /** Oracle price decimals (8dp USD), matching the chain adapter / price hooks. */
 const PRICE_DECIMALS = 8
+
+/** The contract over-provisions the swap input by ~1% (covering DODO's ~0.3% fee)
+ *  so the output fully clears the debt — the user spends ~1% over the spot value. */
+export const SWAP_COST_PCT = 1
 
 /** A pay token for repay. `fromPosition` selects the source: the user's position
  *  holdings (sold there, no approval) when true, otherwise the wallet. */
