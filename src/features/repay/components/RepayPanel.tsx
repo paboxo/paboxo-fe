@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ChevronDown } from 'lucide-react'
@@ -6,64 +6,32 @@ import { ActionPanel } from '#/components/action/ActionPanel'
 import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
-import { TOKENS, TOKEN_SYMBOLS } from '#/lib/contracts'
-import type { Address } from '#/lib/contracts'
-import { formatNumber, formatTokenAmount, toNumber } from '#/lib/format'
-import {
-  useTokenBalance,
-  useTokenBalances,
-} from '#/features/shared/useTokenBalances'
+import { formatTokenAmount, toNumber } from '#/lib/format'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
+import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import type { MarketView } from '#/features/markets/types'
 import { useRepay } from '../hooks/useRepay'
-import { useTokenUsdPrice } from '../hooks/useTokenUsdPrice'
 
-interface RepayOption {
-  address: Address
+/** The two supported repay sources (the contract only pays from the wallet's
+ *  borrow token or the position's own collateral). */
+interface RepaySource {
+  key: 'wallet' | 'collateral'
   symbol: string
-  decimals: number
-  isCollateral: boolean
-  priceUsd: number | undefined
+  address: string
+  /** Sub-line under the symbol in the picker (the source's balance). */
+  detail: string
 }
 
-/**
- * Repay-token options: the borrow token (mode A, direct) and the position
- * collateral (swapped on-chain through the pool's own collateral↔borrow DEX
- * pool). We deliberately do NOT offer arbitrary registry tokens: a swap-repay
- * needs a liquid DEX pool for that token↔borrow, and on this deployment only the
- * pool's own pair is guaranteed to have one — offering e.g. pxWETH just reverts
- * InsufficientBalance when its pool has no liquidity. senja curates its list the
- * same way (KNOWN_COLLATERAL_TOKENS), not the whole registry.
- */
-function buildRepayOptions(market: MarketView): RepayOption[] {
-  const borrow: RepayOption = {
-    address: market.borrowAddress,
-    symbol: market.borrowSymbol,
-    decimals: market.borrowDecimals,
-    isCollateral: false,
-    priceUsd: 1,
-  }
-  const collateral: RepayOption = {
-    address: market.collateralAddress,
-    symbol: market.collateralSymbol,
-    decimals: market.collateralDecimals,
-    isCollateral: true,
-    priceUsd: market.priceUsd,
-  }
-  return [borrow, collateral]
-}
-
-/** Compact token picker shown to the right of the "Repay" header. Each row
- *  carries the token logo, symbol, and the user's wallet balance. */
-function RepayTokenSelect({
-  options,
+/** Picker to the right of the "Repay" header: choose whether to pay the debt
+ *  from your wallet (borrow token) or by selling your position collateral. */
+function RepaySourceSelect({
+  sources,
   selected,
   onSelect,
-  balanceByAddress,
 }: {
-  options: RepayOption[]
-  selected: RepayOption
-  onSelect: (address: Address) => void
-  balanceByAddress: Map<string, bigint>
+  sources: RepaySource[]
+  selected: RepaySource
+  onSelect: (key: RepaySource['key']) => void
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -77,7 +45,7 @@ function RepayTokenSelect({
       >
         <TokenGlyph
           symbol={selected.symbol}
-          address={selected.address}
+          address={selected.address as `0x${string}`}
           size={20}
         />
         {selected.symbol}
@@ -90,7 +58,6 @@ function RepayTokenSelect({
 
       {open ? (
         <>
-          {/* Click-away backdrop. */}
           <button
             type="button"
             aria-hidden="true"
@@ -100,42 +67,39 @@ function RepayTokenSelect({
           />
           <div
             role="listbox"
-            aria-label="Repay with token"
-            className="island-shell absolute right-0 z-20 mt-1 flex max-h-72 w-64 flex-col gap-0.5 overflow-auto rounded-xl p-1"
+            aria-label="Repay from"
+            className="island-shell absolute right-0 z-20 mt-1 flex w-64 flex-col gap-0.5 rounded-xl p-1"
           >
-            {options.map((o) => {
-              const bal = balanceByAddress.get(o.address.toLowerCase())
-              return (
-                <button
-                  key={o.address}
-                  type="button"
-                  role="option"
-                  aria-selected={o.address === selected.address}
-                  onClick={() => {
-                    onSelect(o.address)
-                    setOpen(false)
-                  }}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--surface)]"
-                >
-                  <TokenGlyph symbol={o.symbol} address={o.address} size={20} />
-                  <span className="min-w-0 flex-1 truncate text-sm font-bold text-[var(--sea-ink)]">
-                    {o.symbol}
+            {sources.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                role="option"
+                aria-selected={s.key === selected.key}
+                onClick={() => {
+                  onSelect(s.key)
+                  setOpen(false)
+                }}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--surface)]"
+              >
+                <TokenGlyph
+                  symbol={s.symbol}
+                  address={s.address as `0x${string}`}
+                  size={20}
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm font-bold text-[var(--sea-ink)]">
+                    {s.symbol}
                   </span>
-                  {o.isCollateral ? (
-                    <span className="shrink-0 whitespace-nowrap rounded bg-[var(--surface)] px-1.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.04em] text-[var(--sea-ink-soft)]">
-                      collateral
-                    </span>
-                  ) : null}
-                  {/* Compact (K/M) in the list; the full amount shows on the
-                      "Your Balance" line once the token is selected. */}
-                  {bal !== undefined ? (
-                    <span className="num shrink-0 text-xs text-[var(--sea-ink-soft)]">
-                      {formatTokenAmount(bal, o.decimals, { compact: true })}
-                    </span>
-                  ) : null}
-                </button>
-              )
-            })}
+                  <span className="text-[0.62rem] text-[var(--sea-ink-soft)]">
+                    {s.key === 'wallet' ? 'from wallet' : 'from collateral'}
+                  </span>
+                </span>
+                <span className="num shrink-0 text-xs text-[var(--sea-ink-soft)]">
+                  {s.detail}
+                </span>
+              </button>
+            ))}
           </div>
         </>
       ) : null}
@@ -144,11 +108,9 @@ function RepayTokenSelect({
 }
 
 /**
- * Repay panel (U12). Repays the borrow token directly, the position collateral,
- * or another wallet token (swapped on-chain). The token to pay with is picked
- * from the header selector (logo + wallet balance per row); its wallet balance
- * drives the "Your Balance" line, MAX, and the slider. The hook converts the
- * entered amount to live debt shares and sizes the approval / slippage floor.
+ * Repay panel (U12). The amount is always the debt to clear, in the borrow token
+ * (pxUSDT). The header selector chooses the source: pay from the wallet (borrow
+ * token, path A) or by selling the position collateral (path C, `fromPosition`).
  */
 export function RepayPanel({
   market,
@@ -158,91 +120,73 @@ export function RepayPanel({
   belowSlider?: ReactNode
 }) {
   const { state, revert, repay } = useRepay(market)
-  const options = useMemo(() => buildRepayOptions(market), [market])
-  const [selectedAddress, setSelectedAddress] = useState<Address>(
-    options[0].address,
+  const [source, setSource] = useState<RepaySource['key']>('wallet')
+  const fromCollateral = source === 'collateral'
+
+  const { data: position } = useMarketPosition(market.id)
+  const debt =
+    position?.borrows.find((b) => b.symbol === market.borrowSymbol)?.debt ?? 0n
+  const collateralRow = position?.supplies.find(
+    (s) => s.symbol === market.collateralSymbol,
   )
-  const option =
-    options.find((o) => o.address === selectedAddress) ?? options[0]
-  const isBorrowToken =
-    option.address.toLowerCase() === market.borrowAddress.toLowerCase()
+  const { balance: walletBorrow } = useTokenBalance(market.borrowAddress)
 
-  // Wallet balance of the selected pay-token drives the balance line + MAX.
-  const { balance: selectedBalance } = useTokenBalance(option.address)
-  const wallet = selectedBalance ?? 0n
+  // MAX is the outstanding debt (you can't repay more than you owe). Paying from
+  // the wallet also caps at the wallet's borrow-token balance.
+  const debtTokens = toNumber(debt, market.borrowDecimals)
+  const walletTokens = toNumber(walletBorrow ?? 0n, market.borrowDecimals)
+  const maxTokens = fromCollateral
+    ? debtTokens
+    : Math.min(debtTokens, walletTokens)
 
-  // The pay-token's USD price: on the market view for the borrow token / collateral,
-  // otherwise fetched from the oracle (e.g. pxWETH). Drives the exchange rate and
-  // the ~$ equivalent of the entered amount, so the user can size the repay.
-  const { priceUsd: fetchedPrice } = useTokenUsdPrice(
-    !isBorrowToken && option.priceUsd === undefined ? option.address : undefined,
-  )
-  const rateUsd = option.priceUsd ?? fetchedPrice
-
-  // Per-row balances for the picker, keyed by lowercased token address.
-  const { balances } = useTokenBalances()
-  const balanceByAddress = useMemo(() => {
-    const map = new Map<string, bigint>()
-    for (const symbol of TOKEN_SYMBOLS) {
-      const bal = balances[symbol]
-      if (bal !== undefined) map.set(TOKENS[symbol].address.toLowerCase(), bal)
-    }
-    return map
-  }, [balances])
+  const sources: RepaySource[] = [
+    {
+      key: 'wallet',
+      symbol: market.borrowSymbol,
+      address: market.borrowAddress,
+      detail: `${formatTokenAmount(walletBorrow ?? 0n, market.borrowDecimals, { compact: true })}`,
+    },
+    {
+      key: 'collateral',
+      symbol: market.collateralSymbol,
+      address: market.collateralAddress,
+      detail: collateralRow
+        ? `${formatTokenAmount(collateralRow.balance, collateralRow.decimals, { compact: true })}`
+        : '0',
+    },
+  ]
+  const selected = sources.find((s) => s.key === source) ?? sources[0]
 
   const onSubmit = (amountTokens: number) => {
-    void repay(parseUnits(amountTokens.toString(), option.decimals), {
-      address: option.address,
-      decimals: option.decimals,
-      isCollateral: option.isCollateral,
-    })
+    void repay(
+      parseUnits(amountTokens.toString(), market.borrowDecimals),
+      fromCollateral,
+    )
   }
-
-  // Repaying with a non-borrow token is swapped on-chain — surface the rate so
-  // the user can size the input. Borrow token (pxUSDT ≈ $1) needs no rate.
-  const rateNode =
-    !isBorrowToken && rateUsd !== undefined ? (
-      <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
-        <span>Exchange rate</span>
-        <span className="num text-[var(--sea-ink)]">
-          1 {option.symbol} ≈{' '}
-          {formatNumber(rateUsd, { maxFractionDigits: 2 })}{' '}
-          {market.borrowSymbol}
-        </span>
-      </div>
-    ) : null
 
   return (
     <ActionPanel
       title={`Repay ${market.borrowSymbol}`}
       idleLabel="Repay"
-      symbol={option.symbol}
-      tokenAddress={option.address}
-      decimals={option.decimals}
-      priceUsd={rateUsd}
-      balance={wallet}
-      maxTokens={toNumber(wallet, option.decimals)}
+      symbol={market.borrowSymbol}
+      tokenAddress={market.borrowAddress}
+      decimals={market.borrowDecimals}
+      priceUsd={1}
+      balance={debt}
+      balanceLabel="Debt"
+      maxTokens={maxTokens}
+      maxLabel="Debt"
       preflight={positiveAmount}
       blockReason={staleBlockReason(market)}
       networkFeeHsk={NETWORK_FEE_HSK}
       txState={state}
       revert={revert ?? undefined}
-      belowSlider={
-        rateNode ? (
-          <>
-            {rateNode}
-            {belowSlider}
-          </>
-        ) : (
-          belowSlider
-        )
-      }
+      belowSlider={belowSlider}
       headerRight={
-        <RepayTokenSelect
-          options={options}
-          selected={option}
-          onSelect={setSelectedAddress}
-          balanceByAddress={balanceByAddress}
+        <RepaySourceSelect
+          sources={sources}
+          selected={selected}
+          onSelect={setSource}
         />
       }
       onSubmit={onSubmit}

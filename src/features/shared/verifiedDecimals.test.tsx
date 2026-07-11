@@ -47,7 +47,7 @@ vi.mock('#/features/shared/useTokenBalances', () => ({
   useTokenBalances: () => ({ balances: {}, isLoading: false, isError: false }),
 }))
 vi.mock('#/features/position/hooks/usePosition', () => ({
-  useMarketPosition: () => ({ data: { supplies: [] } }),
+  useMarketPosition: () => ({ data: { supplies: [], borrows: [] } }),
 }))
 
 const { BorrowPanel } = await import('#/features/borrow/components/BorrowPanel')
@@ -104,12 +104,10 @@ describe('write forms use the verified borrow decimals', () => {
   it('repay submits 1.5 pxUSDT as 1500000 when the verified value is 6', async () => {
     render(<RepayPanel market={market(6)} />, { wrapper: QueryWrapper })
     await typeAmountAndSubmit(/repay/i, '1.5')
-    // Default repay source is the borrow token; the panel now passes a token option too.
+    // Amount is the debt in the borrow token (6dp); default source is the wallet
+    // (fromCollateral = false).
     await waitFor(() =>
-      expect(repay).toHaveBeenCalledWith(
-        1_500_000n,
-        expect.objectContaining({ decimals: 6, isCollateral: false }),
-      ),
+      expect(repay).toHaveBeenCalledWith(1_500_000n, false),
     )
   })
 
