@@ -30,7 +30,7 @@ beforeEach(() => {
 
 // Covers R20 (mode A), R9: repay sizes debt shares from live totals.
 describe('useRepay', () => {
-  it('approves the exact assets and repays in mode A with live shares', async () => {
+  it('approves assets plus a drift buffer and repays in mode A with live shares', async () => {
     const approve = vi.spyOn(mockChainAdapter, 'approve')
     const repay = vi.spyOn(mockChainAdapter, 'repayWithSelectedToken')
     const totals = await mockChainAdapter.getMarketTotals(market.poolAddress)
@@ -48,10 +48,12 @@ describe('useRepay', () => {
       await result.current.repay(assets)
     })
 
+    // Approves a small buffer over `assets` (0.1% + 1) so interest accrued
+    // before execution never leaves the allowance a few units short.
     expect(approve).toHaveBeenCalledWith(
       TOKENS.pxUSDT.address,
       market.poolAddress,
-      assets,
+      assets + assets / 1000n + 1n,
     )
     expect(repay).toHaveBeenCalledWith(market.poolAddress, {
       user: USER,

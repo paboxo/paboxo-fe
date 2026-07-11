@@ -54,17 +54,23 @@ export function useRepay(market: MarketView) {
         repayToken.address.toLowerCase() === market.borrowAddress.toLowerCase()
 
       if (isBorrowToken) {
-        // Mode A: pay the borrow token directly — no swap, exact-amount approval.
+        // Mode A: pay the borrow token directly — no swap.
         const shares = debtSharesForAssets(
           assets,
           totals.totalBorrowAssets,
           totals.totalBorrowShares,
         )
+        // The pool pulls sharesToAssets(shares) at *execution* time, which drifts
+        // a few units above the entered `assets` as interest accrues between this
+        // read and the mined tx — a repay reverted with ERC20InsufficientAllowance
+        // (needed 10,000,003 vs approved 10,000,000). Approve a small buffer above
+        // `assets` (0.1% + 1 unit) so that drift never leaves the allowance short.
+        const approvalAmount = assets + assets / 1000n + 1n
         await write.run({
           approval: {
             token: market.borrowAddress,
             spender: market.poolAddress,
-            amount: assets,
+            amount: approvalAmount,
           },
           preflight: preflightRepay({ amount: assets, shares }),
           send: () =>
