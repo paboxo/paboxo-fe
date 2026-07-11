@@ -24,11 +24,26 @@ describe('MarketRateChart', () => {
     expect(screen.queryByText(/Current on-chain rate/)).toBeNull()
   })
 
-  it('shows the current on-chain rate when there is no history series', () => {
+  it('shows a "no history yet" empty state when no series and no current rate', () => {
     mockHook.mockReturnValue({ data: [], isLoading: false, error: null })
     render(<MarketRateChart market={market} />)
-    expect(screen.getByText(/Current on-chain rate/)).toBeTruthy()
+    expect(screen.getByText(/No rate history yet/)).toBeTruthy()
     expect(screen.queryByText(/Couldn't load/)).toBeNull()
+  })
+
+  it('charts a series derived from the current rate when the indexer is empty', () => {
+    mockHook.mockReturnValue({ data: [], isLoading: false, error: null })
+    const withRate = {
+      poolAddress: '0x0000000000000000000000000000000000000001',
+      borrowApr: 5,
+      supplyApy: 2.75,
+    } as unknown as MarketView
+    render(<MarketRateChart market={withRate} />)
+    // The estimated-from-current caption marks the derived (non-indexed) chart.
+    expect(
+      screen.getByText(/Estimated from the current on-chain rate/),
+    ).toBeTruthy()
+    expect(screen.queryByText(/No rate history yet/)).toBeNull()
   })
 
   it('renders neither empty nor error while loading', () => {
