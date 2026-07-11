@@ -48,11 +48,11 @@ The gateway interface mirrors HSP's real API 1:1 so swapping in `@hsp/sdk` later
 | Field | What | Status |
 |---|---|---|
 | `agentKeeper` | AI keeper wallet that receives rebalance-delegation | ✅ `0x1840A5a5AE7D0F70674C434f3BFf4a7e529c9F0b` — the **REBALANCE_KEEPER / `AGENT_ADDRESS`** (keeper `docs/AI-REBALANCE-FRONTEND.md`), NOT the market-maker wallet |
-| `feeTreasury` | Fee recipient — buyback / fee-sink wallet | **TODO** (zero-address) — product decision, pending |
+| `feeTreasury` | Fee recipient — buyback / fee-sink wallet | ✅ `0x63b9679e3A253920161B51A79D122EAad1c19baF` (buyback wallet) |
 | `feeToken` | Fee stablecoin | ✅ pxUSDT |
 | `feeAmount` | Fee in base units | ✅ `1_000_000n` (1 pxUSDT) |
 
-Until `agentKeeper` **and** `feeTreasury` are set, `PROTECTION_UNCONFIGURED(PROTECTION)` is `true` and the panel disables the "Enable protection" action — nothing can be sent to `0x0`.
+Both are now set, so `PROTECTION_UNCONFIGURED(PROTECTION)` is `false` and the "Enable protection" action is enabled. (The guard still disables the panel — and prevents any send to `0x0` — whenever either address is left unset.)
 
 ## Honest caveats (state these in the pitch)
 
