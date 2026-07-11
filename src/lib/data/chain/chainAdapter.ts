@@ -756,6 +756,16 @@ export const liveChainAdapter: ChainAdapter = {
     })
   },
 
+  async getRebalanceDelegation(pool, owner, delegate) {
+    return readContract(wagmiConfig, {
+      chainId: CHAIN_ID,
+      address: pool,
+      abi: lendingPoolAbi,
+      functionName: 'rebalanceDelegation',
+      args: [owner, delegate],
+    })
+  },
+
   // --------------------------------------------------------------- writes ----
 
   async approve(token, spender, amount) {
@@ -891,6 +901,16 @@ export const liveChainAdapter: ChainAdapter = {
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'approveWithdrawDelegation',
+      args: [delegate, allowed],
+    })
+    return hash
+  },
+
+  async approveRebalanceDelegation(pool, delegate, allowed) {
+    const hash = await writeWithGas({
+      address: pool,
+      abi: lendingPoolAbi,
+      functionName: 'approveRebalanceDelegation',
       args: [delegate, allowed],
     })
     return hash
