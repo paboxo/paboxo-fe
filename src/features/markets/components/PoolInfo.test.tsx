@@ -21,6 +21,8 @@ describe('PoolInfo', () => {
     // Charts re-homed from the removed market.$id route are present.
     expect(screen.getByText('Interest rate model')).toBeTruthy()
     expect(screen.getByText('Rate history')).toBeTruthy()
+    // Covers AE1/R6: the liquidity chart card was dropped from the detail page.
+    expect(screen.queryByText('Liquidity')).toBeNull()
   })
 
   it('borrow variant leads with borrow APR, LLTV, and liq-threshold', () => {

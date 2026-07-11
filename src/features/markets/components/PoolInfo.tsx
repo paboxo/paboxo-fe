@@ -4,7 +4,6 @@ import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { MarketIrmChart } from '#/features/analytics/components/MarketIrmChart'
 import { MarketRateChart } from '#/features/analytics/components/MarketRateChart'
-import { MarketLiquidityChart } from '#/features/analytics/components/MarketLiquidityChart'
 import type { MarketView } from '../types'
 import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
@@ -63,7 +62,11 @@ export function PoolInfo({ market, context }: PoolInfoProps) {
         </div>
 
         {context === 'earn' ? (
-          <div className="flex flex-wrap gap-x-8 gap-y-3">
+          // Mockup's five-tile strip: Supply APY (hero), Utilization,
+          // {collateral} price, Borrow APR, TVL. The "Available" tile is
+          // dropped from Earn (KTD4) — Utilization + TVL carry the liquidity
+          // signal now that the liquidity chart is gone.
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-5">
             <StatTile
               label="Supply APY"
               value={formatPercent(market.supplyApy)}
@@ -83,45 +86,41 @@ export function PoolInfo({ market, context }: PoolInfoProps) {
               value={formatPercent(market.borrowApr)}
             />
             <StatTile
-              label="Available"
-              value={formatUsd(market.availableLiquidityUsd, { compact: true })}
-            />
-            <StatTile
               label="TVL"
               value={formatUsd(market.tvlUsd, { compact: true })}
             />
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap gap-x-8 gap-y-3">
-              <StatTile
-                label="Borrow APR"
-                value={formatPercent(market.borrowApr)}
-                hero
-              />
-              <StatTile label="LLTV" value={formatPercent(market.lltv)} />
-              <StatTile
-                label="Liq. threshold"
-                value={formatPercent(market.liqThreshold)}
-              />
-              <StatTile
-                label={`${market.collateralSymbol} price`}
-                value={formatUsd(market.priceUsd)}
-              />
-              <StatTile
-                label="Available"
-                value={formatUsd(market.availableLiquidityUsd, {
-                  compact: true,
-                })}
-              />
-            </div>
+          // Borrow leads with risk: Borrow APR (hero), LLTV, Liq. threshold,
+          // {collateral} price, Available — same grid + tile styling as Earn,
+          // its own richer tile set (KTD4).
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-5">
+            <StatTile
+              label="Borrow APR"
+              value={formatPercent(market.borrowApr)}
+              hero
+            />
+            <StatTile label="LLTV" value={formatPercent(market.lltv)} />
+            <StatTile
+              label="Liq. threshold"
+              value={formatPercent(market.liqThreshold)}
+            />
+            <StatTile
+              label={`${market.collateralSymbol} price`}
+              value={formatUsd(market.priceUsd)}
+            />
+            <StatTile
+              label="Available"
+              value={formatUsd(market.availableLiquidityUsd, {
+                compact: true,
+              })}
+            />
           </div>
         )}
       </section>
 
       <MarketIrmChart market={market} />
       <MarketRateChart market={market} />
-      <MarketLiquidityChart market={market} />
     </div>
   )
 }
