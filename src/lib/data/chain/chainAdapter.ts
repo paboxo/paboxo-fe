@@ -252,8 +252,10 @@ interface WriteArgs {
   args?: readonly unknown[]
 }
 
-/** Escalating multipliers (percent of the RPC's suggested price) across attempts. */
-const GAS_ATTEMPT_PCT = [125n, 200n, 320n] as const
+/** Escalating multipliers (percent of the RPC's suggested price) across attempts.
+ *  The first attempt already carries a generous 2x buffer so a normal tx clears
+ *  the floor on the first try (no re-prompt); the rest cover a spiking floor. */
+const GAS_ATTEMPT_PCT = [200n, 350n, 600n] as const
 
 /** The node's "gas price below minimum" floor rejection, matched leniently. */
 function isGasPriceBelowMinimum(error: unknown): boolean {
