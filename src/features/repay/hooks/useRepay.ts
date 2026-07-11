@@ -138,13 +138,17 @@ export function useRepay(market: MarketView) {
 
       await write.run({
         // From the position the token is already there — no wallet approval. From
-        // the wallet the pool pulls it, so approve the exact amount.
+        // the wallet the pool pulls it and swaps: the contract over-provisions the
+        // input ~SWAP_COST_PCT% so the output clears the debt, so it pulls a bit
+        // MORE than the entered `assets`. Approving the exact `assets` reverted
+        // ERC20InsufficientAllowance (tx 0xbd16bd36…); approve that plus a 2%
+        // buffer (over the ~1% over-provision) so the pull is always covered.
         approval: repayToken.fromPosition
           ? undefined
           : {
               token: repayToken.address,
               spender: market.poolAddress,
-              amount: assets,
+              amount: assets + (assets * BigInt(SWAP_COST_PCT + 1)) / 100n + 1n,
             },
         preflight: preflightRepay({ amount: borrowAmount, shares }),
         send: () =>

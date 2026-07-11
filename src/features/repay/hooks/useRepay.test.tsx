@@ -147,7 +147,13 @@ describe('useRepay', () => {
       })
     })
 
-    expect(approve).toHaveBeenCalledWith(weth.address, market.poolAddress, assets)
+    // The pool over-provisions the swap input, so the approval carries a 2% buffer
+    // over the entered amount (exact-amount approval reverted InsufficientAllowance).
+    expect(approve).toHaveBeenCalledWith(
+      weth.address,
+      market.poolAddress,
+      assets + (assets * 2n) / 100n + 1n,
+    )
     expect(repay).toHaveBeenCalledWith(market.poolAddress, {
       user: USER,
       token: weth.address,
