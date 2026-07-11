@@ -13,8 +13,18 @@ describe('MoneyInput', () => {
   it('shows the balance line and token symbol without a denomination toggle', () => {
     render(<MoneyInput {...base} value="" onChange={() => {}} />)
     expect(screen.getByText(/1,900 pxUSDT/)).toBeTruthy()
+    // Default balance-line label matches the mockup.
+    expect(screen.getByText('Your Balance')).toBeTruthy()
     // The ⇄ denomination toggle was removed (U5).
     expect(screen.queryByLabelText('Switch denomination')).toBeNull()
+  })
+
+  it('uses a caller-supplied balanceLabel over the default', () => {
+    render(
+      <MoneyInput {...base} value="" onChange={() => {}} balanceLabel="Supplied" />,
+    )
+    expect(screen.getByText('Supplied')).toBeTruthy()
+    expect(screen.queryByText('Your Balance')).toBeNull()
   })
 
   it('signals quick-fill fractions via the slider and MAX via its button', () => {

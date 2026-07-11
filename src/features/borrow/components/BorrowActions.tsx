@@ -26,7 +26,7 @@ function SupplyCollateralFirst({ onSupply }: { onSupply: () => void }) {
         type="button"
         onClick={onSupply}
         className="inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold"
-        style={{ background: 'var(--palm)', color: '#ffffff' }}
+        style={{ background: 'var(--palm)', color: '#f3faf5' }}
       >
         Supply collateral first
       </button>
@@ -77,7 +77,7 @@ export function BorrowActions({
             onClick={() => setActive(tab.key)}
             className={`flex-1 rounded-full px-3 py-1.5 text-sm font-bold ${
               active === tab.key
-                ? 'text-white'
+                ? 'text-[#f3faf5]'
                 : 'text-[var(--sea-ink-soft)]'
             }`}
             style={

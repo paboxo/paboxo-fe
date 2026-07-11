@@ -23,6 +23,9 @@ describe('PoolInfo', () => {
     expect(screen.getByText('Rate history')).toBeTruthy()
     // Covers AE1/R6: the liquidity chart card was dropped from the detail page.
     expect(screen.queryByText('Liquidity')).toBeNull()
+    // KTD4: the Earn strip trims to five tiles — the "Available" tile is dropped
+    // here (it stays on the Borrow variant).
+    expect(screen.queryByText('Available')).toBeNull()
   })
 
   it('borrow variant leads with borrow APR, LLTV, and liq-threshold', () => {
