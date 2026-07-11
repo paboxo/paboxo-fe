@@ -53,7 +53,11 @@ export function TokenSelectDialog({
                   isSelected ? 'bg-[var(--chip-bg)]' : ''
                 }`}
               >
-                <TokenGlyph symbol={symbol} size={30} />
+                <TokenGlyph
+                  symbol={symbol}
+                  address={TOKENS[symbol].address}
+                  size={30}
+                />
                 <span className="flex flex-1 flex-col">
                   <span className="text-sm font-semibold text-[var(--sea-ink)]">
                     {symbol}

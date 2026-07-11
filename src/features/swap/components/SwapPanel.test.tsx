@@ -28,8 +28,9 @@ describe('SwapPanel', () => {
     expect(
       screen.getByRole('button', { name: '0.5%' }).getAttribute('aria-pressed'),
     ).toBe('true')
-    // The target token trigger shows the default (pxUSDT).
-    expect(screen.getByRole('button', { name: /pxUSDT/ })).toBeTruthy()
+    // The Buy token trigger shows the default (pxUSDT); exact name avoids the
+    // market dropdown button ("pxWHSK / pxUSDT").
+    expect(screen.getByRole('button', { name: 'pxUSDT' })).toBeTruthy()
     // Amount empty -> the swap stays disabled until an amount is entered.
     expect(
       screen.getByRole('button', { name: 'Swap' }).hasAttribute('disabled'),
@@ -38,7 +39,7 @@ describe('SwapPanel', () => {
 
   it('opens the token dialog and switches the target token', async () => {
     renderPanel()
-    fireEvent.click(screen.getByRole('button', { name: /pxUSDT/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'pxUSDT' }))
     expect(screen.getByRole('dialog', { name: 'Select a token' })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: /pxWETH/ }))
