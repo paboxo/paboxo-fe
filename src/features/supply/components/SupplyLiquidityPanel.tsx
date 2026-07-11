@@ -69,7 +69,7 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
             onClick={() => setActive(tab.key)}
             className={`flex-1 rounded-full px-3 py-1.5 text-sm font-bold ${
               active === tab.key
-                ? 'text-[#f3faf5]'
+                ? 'text-white'
                 : 'text-[var(--sea-ink-soft)]'
             }`}
             style={
