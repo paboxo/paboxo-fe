@@ -1,133 +1,266 @@
 import { useState } from 'react'
 import { parseUnits } from 'viem'
+import { ChevronDown } from 'lucide-react'
 import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
-import { formatTokenAmount } from '#/lib/format'
-import { MoneyInput } from '#/components/ui/MoneyInput'
+import { formatNumber, formatTokenAmount } from '#/lib/format'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
+import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { ActionButton } from '#/components/ui/ActionButton'
-import {
-  useTokenBalance,
-  useTokenBalances,
-} from '#/features/shared/useTokenBalances'
 import { useSwapCollateral } from '../hooks/useSwapCollateral'
+import {
+  usePositionBalances,
+  useSwapQuote,
+} from '../hooks/useSwapCollateralData'
 import { TokenSelectButton } from './TokenSelectButton'
 import { TokenSelectDialog } from './TokenSelectDialog'
 
 /**
- * Swap collateral (trade the tokens held in a position). Pick the market whose
- * position holds the collateral, an amount, and the token to swap into — chosen
- * from a dialog that lists every token with the user's balance. The hook derives
- * amountOutMinimum from oracle prices.
+ * Swap collateral (senja `trade-collateral` model). Pick a pool, then swap the
+ * collateral the position holds — flexibly, into any token. The "Sell" balance
+ * is the token the user holds INSIDE the position (not the wallet); the output +
+ * rate come from the oracle prices; nothing needs approval (the token is already
+ * in the position).
  */
 export function SwapPanel() {
   const [marketId, setMarketId] = useState(MARKETS[0].id)
   const market = getMarketConfig(marketId) ?? MARKETS[0]
   const { state, swap } = useSwapCollateral(market.pool)
-  const { balances, isLoading: balancesLoading } = useTokenBalances()
 
-  const [tokenOut, setTokenOut] = useState<TokenSymbol>('pxUSDT')
+  const [sellSymbol, setSellSymbol] = useState<TokenSymbol>(
+    market.collateralSymbol as TokenSymbol,
+  )
+  const [buySymbol, setBuySymbol] = useState<TokenSymbol>('pxUSDT')
   const [amount, setAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5')
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [picker, setPicker] = useState<'sell' | 'buy' | null>(null)
+  const [marketOpen, setMarketOpen] = useState(false)
 
-  const collateralSymbol = market.collateralSymbol as TokenSymbol
-  // Read the collateral balance by the market's collateral address — the
-  // cross-chain pxWHSK shares the pxWHSK symbol but has a distinct address, so a
-  // symbol lookup would show the wrong token's balance.
-  const { balance: collateralBalance } = useTokenBalance(
-    market.collateralAddress,
+  const sell = TOKENS[sellSymbol]
+  const buy = TOKENS[buySymbol]
+
+  // Both sides read the POSITION balances: swap-collateral trades tokens inside
+  // the position, so the wallet is irrelevant — Sell decreases and Buy increases
+  // the position's holding of that token.
+  const { balances: positionBalances, isLoading: positionLoading } =
+    usePositionBalances(market.pool)
+
+  const amountIn = (() => {
+    try {
+      return parseUnits(amount || '0', sell.decimals)
+    } catch {
+      return 0n
+    }
+  })()
+  const { estimatedOut, rate } = useSwapQuote(
+    sell.address,
+    sell.decimals,
+    buy.address,
+    buy.decimals,
+    amountIn,
   )
 
+  const sellBalance = positionBalances[sellSymbol] ?? 0n
+  const sameToken = sellSymbol === buySymbol
+  const overBalance = amountIn > sellBalance
+  const disabled =
+    amount === '' || Number(amount) <= 0 || sameToken || overBalance
+
   const onSwap = () => {
-    const out = TOKENS[tokenOut]
     void swap({
       pool: market.pool,
-      tokenIn: market.collateralAddress,
-      tokenInDecimals: market.collateralDecimals,
-      tokenOut: out.address,
-      tokenOutDecimals: out.decimals,
-      amountIn: parseUnits(amount || '0', market.collateralDecimals),
+      tokenIn: sell.address,
+      tokenInDecimals: sell.decimals,
+      tokenOut: buy.address,
+      tokenOutDecimals: buy.decimals,
+      amountIn,
       slippagePct: Number(slippage) || 0,
     })
   }
 
-  const sameToken = tokenOut === collateralSymbol
-  const disabled = amount === '' || Number(amount) <= 0 || sameToken
-
   return (
-    <div className="island-shell flex flex-col gap-4 rounded-2xl p-5">
-      <div>
-        <h2 className="display-title m-0 text-lg font-semibold">
-          Swap collateral
-        </h2>
-        <p className="m-0 text-sm text-[var(--sea-ink-soft)]">
-          Trade the collateral held in your position — routed through the DEX,
-          staying inside the position.
-        </p>
+    <div className="island-shell mx-auto flex w-full max-w-xl flex-col gap-4 rounded-lg p-5">
+      {/* Select Market — a custom dropdown so each option shows its pair glyph. */}
+      <div className="flex flex-col gap-1.5 text-[0.78rem] font-semibold text-[var(--sea-ink-soft)]">
+        Select Market
+        <div className="relative">
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={marketOpen}
+            onClick={() => setMarketOpen((open) => !open)}
+            className="flex w-full items-center justify-between rounded border border-[var(--palm)] bg-[var(--surface)] px-3 py-3 text-sm font-bold text-[var(--sea-ink)]"
+          >
+            <span className="flex items-center gap-3">
+              <TokenPairGlyph
+                collateralSymbol={market.collateralSymbol}
+                borrowSymbol={market.borrowSymbol}
+                collateralAddress={market.collateralAddress}
+                borrowAddress={TOKENS.pxUSDT.address}
+                size={22}
+              />
+              {market.collateralSymbol} / {market.borrowSymbol}
+            </span>
+            <ChevronDown
+              size={16}
+              className="text-[var(--sea-ink-soft)]"
+              aria-hidden="true"
+            />
+          </button>
+          {marketOpen ? (
+            <>
+              <button
+                type="button"
+                aria-hidden="true"
+                tabIndex={-1}
+                className="fixed inset-0 z-10 cursor-default"
+                onClick={() => setMarketOpen(false)}
+              />
+              <ul
+                role="listbox"
+                className="island-shell absolute z-20 mt-1 w-full overflow-hidden rounded"
+              >
+                {MARKETS.map((entry) => (
+                  <li key={entry.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMarketId(entry.id)
+                        setMarketOpen(false)
+                      }}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-semibold text-[var(--sea-ink)] hover:bg-[var(--chip-bg)]"
+                    >
+                      <TokenPairGlyph
+                        collateralSymbol={entry.collateralSymbol}
+                        borrowSymbol={entry.borrowSymbol}
+                        collateralAddress={entry.collateralAddress}
+                        borrowAddress={TOKENS.pxUSDT.address}
+                        size={20}
+                      />
+                      {entry.collateralSymbol} / {entry.borrowSymbol}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
       </div>
 
-      <label className="flex flex-col gap-1 text-[0.78rem] text-[var(--sea-ink-soft)]">
-        Position (market)
-        <select
-          value={marketId}
-          onChange={(event) => setMarketId(event.target.value)}
-          className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-2 text-sm text-[var(--sea-ink)]"
-        >
-          {MARKETS.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.collateralSymbol} market
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <MoneyInput
-        symbol={market.collateralSymbol}
-        decimals={market.collateralDecimals}
-        value={amount}
-        onChange={setAmount}
-        balance={collateralBalance}
-      />
-
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="text-[0.78rem] text-[var(--sea-ink-soft)]">
-            Swap into
-          </span>
-          <span className="num text-[0.72rem] text-[var(--sea-ink-soft)]">
+      {/* Sell — the collateral held in the position (flexible token). */}
+      <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-4">
+        <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+          <span>Sell</span>
+          <span className="num">
             Balance:{' '}
-            {balancesLoading
+            {positionLoading
               ? '…'
-              : formatTokenAmount(
-                  balances[tokenOut] ?? 0n,
-                  TOKENS[tokenOut].decimals,
-                )}{' '}
-            {tokenOut}
+              : formatTokenAmount(sellBalance, sell.decimals)}{' '}
+            {sellSymbol}
           </span>
         </div>
-        <TokenSelectButton
-          symbol={tokenOut}
-          onClick={() => setPickerOpen(true)}
-        />
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <input
+            aria-label="Sell amount"
+            inputMode="decimal"
+            placeholder="0.00"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            className="num min-w-0 flex-1 bg-transparent text-3xl font-bold text-[var(--sea-ink)] outline-none"
+          />
+          <TokenSelectButton
+            symbol={sellSymbol}
+            onClick={() => setPicker('sell')}
+          />
+        </div>
       </div>
 
-      <label className="flex items-center justify-between gap-2 text-[0.78rem] text-[var(--sea-ink-soft)]">
-        Slippage tolerance
-        <span className="flex items-center gap-1">
-          <input
-            aria-label="Slippage tolerance"
-            inputMode="decimal"
-            value={slippage}
-            onChange={(event) => setSlippage(event.target.value)}
-            className="num w-16 rounded-lg border border-[var(--line)] bg-[var(--chip-bg)] px-2 py-1 text-right text-sm text-[var(--sea-ink)]"
-          />
-          %
+      {/* Swap direction (decorative — swap-collateral does not reverse) */}
+      <div className="-my-2 flex justify-center">
+        <span
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--chip-bg)] text-[var(--palm)]"
+          aria-hidden="true"
+        >
+          ↓
         </span>
-      </label>
+      </div>
+
+      {/* Buy — estimated output token. */}
+      <div className="rounded border border-[var(--line)] bg-[var(--surface)] p-4">
+        <div className="flex items-center justify-between text-[0.78rem] text-[var(--sea-ink-soft)]">
+          <span>Buy</span>
+          <span className="num">
+            Balance:{' '}
+            {positionLoading
+              ? '…'
+              : formatTokenAmount(
+                  positionBalances[buySymbol] ?? 0n,
+                  buy.decimals,
+                )}{' '}
+            {buySymbol}
+          </span>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="num text-3xl font-bold text-[var(--sea-ink)]">
+            {amount === '' ? '—' : formatTokenAmount(estimatedOut, buy.decimals)}
+          </span>
+          <TokenSelectButton
+            symbol={buySymbol}
+            onClick={() => setPicker('buy')}
+          />
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className="flex flex-col gap-2 text-[0.82rem] text-[var(--sea-ink-soft)]">
+        <div className="flex items-center justify-between">
+          <span>Exchange Rate</span>
+          <span className="num text-[var(--sea-ink)]">
+            {rate > 0
+              ? `1 ${sellSymbol} = ${rate.toLocaleString(undefined, {
+                  maximumFractionDigits: 6,
+                })} ${buySymbol}`
+              : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Network Fee</span>
+          <span className="num text-[var(--sea-ink)]">
+            ~{formatNumber(NETWORK_FEE_HSK, { maxFractionDigits: 8 })} HSK
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Slippage Tolerance</span>
+          <span className="inline-flex gap-1">
+            {['0.1', '0.5', '1.0'].map((value) => {
+              const isActive = slippage === value
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSlippage(value)}
+                  aria-pressed={isActive}
+                  className={
+                    isActive
+                      ? 'rounded bg-[var(--palm)] px-2 py-1 text-xs font-bold text-white'
+                      : 'rounded bg-[var(--chip-bg)] px-2 py-1 text-xs font-bold text-[var(--sea-ink)]'
+                  }
+                >
+                  {value}%
+                </button>
+              )
+            })}
+          </span>
+        </div>
+      </div>
 
       {sameToken ? (
         <p className="m-0 text-[0.78rem]" style={{ color: 'var(--danger)' }}>
           Pick a different token to swap into.
+        </p>
+      ) : overBalance ? (
+        <p className="m-0 text-[0.78rem]" style={{ color: 'var(--danger)' }}>
+          You don&apos;t hold that much {sellSymbol} in this position.
         </p>
       ) : null}
 
@@ -139,13 +272,18 @@ export function SwapPanel() {
       />
 
       <TokenSelectDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        selected={tokenOut}
-        onSelect={setTokenOut}
-        balances={balances}
-        isLoading={balancesLoading}
-        disabledSymbol={collateralSymbol}
+        open={picker !== null}
+        onOpenChange={(open) => {
+          if (!open) setPicker(null)
+        }}
+        selected={picker === 'sell' ? sellSymbol : buySymbol}
+        onSelect={(symbol) => {
+          if (picker === 'sell') setSellSymbol(symbol)
+          else setBuySymbol(symbol)
+        }}
+        balances={positionBalances}
+        isLoading={positionLoading}
+        disabledSymbol={picker === 'sell' ? buySymbol : sellSymbol}
       />
     </div>
   )

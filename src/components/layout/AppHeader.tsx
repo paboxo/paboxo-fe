@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
-import ThemeToggle from '#/components/ThemeToggle'
 import {
   BorrowIcon,
   EarnIcon,
@@ -9,6 +8,7 @@ import {
 } from '#/components/icons'
 import type { IconProps } from '#/components/icons'
 import { WalletControls } from '#/components/wallet/WalletControls'
+import { NetworkPill } from '#/components/wallet/NetworkPill'
 import { DensityToggle } from './DensityToggle'
 
 const NAV: Array<{
@@ -46,7 +46,7 @@ const NAV: Array<{
 /**
  * The app shell header (U9, U11, R6, R7). Two-plane nav with an active
  * indicator and hand-drawn inline icons, and the wallet controls (one chain
- * chip + one account chip) rendered through RainbowKit. The Simple/Pro density
+ * chip + one account chip) rendered through Reown AppKit. The Simple/Pro density
  * toggle lives in the page header.
  */
 export function AppHeader() {
@@ -87,8 +87,8 @@ export function AppHeader() {
           <span className="sm:hidden">
             <DensityToggle />
           </span>
+          <NetworkPill />
           <WalletControls />
-          <ThemeToggle />
         </div>
       </nav>
     </header>

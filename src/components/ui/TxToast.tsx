@@ -15,12 +15,15 @@ export function TxToast({
   tone = 'neutral',
   title,
   actionLabel,
+  actionHref,
   onAction,
   busy = false,
 }: {
   tone?: ToastTone
   title: string
   actionLabel?: string
+  /** When set, the action renders as an external link (e.g. a block explorer). */
+  actionHref?: string
   onAction?: () => void
   busy?: boolean
 }) {
@@ -34,7 +37,17 @@ export function TxToast({
         <span className="text-[0.85rem] font-semibold text-[var(--sea-ink)]">
           {title}
         </span>
-        {actionLabel ? (
+        {actionLabel && actionHref ? (
+          <a
+            href={actionHref}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-auto text-[0.78rem] font-bold no-underline hover:underline"
+            style={{ color: 'var(--lagoon-deep)' }}
+          >
+            {actionLabel}
+          </a>
+        ) : actionLabel ? (
           <button
             type="button"
             onClick={onAction}

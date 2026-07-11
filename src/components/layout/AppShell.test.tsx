@@ -22,8 +22,9 @@ describe('AppShell', () => {
     expect(shell).toBeTruthy()
 
     // jsdom does not lay out, so assert the class contract that produces the
-    // sticky footer rather than a computed height.
-    expect(shell?.className).toContain('min-h-dvh')
+    // sticky footer rather than a computed height. `.app-frame` provides the
+    // full-height framing (fixed inset) that `min-h-dvh` used to.
+    expect(shell?.className).toContain('app-frame')
     expect(shell?.className).toContain('flex')
     expect(shell?.className).toContain('flex-col')
 

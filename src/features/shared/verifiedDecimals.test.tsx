@@ -44,6 +44,7 @@ vi.mock('#/features/withdraw/hooks/useWithdraw', () => ({
 }))
 vi.mock('#/features/shared/useTokenBalances', () => ({
   useTokenBalance: () => ({ balance: 10_000_000_000n }),
+  useTokenBalances: () => ({ balances: {}, isLoading: false, isError: false }),
 }))
 vi.mock('#/features/position/hooks/usePosition', () => ({
   useMarketPosition: () => ({ data: { supplies: [] } }),
@@ -103,7 +104,13 @@ describe('write forms use the verified borrow decimals', () => {
   it('repay submits 1.5 pxUSDT as 1500000 when the verified value is 6', async () => {
     render(<RepayPanel market={market(6)} />, { wrapper: QueryWrapper })
     await typeAmountAndSubmit(/repay/i, '1.5')
-    await waitFor(() => expect(repay).toHaveBeenCalledWith(1_500_000n))
+    // Default repay source is the borrow token; the panel now passes a token option too.
+    await waitFor(() =>
+      expect(repay).toHaveBeenCalledWith(
+        1_500_000n,
+        expect.objectContaining({ decimals: 6, isCollateral: false }),
+      ),
+    )
   })
 
   it('scales by the market value, not the hardcoded registry constant', async () => {

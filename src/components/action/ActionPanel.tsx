@@ -1,11 +1,16 @@
 import { useId, useState } from 'react'
+import type { ReactNode } from 'react'
 import { MoneyInput } from '#/components/ui/MoneyInput'
+import { NetworkBadge } from '#/components/ui/NetworkBadge'
+import { formatNumber } from '#/lib/format'
 import type { Denomination } from '#/components/ui/MoneyInput'
 import { ProjectedHealth } from '#/components/ui/ProjectedHealth'
 import { LiquidationPrice } from '#/components/ui/LiquidationPrice'
 import { ActionButton } from '#/components/ui/ActionButton'
+import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { TxStatus, TxStepper } from '#/components/ui/TxStatus'
 import type { TxStep } from '#/components/ui/TxStatus'
+import type { Address } from '#/lib/contracts'
 import type { TxState } from '#/lib/tx/txState'
 import type { NormalizedRevert } from '#/lib/tx/revertReason'
 import { ReviewBlock } from './ReviewBlock'
@@ -20,12 +25,16 @@ export interface ActionPanelProps {
   title: string
   idleLabel: string
   symbol: string
+  /** When set and known to the registry, the token logo renders in the header. */
+  tokenAddress?: Address
   decimals: number
   priceUsd?: number
   balance?: bigint
   /** Basis for MAX and quick-fill (gas-reserved / risk-bounded, computed by the caller). */
   maxTokens?: number
   maxLabel?: string
+  /** Label for the balance line (e.g. "Your Balance", "Supplied"). */
+  balanceLabel?: string
   currentHf?: number
   projectHf?: (amountTokens: number) => number
   /** Injected revert-condition gate; blocks before the wallet opens (R18). */
@@ -40,7 +49,8 @@ export interface ActionPanelProps {
    */
   blockReason?: string
   reviewApy?: number
-  networkFeeUsd?: number
+  /** Estimated on-chain fee in HSK (gas x gasPrice), shown in the review block. */
+  networkFeeHsk?: number
   liquidation?: {
     asset: string
     currentPrice: number
@@ -50,6 +60,11 @@ export interface ActionPanelProps {
   activeStep?: number
   txState?: TxState
   revert?: NormalizedRevert
+  /** Extra content rendered inside the card, below the slider (e.g. the borrow
+   *  "Your position" block). Sits above the network line and the review. */
+  belowSlider?: ReactNode
+  /** Content pinned to the right of the header title row (e.g. a token picker). */
+  headerRight?: ReactNode
   onSubmit: (amountTokens: number) => void
 }
 
@@ -66,22 +81,26 @@ export function ActionPanel(props: ActionPanelProps) {
     title,
     idleLabel,
     symbol,
+    tokenAddress,
     decimals,
     priceUsd,
     balance,
     maxTokens,
     maxLabel,
+    balanceLabel,
     currentHf,
     projectHf,
     preflight,
     blockReason,
     reviewApy,
-    networkFeeUsd,
+    networkFeeHsk,
     liquidation,
     steps,
     activeStep = 0,
     txState = 'idle',
     revert,
+    belowSlider,
+    headerRight,
     onSubmit,
   } = props
 
@@ -123,14 +142,25 @@ export function ActionPanel(props: ActionPanelProps) {
     ...(reviewApy !== undefined
       ? [{ label: 'APY', value: `${reviewApy.toFixed(2)}%` }]
       : []),
-    ...(networkFeeUsd !== undefined
-      ? [{ label: 'Network fee', value: `$${networkFeeUsd.toFixed(2)}` }]
+    ...(networkFeeHsk !== undefined
+      ? [
+          {
+            label: 'Network fee',
+            value: `${formatNumber(networkFeeHsk, { maxFractionDigits: 8 })} HSK`,
+          },
+        ]
       : []),
   ]
 
   return (
     <div className="island-shell flex flex-col gap-3 rounded-2xl p-4">
-      <h3 className="display-title m-0 text-base font-semibold">{title}</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="display-title m-0 flex items-center gap-2 text-base font-semibold">
+          <TokenGlyph symbol={symbol} address={tokenAddress} size={22} />
+          {title}
+        </h3>
+        {headerRight}
+      </div>
 
       <MoneyInput
         symbol={symbol}
@@ -140,21 +170,21 @@ export function ActionPanel(props: ActionPanelProps) {
         balance={balance}
         priceUsd={priceUsd}
         denomination={denomination}
-        onToggleDenomination={
-          priceUsd
-            ? () =>
-                setDenomination((current) =>
-                  current === 'token' ? 'usd' : 'token',
-                )
-            : undefined
-        }
+        maxTokens={maxTokens}
         onQuickFill={
           maxTokens ? (fraction) => fillWith(maxTokens * fraction) : undefined
         }
         onMax={maxTokens ? () => fillWith(maxTokens) : undefined}
         maxLabel={maxLabel}
+        balanceLabel={balanceLabel}
         error={gate.enabled ? undefined : gate.reason}
       />
+
+      {/* Optional block below the slider (e.g. the borrow "Your position"). */}
+      {belowSlider}
+
+      {/* Network moved below the slider (mockup). */}
+      <NetworkBadge />
 
       {currentHf !== undefined && projectedHf !== undefined ? (
         <ProjectedHealth currentHf={currentHf} projectedHf={projectedHf} />

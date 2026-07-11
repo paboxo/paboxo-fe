@@ -1,4 +1,5 @@
 import { ChevronDown } from 'lucide-react'
+import { TOKENS } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 
@@ -13,9 +14,9 @@ export function TokenSelectButton({ symbol, onClick }: TokenSelectButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-2 text-sm font-semibold text-[var(--sea-ink)] transition-colors hover:border-[var(--sea-ink-soft)]"
+      className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-bold text-[var(--sea-ink)] transition-colors hover:border-[var(--sea-ink-soft)]"
     >
-      <TokenGlyph symbol={symbol} size={22} />
+      <TokenGlyph symbol={symbol} address={TOKENS[symbol].address} size={22} />
       {symbol}
       <ChevronDown
         size={16}

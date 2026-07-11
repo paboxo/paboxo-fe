@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
+import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { toNumber } from '#/lib/format'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
 import type { MarketView } from '#/features/markets/types'
@@ -86,15 +87,15 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           title={`Supply ${market.borrowSymbol}`}
           idleLabel="Supply"
           symbol={market.borrowSymbol}
+          tokenAddress={market.borrowAddress}
           decimals={decimals}
           priceUsd={1}
           balance={wallet}
           maxTokens={toNumber(wallet, decimals)}
-          maxLabel="Wallet balance"
           preflight={positiveAmount}
           blockReason={staleBlockReason(market)}
           reviewApy={market.supplyApy}
-          networkFeeUsd={0.42}
+          networkFeeHsk={NETWORK_FEE_HSK}
           txState={supplyLiquidity.state}
           revert={supplyLiquidity.revert ?? undefined}
           onSubmit={onSupply}
@@ -104,13 +105,13 @@ export function SupplyLiquidityPanel({ market }: { market: MarketView }) {
           title={`Withdraw ${market.borrowSymbol}`}
           idleLabel="Withdraw"
           symbol={market.borrowSymbol}
+          tokenAddress={market.borrowAddress}
           decimals={decimals}
           priceUsd={1}
           balance={suppliedBalance}
           maxTokens={toNumber(suppliedBalance, decimals)}
-          maxLabel="Supplied"
           preflight={positiveAmount}
-          networkFeeUsd={0.42}
+          networkFeeHsk={NETWORK_FEE_HSK}
           txState={withdraw.state}
           revert={withdraw.revert ?? undefined}
           onSubmit={onWithdraw}

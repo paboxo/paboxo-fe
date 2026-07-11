@@ -1,5 +1,5 @@
 import { formatPercent } from '#/lib/format'
-import { TokenGlyph } from '#/components/ui/TokenGlyph'
+import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { PoolTable } from '#/features/markets/components/PoolTable'
 import type { PoolColumn } from '#/features/markets/components/PoolTable'
 import { compactUsd, numColumn } from '#/features/markets/columns'
@@ -12,14 +12,23 @@ import { byAvailableLiquidity } from '#/features/markets/sort'
 const BORROW_COLUMNS: PoolColumn[] = [
   {
     header: 'Pool',
+    // The pair: collateral over the token borrowers draw (the borrow token).
     cell: (m) => (
       <>
-        <TokenGlyph
-          symbol={m.collateralSymbol}
-          address={m.collateralAddress}
+        <TokenPairGlyph
+          collateralSymbol={m.collateralSymbol}
+          borrowSymbol={m.borrowSymbol}
+          collateralAddress={m.collateralAddress}
+          borrowAddress={m.borrowAddress}
           size={20}
         />
-        {m.collateralSymbol}
+        <span>
+          {m.collateralSymbol}
+          <span className="text-[var(--sea-ink-soft)]">
+            {' / '}
+            {m.borrowSymbol}
+          </span>
+        </span>
       </>
     ),
   },

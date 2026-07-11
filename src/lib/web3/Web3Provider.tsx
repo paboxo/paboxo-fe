@@ -1,19 +1,30 @@
-import '@rainbow-me/rainbowkit/styles.css'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { WagmiProvider } from 'wagmi'
 import type { State } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RainbowKitProvider, lightTheme } from '@rainbow-me/rainbowkit'
-import { wagmiConfig } from './config'
+import { createAppKit } from '@reown/appkit/react'
+import { networks, projectId, wagmiAdapter } from './config'
 
-// Coastal-glass accent so the wallet modal matches the app (azure blue).
-const rainbowTheme = lightTheme({
-  accentColor: '#0690d4',
-  accentColorForeground: '#f2f8fd',
-  borderRadius: 'large',
-  overlayBlur: 'small',
-})
+// The AppKit modal is a browser singleton — initialise it once, on the client
+// only (createAppKit touches window), themed to the app's light palette.
+if (typeof window !== 'undefined') {
+  createAppKit({
+    adapters: [wagmiAdapter],
+    projectId,
+    networks,
+    defaultNetwork: networks[0],
+    metadata: {
+      name: 'Paboxo',
+      description: 'Earn and borrow on HashKey',
+      url: 'https://paboxo.app',
+      icons: ['/logo192.png'],
+    },
+    themeMode: 'light',
+    themeVariables: { '--w3m-accent': '#0690d4' },
+    features: { analytics: false, swaps: false, onramp: false },
+  })
+}
 
 export function Web3Provider({
   children,
@@ -24,12 +35,8 @@ export function Web3Provider({
 }) {
   const [queryClient] = useState(() => new QueryClient())
   return (
-    <WagmiProvider config={wagmiConfig} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={rainbowTheme} initialChain={177}>
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
+    <WagmiProvider config={wagmiAdapter.wagmiConfig} initialState={initialState}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   )
 }

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, screen } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useAccount, useSwitchChain } from 'wagmi'
 import { QueryWrapper, createTestQueryClient } from '#/test/utils'
 import { TOKENS } from '#/lib/contracts'
+import { ToastProvider } from '#/components/ui/ToastProvider'
 import { mockChainAdapter } from '#/lib/data/chain/chainAdapter.mock'
 import { useWriteAction } from './useWriteAction'
 
@@ -194,6 +195,45 @@ describe('useWriteAction', () => {
     })
     expect(result.current.state).toBe('reverted')
     waitSpy.mockRestore()
+  })
+
+  it('fires a success toast and clears isPending on confirm (R6)', async () => {
+    connected(177)
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={createTestQueryClient()}>
+        <ToastProvider>{children}</ToastProvider>
+      </QueryClientProvider>
+    )
+    const send = vi.fn().mockResolvedValue(HASH)
+    const { result } = renderHook(() => useWriteAction(), { wrapper })
+    await act(async () => {
+      await result.current.run({ send })
+    })
+    expect(screen.getByText('Success')).not.toBeNull()
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.isError).toBe(false)
+  })
+
+  it('fires an error toast and sets isError on revert (R6, AE4)', async () => {
+    connected(177)
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={createTestQueryClient()}>
+        <ToastProvider>{children}</ToastProvider>
+      </QueryClientProvider>
+    )
+    const send = vi
+      .fn()
+      .mockRejectedValue(
+        Object.assign(new Error('revert'), { name: 'HealthFactorTooLow' }),
+      )
+    const { result } = renderHook(() => useWriteAction(), { wrapper })
+    await act(async () => {
+      await result.current.run({ send })
+    })
+    expect(result.current.isError).toBe(true)
+    // The toast shows the short status; the detailed reason stays on `revert`.
+    expect(screen.getByText('Failed')).not.toBeNull()
+    expect(result.current.revert?.message).toMatch(/risk of liquidation/)
   })
 
   it('stays confirmed when post-confirm cache invalidation fails', async () => {

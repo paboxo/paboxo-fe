@@ -31,47 +31,45 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }))
 
-// WalletControls renders through RainbowKit's ConnectButton.Custom render prop.
-// Stub it so the header can be exercised without a live wallet: each test sets
-// `rk.state`, which the mock forwards to the render prop.
-const rk = vi.hoisted(() => ({
-  state: {},
+// WalletControls renders through Reown AppKit's hooks. Stub them so the header
+// can be exercised without a live wallet: each test sets `wallet`, which the
+// mocked hooks return.
+const wallet = vi.hoisted(() => ({
+  address: undefined as string | undefined,
+  isConnected: false,
+  chainId: undefined as number | undefined,
 }))
 
-vi.mock('@rainbow-me/rainbowkit', () => ({
-  ConnectButton: {
-    Custom: ({ children }: { children: (state: unknown) => ReactNode }) =>
-      children(rk.state),
-  },
+vi.mock('@reown/appkit/react', () => ({
+  useAppKit: () => ({ open: () => {} }),
+  useAppKitAccount: () => ({
+    address: wallet.address,
+    isConnected: wallet.isConnected,
+  }),
+  useAppKitNetwork: () => ({
+    chainId: wallet.chainId,
+    caipNetwork: { name: 'HashKey' },
+  }),
 }))
 
-const noop = () => {}
+const ADDRESS = '0xabcabcabcabcabcabcabcabcabcabcabcabcabca'
 
-function connectedState(chain: { name: string; unsupported?: boolean }) {
-  return {
-    mounted: true,
-    account: {
-      address: '0xabcabcabcabcabcabcabcabcabcabcabcabcabca',
-      displayName: '0xabc…abca',
-    },
-    chain: {
-      id: HASHKEY.id,
-      name: chain.name,
-      unsupported: chain.unsupported ?? false,
-    },
-    openAccountModal: noop,
-    openChainModal: noop,
-    openConnectModal: noop,
-  }
+function connectHashkey() {
+  wallet.address = ADDRESS
+  wallet.isConnected = true
+  wallet.chainId = HASHKEY.id
 }
 
-const disconnectedState = {
-  mounted: true,
-  account: undefined,
-  chain: undefined,
-  openAccountModal: noop,
-  openChainModal: noop,
-  openConnectModal: noop,
+function connectWrongNetwork() {
+  wallet.address = ADDRESS
+  wallet.isConnected = true
+  wallet.chainId = 1
+}
+
+function disconnect() {
+  wallet.address = undefined
+  wallet.isConnected = false
+  wallet.chainId = undefined
 }
 
 function renderHeader(pathname: string) {
@@ -84,7 +82,7 @@ function renderHeader(pathname: string) {
 }
 
 beforeEach(() => {
-  rk.state = connectedState({ name: HASHKEY.name })
+  connectHashkey()
 })
 
 // Covers R1.
@@ -147,14 +145,16 @@ describe('AppHeader wallet controls', () => {
     return container.querySelector('.num')?.closest('button') ?? null
   }
 
-  it('shows the chain name exactly once when connected to HashKey', () => {
-    rk.state = connectedState({ name: HASHKEY.name })
+  it('shows the chain name in the pill plus the wallet chip when connected to HashKey', () => {
+    connectHashkey()
     renderHeader('/earn')
-    expect(screen.getAllByText(new RegExp(HASHKEY.name, 'i'))).toHaveLength(1)
+    // The always-on NetworkPill plus the wallet chain chip — the wallet chip
+    // still shows the chain exactly once (no internal duplication).
+    expect(screen.getAllByText(new RegExp(HASHKEY.name, 'i'))).toHaveLength(2)
   })
 
   it('shows a danger-toned wrong-network indication off HashKey', () => {
-    rk.state = connectedState({ name: 'Ethereum', unsupported: true })
+    connectWrongNetwork()
     const { container } = renderHeader('/earn')
     const control = chainControl(container)
     expect(control?.textContent).toContain('Wrong network')
@@ -167,7 +167,7 @@ describe('AppHeader wallet controls', () => {
   })
 
   it('keeps the chain chip a button and leaves the live region silent on HashKey', () => {
-    rk.state = connectedState({ name: HASHKEY.name })
+    connectHashkey()
     const { container } = renderHeader('/earn')
     expect(chainControl(container)?.tagName).toBe('BUTTON')
     expect(chainControl(container)?.getAttribute('role')).toBeNull()
@@ -175,15 +175,16 @@ describe('AppHeader wallet controls', () => {
   })
 
   it('renders neither the chain nor the address control when disconnected, only connect', () => {
-    rk.state = disconnectedState
+    disconnect()
     const { container } = renderHeader('/earn')
     expect(chainControl(container)).toBeNull()
     expect(screen.getByRole('button', { name: 'Connect' })).toBeTruthy()
-    expect(screen.queryByText(new RegExp(HASHKEY.name, 'i'))).toBeNull()
+    // The static NetworkPill still shows the chain even when disconnected.
+    expect(screen.getByText(new RegExp(HASHKEY.name, 'i'))).toBeTruthy()
   })
 
   it('collapses only the chain control below sm, never the address control', () => {
-    rk.state = connectedState({ name: HASHKEY.name })
+    connectHashkey()
     const { container } = renderHeader('/earn')
     const chain = chainControl(container)
     expect(chain?.className).toContain('hidden')
@@ -193,7 +194,7 @@ describe('AppHeader wallet controls', () => {
   })
 
   it('sizes the chain and address controls from the same chip contract', () => {
-    rk.state = connectedState({ name: HASHKEY.name })
+    connectHashkey()
     const { container } = renderHeader('/earn')
     expect(chainControl(container)?.className).toContain(CHIP)
     expect(addressControl(container)?.className).toContain(CHIP)

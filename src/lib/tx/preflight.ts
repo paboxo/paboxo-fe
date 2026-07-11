@@ -160,20 +160,18 @@ export function preflightRepay(ctx: RepayContext): PreflightResult {
 
 export interface SwapContext {
   amountIn: bigint
-  amountOutMinimum: bigint
   priceUpdatedAt: number
   nowSeconds: number
 }
 
-/** Swap collateral: positive input, fresh price, and a real slippage floor — a
- *  swap must never be sent with `amountOutMinimum: 0` (fills at any price). */
+/** Swap collateral: positive input and a fresh price. The client sends
+ *  `amountOutMinimum: 0` and lets the pool price the swap (senja parity) — an
+ *  oracle-derived floor rejected real fills when the pool price diverged from
+ *  the feed, so there is no client-side slippage floor to enforce here. */
 export function preflightSwap(ctx: SwapContext): PreflightResult {
   return firstBlock(
     ctx.amountIn > 0n ? OK : block('Enter an amount greater than zero'),
     freshPrice(ctx.priceUpdatedAt, ctx.nowSeconds),
-    ctx.amountOutMinimum > 0n
-      ? OK
-      : block('Set a slippage tolerance before swapping'),
   )
 }
 

@@ -260,6 +260,13 @@ export interface RatePoint {
   supplyApy: number
 }
 
+/** A point on a market's liquidity history (available liquidity, USD), for charts. */
+export interface LiquidityPoint {
+  /** Unix seconds. */
+  timestamp: number
+  liquidityUsd: number
+}
+
 /**
  * A lending market exactly as the indexer emits it (`lendingPoolCreateds`).
  * Addresses stay `Address`; risk/rate params stay raw WAD `bigint` (1e18 = 100%);
@@ -361,4 +368,7 @@ export interface IndexerAdapter {
   getProtocolAggregates: () => Promise<ProtocolAggregates>
   getCrossChainStatus: (messageId: Hash) => Promise<CrossChainStatus>
   getRateHistory: (pool: Address) => Promise<RatePoint[]>
+  /** Liquidity-over-time series. Empty until the indexer persists liquidity
+   *  snapshots — consumers then fall back to a current-value indicator (KTD4). */
+  getLiquidityHistory: (pool: Address) => Promise<LiquidityPoint[]>
 }

@@ -18,12 +18,13 @@
  */
 import { useId, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { LoadingCard } from '#/components/ui/states/Loading'
+import { Skeleton } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { usePools } from '#/features/markets/hooks/usePools'
 import type { MarketView, PoolRoute } from '#/features/markets/types'
 import { PoolSearch } from './PoolSearch'
+import { PoolFilterTabs } from './PoolFilterTabs'
 import { Pagination } from './Pagination'
 import { SizeUnavailableChip, StaleBadge } from './PoolBadges'
 
@@ -108,11 +109,68 @@ export function PoolTable({
   }
 
   // --- 1. loading -----------------------------------------------------------
+  // Shaped like the real list — the search+tabs header over a table with the
+  // same columns — so nothing reflows when the pools resolve.
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <LoadingCard />
-        <LoadingCard />
+      <div className="flex flex-col gap-4">
+        <div
+          className="island-shell overflow-hidden rounded-lg"
+          role="status"
+          aria-busy="true"
+          aria-label="Loading pools"
+        >
+          <div className="flex flex-col gap-3 border-b border-[var(--line)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton width="16rem" height="2.25rem" className="rounded-md" />
+            <Skeleton width="13rem" height="2.25rem" className="rounded-full" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--line)]">
+                  {columns.map((column, index) => (
+                    <th key={index} className={cellAlignClass(column.align)}>
+                      <Skeleton
+                        width="60%"
+                        height="0.7rem"
+                        className={column.align === 'right' ? 'ml-auto' : ''}
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, row) => (
+                  <tr
+                    key={row}
+                    className="border-b border-[var(--line)] last:border-0"
+                  >
+                    {columns.map((column, col) => (
+                      <td key={col} className={cellAlignClass(column.align)}>
+                        {col === 0 ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Skeleton
+                              width="2.4rem"
+                              height="1.4rem"
+                              className="rounded-full"
+                            />
+                            <Skeleton width="5rem" height="0.9rem" />
+                          </span>
+                        ) : (
+                          <Skeleton
+                            width="60%"
+                            height="0.9rem"
+                            className={column.align === 'right' ? 'ml-auto' : ''}
+                          />
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     )
   }
@@ -145,44 +203,50 @@ export function PoolTable({
 
   return (
     <div className="flex flex-col gap-4">
-      <PoolSearch value={query} onChange={handleQueryChange} />
+      <div className="island-shell overflow-hidden rounded-lg">
+        {/* Card header: search on the left, filter tabs on the right. */}
+        <div className="flex flex-col gap-3 border-b border-[var(--line)] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <PoolSearch value={query} onChange={handleQueryChange} />
+          <PoolFilterTabs />
+        </div>
 
-      {/* Polite live region: announces the filtered count and page changes. */}
-      <div
-        id={liveRegionId}
-        role="status"
-        aria-live="polite"
-        className="sr-only"
-      >
-        {announcement}
-      </div>
+        {/* Polite live region: announces the filtered count and page changes. */}
+        <div
+          id={liveRegionId}
+          role="status"
+          aria-live="polite"
+          className="sr-only"
+        >
+          {announcement}
+        </div>
 
-      {/* --- 4. no matches (pools exist, query matches none) R29 ------------- */}
-      {count === 0 ? (
-        <EmptyState
-          title="No matching pools"
-          description={`No pools match "${query.trim()}".`}
-          action={
-            <button
-              type="button"
-              onClick={() => handleQueryChange('')}
-              className="rounded-xl border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-[0.82rem] font-bold text-[var(--sea-ink)]"
-            >
-              Clear search
-            </button>
-          }
-        />
-      ) : (
-        // --- 5. table ---------------------------------------------------------
-        <>
-          <div className="island-shell overflow-x-auto rounded-2xl">
+        {/* --- 4. no matches (pools exist, query matches none) R29 ----------- */}
+        {count === 0 ? (
+          <div className="p-6">
+            <EmptyState
+              title="No matching pools"
+              description={`No pools match "${query.trim()}".`}
+              action={
+                <button
+                  type="button"
+                  onClick={() => handleQueryChange('')}
+                  className="rounded border border-[var(--line)] bg-[var(--chip-bg)] px-3 py-1.5 text-[0.82rem] font-bold text-[var(--sea-ink)]"
+                >
+                  Clear search
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          // --- 5. table -------------------------------------------------------
+          <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
+                <tr className="border-b border-[var(--line)] font-mono text-[0.68rem] uppercase tracking-[0.07em] text-[var(--sea-ink-soft)]">
                   {columns.map((column, index) => (
                     <th
                       key={index}
-                      className={`px-4 py-3 font-bold ${
+                      className={`px-4 py-3 font-medium ${
                         column.align === 'right' ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -195,7 +259,7 @@ export function PoolTable({
                 {pageItems.map((market) => (
                   <tr
                     key={market.id}
-                    className="border-b border-[var(--line)] last:border-0 hover:bg-[color-mix(in_oklab,var(--lagoon)_8%,transparent)]"
+                    className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--surface-strong)]"
                   >
                     {columns.map((column, index) => (
                       <td key={index} className={cellAlignClass(column.align)}>
@@ -223,14 +287,16 @@ export function PoolTable({
               </tbody>
             </table>
           </div>
+        )}
+      </div>
 
-          <Pagination
-            page={page}
-            pageCount={pageCount}
-            onPageChange={setRequestedPage}
-          />
-        </>
-      )}
+      {count > 0 ? (
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={setRequestedPage}
+        />
+      ) : null}
     </div>
   )
 }

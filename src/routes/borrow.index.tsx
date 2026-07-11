@@ -8,7 +8,6 @@ function BorrowPage() {
   return (
     <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
       <AppPageHeader
-        kicker="Borrow"
         title="Borrow pxUSDT"
         subtitle="Supply collateral to an isolated pool and borrow pxUSDT against it."
       />

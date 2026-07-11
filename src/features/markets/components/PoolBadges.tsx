@@ -25,10 +25,10 @@ export function StaleBadge({ label = 'Price stale' }: { label?: string }) {
   return (
     <span
       role="status"
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-bold"
-      style={{ background: 'var(--caution-soft)', color: 'var(--sea-ink)' }}
+      className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-[0.04em]"
+      style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}
     >
-      <span aria-hidden="true">◐</span>
+      <span aria-hidden="true">⚠</span>
       {label}
     </span>
   )

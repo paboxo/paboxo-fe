@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LoadingCard } from '#/components/ui/states/Loading'
+import { PoolDetailSkeleton } from '#/features/markets/components/PoolDetailSkeleton'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
@@ -8,6 +8,8 @@ import { usePool } from '#/features/markets/hooks/usePools'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import { PoolBreadcrumb } from '#/components/layout/PoolBreadcrumb'
 import { PoolInfo } from '#/features/markets/components/PoolInfo'
+import { HealthMeter } from '#/components/ui/HealthMeter'
+import { formatTokenAmount } from '#/lib/format'
 import { BorrowActions } from '#/features/borrow/components/BorrowActions'
 
 export const Route = createFileRoute('/borrow/$id')({
@@ -27,6 +29,48 @@ function BorrowPoolPage() {
     position?.supplies.some(
       (row) => row.symbol === collateralSymbol && row.valueUsd > 0,
     ) ?? false
+  const collateralRow = position?.supplies.find(
+    (row) => row.symbol === collateralSymbol,
+  )
+  const borrowRow = position?.borrows[0]
+  const borrowSymbol =
+    pool.status === 'ready' ? pool.market.borrowSymbol : undefined
+
+  // The "Your position" block now lives inside the action card, below the
+  // slider (rendered via BorrowActions -> each panel's `belowSlider`). It is a
+  // divider-separated section here, not its own card.
+  const positionCard =
+    pool.status === 'ready' && position ? (
+      <div className="flex flex-col gap-3 border-t border-[var(--line)] pt-3">
+        <span className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--sea-ink-soft)]">
+          Your position
+        </span>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-[var(--sea-ink-soft)]">Collateral</span>
+          <span className="num font-semibold text-[var(--sea-ink)]">
+            {collateralRow
+              ? `${formatTokenAmount(collateralRow.balance, collateralRow.decimals)} ${collateralRow.symbol}`
+              : `0 ${collateralSymbol}`}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-[var(--sea-ink-soft)]">Borrowed</span>
+          <span className="num font-semibold text-[var(--sea-ink)]">
+            {borrowRow
+              ? `${formatTokenAmount(borrowRow.debt, borrowRow.decimals)} ${borrowRow.symbol}`
+              : `0 ${borrowSymbol}`}
+          </span>
+        </div>
+        {position.healthFactor !== undefined ? (
+          <div className="flex flex-col gap-1.5 border-t border-[var(--line)] pt-3">
+            <span className="text-[0.6rem] font-bold uppercase tracking-[0.08em] text-[var(--sea-ink-soft)]">
+              Health
+            </span>
+            <HealthMeter hf={position.healthFactor} />
+          </div>
+        ) : null}
+      </div>
+    ) : undefined
 
   return (
     <main className="page-wrap flex flex-col gap-5 px-4 pb-12 pt-8">
@@ -41,7 +85,7 @@ function BorrowPoolPage() {
       />
 
       {pool.status === 'pending' ? (
-        <LoadingCard />
+        <PoolDetailSkeleton />
       ) : pool.status === 'unavailable' ? (
         <div className="flex flex-col items-center gap-3">
           <EmptyState
@@ -50,7 +94,7 @@ function BorrowPoolPage() {
           />
           <Link
             to="/borrow"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Borrow
           </Link>
@@ -63,18 +107,15 @@ function BorrowPoolPage() {
           />
           <Link
             to="/borrow"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Borrow
           </Link>
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <PoolInfo
-            market={pool.market}
-            context="borrow"
-            health={position?.healthFactor}
-          />
+          {/* Left card is wallet-independent: pool data for any visitor. */}
+          <PoolInfo market={pool.market} context="borrow" />
           <aside className="h-fit lg:sticky lg:top-20">
             <NetworkGuard
               title="Connect to borrow"
@@ -83,6 +124,8 @@ function BorrowPoolPage() {
               <BorrowActions
                 market={pool.market}
                 hasCollateral={hasCollateral}
+                positionCard={positionCard}
+                collateralBalance={collateralRow?.balance}
               />
             </NetworkGuard>
           </aside>

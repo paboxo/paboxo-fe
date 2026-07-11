@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { LoadingCard } from '#/components/ui/states/Loading'
+import { PoolDetailSkeleton } from '#/features/markets/components/PoolDetailSkeleton'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
@@ -31,7 +31,7 @@ function EarnPoolPage() {
       />
 
       {pool.status === 'pending' ? (
-        <LoadingCard />
+        <PoolDetailSkeleton />
       ) : pool.status === 'unavailable' ? (
         <div className="flex flex-col items-center gap-3">
           <EmptyState
@@ -40,7 +40,7 @@ function EarnPoolPage() {
           />
           <Link
             to="/earn"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Earn
           </Link>
@@ -53,7 +53,7 @@ function EarnPoolPage() {
           />
           <Link
             to="/earn"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Earn
           </Link>

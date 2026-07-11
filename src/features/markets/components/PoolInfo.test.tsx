@@ -21,15 +21,18 @@ describe('PoolInfo', () => {
     // Charts re-homed from the removed market.$id route are present.
     expect(screen.getByText('Interest rate model')).toBeTruthy()
     expect(screen.getByText('Rate history')).toBeTruthy()
+    // Covers AE1/R6: the liquidity chart card was dropped from the detail page.
+    expect(screen.queryByText('Liquidity')).toBeNull()
+    // KTD4: the Earn strip trims to five tiles — the "Available" tile is dropped
+    // here (it stays on the Borrow variant).
+    expect(screen.queryByText('Available')).toBeNull()
   })
 
-  it('borrow variant leads with borrow APR, LLTV, liq-threshold, and health', () => {
-    renderPoolInfo(<PoolInfo market={market} context="borrow" health={1.89} />)
+  it('borrow variant leads with borrow APR, LLTV, and liq-threshold', () => {
+    renderPoolInfo(<PoolInfo market={market} context="borrow" />)
     expect(screen.getByText('Borrow APR')).toBeTruthy()
     expect(screen.getByText('LLTV')).toBeTruthy()
     expect(screen.getByText('Liq. threshold')).toBeTruthy()
-    // Health comes from the prop (single-pool, via useMarketPosition upstream).
-    expect(screen.getByRole('group', { name: /Health/ })).toBeTruthy()
     // Supply APY does not lead the Borrow variant.
     expect(screen.queryByText('Supply APY')).toBeNull()
     // Charts present here too.
@@ -37,10 +40,9 @@ describe('PoolInfo', () => {
     expect(screen.getByText('Rate history')).toBeTruthy()
   })
 
-  it('renders without crashing when health is missing', () => {
+  it('never renders the health meter — it is wallet-independent, health lives in the action card', () => {
     renderPoolInfo(<PoolInfo market={market} context="borrow" />)
     expect(screen.getByText('Borrow APR')).toBeTruthy()
-    // No health meter without a health value.
     expect(screen.queryByRole('group', { name: /Health/ })).toBeNull()
   })
 

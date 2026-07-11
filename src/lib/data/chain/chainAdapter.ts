@@ -7,27 +7,31 @@
  * UI are unchanged from mock mode (KTD10).
  *
  * Two-address rule (R7): writes target the LendingPool; accounting reads resolve
- * `LendingPool(pool).router()` at runtime (cached). HelperUtils reads take the
- * LendingPool; IsHealthy / InterestRateModel take the router.
+ * `LendingPool(pool).router()` at runtime (cached). IsHealthy / InterestRateModel
+ * take the router.
+ *
+ * Collateral value, max-borrow, and the position address are derived directly
+ * from the router (`addressPositions`, `collateralToken`, `borrowToken`, `ltv`)
+ * plus the price oracle — NOT from HelperUtils, whose address is unset and which
+ * would degrade every borrow to a 0 max-borrow. The client-side max-borrow math
+ * mirrors senja (`collateral × price × ltv / borrowPrice − debt`).
  *
  * Not wired here (by scope / infra): createLendingPool (excluded), and the Base
- * CCIP sender (quote / supplyToHashKey) which is not deployed yet. HelperUtils
- * reads (max-borrow, collateral value, position address) degrade to 0/zero until
- * its address is supplied — the on-chain contracts still enforce health on write.
+ * CCIP sender (quote / supplyToHashKey) which is not deployed yet.
  */
 import {
+  getGasPrice,
   readContract,
   readContracts,
   waitForTransactionReceipt,
   writeContract,
 } from '@wagmi/core'
-import { zeroAddress } from 'viem'
-import { CORE, HASHKEY, HELPER_UTILS } from '#/lib/contracts'
+import { formatUnits, parseUnits, zeroAddress } from 'viem'
+import { CORE, HASHKEY } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
 import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import {
   erc20Abi,
-  helperUtilsAbi,
   interestRateModelAbi,
   isHealthyAbi,
   lendingPoolAbi,
@@ -87,6 +91,79 @@ async function resolveSharesToken(router: Address): Promise<Address> {
   })
   sharesTokenCache.set(key, sharesToken)
   return sharesToken
+}
+
+// The router's collateral token, borrow token, and LTV are immutable per pool.
+const collateralTokenCache = new Map<string, Address>()
+const borrowTokenCache = new Map<string, Address>()
+const ltvCache = new Map<string, bigint>()
+
+/** Oracle price is reported at 8 decimals (matches `toWholeNumber(price, 8)` in
+ *  the position/withdraw hooks). */
+const PRICE_DECIMALS = 8
+
+async function resolveRouterAddressField(
+  router: Address,
+  field: 'collateralToken' | 'borrowToken',
+  cache: Map<string, Address>,
+): Promise<Address> {
+  const key = router.toLowerCase()
+  const cached = cache.get(key)
+  if (cached) return cached
+  const value = await readContract(wagmiConfig, {
+    chainId: CHAIN_ID,
+    address: router,
+    abi: lendingPoolRouterAbi,
+    functionName: field,
+  })
+  cache.set(key, value)
+  return value
+}
+
+const resolveCollateralToken = (router: Address) =>
+  resolveRouterAddressField(router, 'collateralToken', collateralTokenCache)
+
+const resolveBorrowToken = (router: Address) =>
+  resolveRouterAddressField(router, 'borrowToken', borrowTokenCache)
+
+async function resolveLtv(router: Address): Promise<bigint> {
+  const key = router.toLowerCase()
+  if (ltvCache.has(key)) return ltvCache.get(key) as bigint
+  const ltv = await readContract(wagmiConfig, {
+    chainId: CHAIN_ID,
+    address: router,
+    abi: lendingPoolRouterAbi,
+    functionName: 'ltv',
+  })
+  ltvCache.set(key, ltv)
+  return ltv
+}
+
+/** Latest oracle price for a token, or a zero/stale reading when the feed
+ *  reverts (past its 1h freshness window) so pre-flight can block. */
+async function fetchPrice(token: Address): Promise<PriceData> {
+  try {
+    const result = await readContract(wagmiConfig, {
+      chainId: CHAIN_ID,
+      address: CORE.tokenDataStream,
+      abi: tokenDataStreamAbi,
+      functionName: 'latestRoundData',
+      args: [token],
+    })
+    // (roundId, price, startedAt, updatedAt, answeredInRound)
+    return { price: result[1], updatedAt: Number(result[3]) }
+  } catch {
+    return { price: 0n, updatedAt: 0 }
+  }
+}
+
+const tokenDecimals = (token: Address): number => {
+  // Record indexing is typed non-nullish, but an unknown token is genuinely
+  // absent at runtime — treat the lookup as possibly-undefined.
+  const entry = TOKEN_REGISTRY[token.toLowerCase()] as
+    | { decimals: number }
+    | undefined
+  return entry?.decimals ?? 18
 }
 
 // ---- batched enrichment (two phases; see enrichPools) ----
@@ -152,6 +229,76 @@ function verifyDecimals(
     return { valid: false, reason: 'mismatch', registry, onChain: r.result }
   }
   return { valid: true, decimals: registry }
+}
+
+/**
+ * Broadcast a write with an explicit legacy `gasPrice`. HashKey enforces a fixed
+ * minimum gas price ("transaction gas price below minimum"). Crucially, the RPC's
+ * `eth_gasPrice` on HashKey returns a value near the base fee (a few hundred wei)
+ * — far below that floor — so buffering the *suggested* price never reaches it
+ * (252 wei * 2 is still ~500 wei). A confirmed-good tx paid exactly
+ * `MIN_GAS_PRICE` wei, so we clamp the price up to that floor, then buffer above
+ * it. A present `gasPrice` also forces a legacy (type-0) tx.
+ *
+ * If the node still rejects (a floor that rose), we escalate and resubmit. A
+ * rejected tx never entered the mempool, so retrying is safe — no double
+ * broadcast. Only the floor rejection is retried; every other error (user
+ * rejection, real revert) propagates immediately. Gas on HashKey is negligible,
+ * so overpaying to stay above the floor costs almost nothing.
+ */
+interface WriteArgs {
+  address: Address
+  abi: readonly unknown[]
+  functionName: string
+  args?: readonly unknown[]
+}
+
+/** HashKey's enforced floor in wei — a confirmed-good tx paid exactly this
+ *  (0.001 gwei). The RPC's suggested price sits well below it, so this is the
+ *  real basis for the gas price, not `eth_gasPrice`. */
+const MIN_GAS_PRICE = 1_000_000n
+
+/** Escalating multipliers (percent) applied to the clamped floor across attempts.
+ *  The first attempt is already 1.5x the floor so a normal tx clears it on the
+ *  first try (no re-prompt); the rest cover a floor that has risen. */
+const GAS_ATTEMPT_PCT = [150n, 300n, 600n] as const
+
+/** The node's "gas price below minimum" floor rejection, matched leniently. */
+function isGasPriceBelowMinimum(error: unknown): boolean {
+  const e = error as {
+    shortMessage?: string
+    details?: string
+    message?: string
+  } | null
+  const message = String(
+    e?.shortMessage ?? e?.details ?? e?.message ?? error,
+  ).toLowerCase()
+  return (
+    message.includes('below minimum') ||
+    message.includes('gas price too low') ||
+    message.includes('underpriced') ||
+    message.includes('fee too low')
+  )
+}
+
+async function writeWithGas(params: WriteArgs): Promise<Hash> {
+  let lastError: unknown
+  for (const pct of GAS_ATTEMPT_PCT) {
+    try {
+      const suggested = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
+      // Clamp to the real floor: eth_gasPrice on HashKey undershoots it.
+      const base = suggested > MIN_GAS_PRICE ? suggested : MIN_GAS_PRICE
+      return await writeContract(wagmiConfig, {
+        ...params,
+        gasPrice: (base * pct) / 100n,
+      })
+    } catch (error) {
+      lastError = error
+      // Only the floor rejection is retriable; anything else is final.
+      if (!isGasPriceBelowMinimum(error)) throw error
+    }
+  }
+  throw lastError
 }
 
 export const liveChainAdapter: ChainAdapter = {
@@ -261,21 +408,8 @@ export const liveChainAdapter: ChainAdapter = {
     }
   },
 
-  async getPrice(token): Promise<PriceData> {
-    try {
-      const result = await readContract(wagmiConfig, {
-        chainId: CHAIN_ID,
-        address: CORE.tokenDataStream,
-        abi: tokenDataStreamAbi,
-        functionName: 'latestRoundData',
-        args: [token],
-      })
-      // (roundId, price, startedAt, updatedAt, answeredInRound)
-      return { price: result[1], updatedAt: Number(result[3]) }
-    } catch {
-      // Feed reverts PriceStale past 1h — surface as stale so pre-flight blocks.
-      return { price: 0n, updatedAt: 0 }
-    }
+  getPrice(token): Promise<PriceData> {
+    return fetchPrice(token)
   },
 
   /**
@@ -453,37 +587,120 @@ export const liveChainAdapter: ChainAdapter = {
     })
   },
 
-  async getMaxBorrowAmount(pool, user) {
-    if (!HELPER_UTILS) return 0n
-    return readContract(wagmiConfig, {
-      chainId: CHAIN_ID,
-      address: HELPER_UTILS,
-      abi: helperUtilsAbi,
-      functionName: 'getMaxBorrowAmount',
-      args: [pool, user],
-    })
-  },
-
-  async getCollateralValue(pool, user) {
-    if (!HELPER_UTILS) return 0n
-    return readContract(wagmiConfig, {
-      chainId: CHAIN_ID,
-      address: HELPER_UTILS,
-      abi: helperUtilsAbi,
-      functionName: 'getCollateralValue',
-      args: [pool, user],
-    })
-  },
-
   async getPositionAddress(pool, user) {
-    if (!HELPER_UTILS) return zeroAddress
+    const router = await resolveRouter(pool)
     return readContract(wagmiConfig, {
       chainId: CHAIN_ID,
-      address: HELPER_UTILS,
-      abi: helperUtilsAbi,
-      functionName: 'getAddressPosition',
-      args: [pool, user],
+      address: router,
+      abi: lendingPoolRouterAbi,
+      functionName: 'addressPositions',
+      args: [user],
     })
+  },
+
+  /**
+   * The user's collateral as a USD value scaled to the borrow token's decimals
+   * (6) — the shape `usePosition` / `useWithdraw` consume. Reads the position's
+   * on-chain collateral balance directly (senja `useBorrowPoolData.ts:155-199`),
+   * so it no longer degrades to 0 and the "supply collateral first" gate clears
+   * once collateral is supplied.
+   */
+  async getCollateralValue(pool, user) {
+    const router = await resolveRouter(pool)
+    const position = await this.getPositionAddress(pool, user)
+    if (position === zeroAddress) return 0n
+    const collateralToken = await resolveCollateralToken(router)
+    const [balance, price] = await Promise.all([
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: collateralToken,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [position],
+      }),
+      fetchPrice(collateralToken),
+    ])
+    if (balance === 0n || price.price === 0n) return 0n
+    // USD (6dp) = balance/10^colDec × price/10^8 × 10^6
+    const colDec = tokenDecimals(collateralToken)
+    return (
+      (balance * price.price * 1_000_000n) /
+      (10n ** BigInt(colDec) * 10n ** BigInt(PRICE_DECIMALS))
+    )
+  },
+
+  /**
+   * Client-side max-borrow, mirroring senja's `maxBorrowable`
+   * (`useBorrowPoolData.ts:315`): collateral USD × LTV / borrow price, minus
+   * current debt, in borrow-token decimals. Replaces the HelperUtils read that
+   * returned 0 (its address is unset) and blocked every borrow.
+   */
+  async getMaxBorrowAmount(pool, user) {
+    const router = await resolveRouter(pool)
+    const position = await this.getPositionAddress(pool, user)
+    if (position === zeroAddress) return 0n
+    const [collateralToken, borrowToken, ltvRaw] = await Promise.all([
+      resolveCollateralToken(router),
+      resolveBorrowToken(router),
+      resolveLtv(router),
+    ])
+    if (ltvRaw === 0n) return 0n
+    const [
+      balance,
+      collateralPrice,
+      borrowPrice,
+      userBorrowShares,
+      totalBorrowAssets,
+      totalBorrowShares,
+    ] = await Promise.all([
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: collateralToken,
+        abi: erc20Abi,
+        functionName: 'balanceOf',
+        args: [position],
+      }),
+      fetchPrice(collateralToken),
+      fetchPrice(borrowToken),
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'userBorrowShares',
+        args: [user],
+      }),
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'totalBorrowAssets',
+      }),
+      readContract(wagmiConfig, {
+        chainId: CHAIN_ID,
+        address: router,
+        abi: lendingPoolRouterAbi,
+        functionName: 'totalBorrowShares',
+      }),
+    ])
+    if (balance === 0n || collateralPrice.price === 0n || borrowPrice.price === 0n)
+      return 0n
+
+    const colDec = tokenDecimals(collateralToken)
+    const borDec = tokenDecimals(borrowToken)
+    const colUsd =
+      Number(formatUnits(balance, colDec)) *
+      Number(formatUnits(collateralPrice.price, PRICE_DECIMALS))
+    const ltvFraction = Number(ltvRaw) / 1e18
+    const borrowPriceUsd = Number(formatUnits(borrowPrice.price, PRICE_DECIMALS))
+    if (borrowPriceUsd === 0) return 0n
+    const maxTokens = (colUsd * ltvFraction) / borrowPriceUsd
+    const maxRaw = parseUnits(maxTokens.toFixed(borDec), borDec)
+
+    const userBorrowAmount =
+      totalBorrowShares > 0n
+        ? (userBorrowShares * totalBorrowAssets) / totalBorrowShares
+        : 0n
+    return maxRaw > userBorrowAmount ? maxRaw - userBorrowAmount : 0n
   },
 
   async checkLiquidatable(pool, user): Promise<LiquidatableStatus> {
@@ -542,7 +759,7 @@ export const liveChainAdapter: ChainAdapter = {
   // --------------------------------------------------------------- writes ----
 
   async approve(token, spender, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: token,
       abi: erc20Abi,
       functionName: 'approve',
@@ -552,7 +769,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async supplyLiquidity(pool, onBehalf, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'supplyLiquidity',
@@ -562,7 +779,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async supplyCollateral(pool, onBehalf, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'supplyCollateral',
@@ -572,7 +789,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async borrowDebt(pool, params: BorrowParams, onBehalf) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'borrowDebt',
@@ -589,7 +806,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async repayWithSelectedToken(pool, params: RepayParams) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'repayWithSelectedToken',
@@ -608,7 +825,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async withdrawCollateral(pool, amount, to) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'withdrawCollateral',
@@ -618,7 +835,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async withdrawLiquidity(pool, shares, to) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'withdrawLiquidity',
@@ -632,7 +849,7 @@ export const liveChainAdapter: ChainAdapter = {
     if (borrowers.length === 0) {
       throw new Error('liquidation requires a borrower')
     }
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'liquidation',
@@ -642,7 +859,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async swapCollateral(pool, params: SwapParams) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'swapTokenByPosition',
@@ -660,7 +877,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async approveBorrowDelegation(pool, delegate, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'approveBorrowDelegation',
@@ -670,7 +887,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async approveWithdrawDelegation(pool, delegate, allowed) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'approveWithdrawDelegation',
