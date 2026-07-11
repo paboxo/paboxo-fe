@@ -12,6 +12,7 @@ vi.mock('@wagmi/core', () => ({
   readContract: vi.fn(),
   writeContract: vi.fn(),
   waitForTransactionReceipt: vi.fn(),
+  getGasPrice: vi.fn().mockResolvedValue(1_000_000_000n),
 }))
 // Avoid initializing the real wallet config (WalletConnect) in tests.
 vi.mock('#/lib/web3/config', () => ({ wagmiConfig: { mock: true } }))

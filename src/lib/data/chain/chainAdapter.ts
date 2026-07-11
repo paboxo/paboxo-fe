@@ -20,6 +20,7 @@
  * CCIP sender (quote / supplyToHashKey) which is not deployed yet.
  */
 import {
+  getGasPrice,
   readContract,
   readContracts,
   waitForTransactionReceipt,
@@ -228,6 +229,28 @@ function verifyDecimals(
     return { valid: false, reason: 'mismatch', registry, onChain: r.result }
   }
   return { valid: true, decimals: registry }
+}
+
+/**
+ * Broadcast a write with an explicit legacy `gasPrice`. HashKey enforces a
+ * minimum gas price that viem's default fee estimation undershoots ("transaction
+ * gas price below minimum"), so read the RPC's suggested price (which respects
+ * the floor) and bump it 25% to clear it on a busy block. A present `gasPrice`
+ * also forces a legacy (type-0) transaction.
+ */
+interface WriteArgs {
+  address: Address
+  abi: readonly unknown[]
+  functionName: string
+  args?: readonly unknown[]
+}
+async function writeWithGas(params: WriteArgs): Promise<Hash> {
+  const gasPrice = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
+  // A present gasPrice forces a legacy (type-0) tx that clears HashKey's floor.
+  return writeContract(wagmiConfig, {
+    ...params,
+    gasPrice: (gasPrice * 125n) / 100n,
+  })
 }
 
 export const liveChainAdapter: ChainAdapter = {
@@ -688,7 +711,7 @@ export const liveChainAdapter: ChainAdapter = {
   // --------------------------------------------------------------- writes ----
 
   async approve(token, spender, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: token,
       abi: erc20Abi,
       functionName: 'approve',
@@ -698,7 +721,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async supplyLiquidity(pool, onBehalf, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'supplyLiquidity',
@@ -708,7 +731,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async supplyCollateral(pool, onBehalf, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'supplyCollateral',
@@ -718,7 +741,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async borrowDebt(pool, params: BorrowParams, onBehalf) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'borrowDebt',
@@ -735,7 +758,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async repayWithSelectedToken(pool, params: RepayParams) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'repayWithSelectedToken',
@@ -754,7 +777,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async withdrawCollateral(pool, amount, to) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'withdrawCollateral',
@@ -764,7 +787,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async withdrawLiquidity(pool, shares, to) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'withdrawLiquidity',
@@ -778,7 +801,7 @@ export const liveChainAdapter: ChainAdapter = {
     if (borrowers.length === 0) {
       throw new Error('liquidation requires a borrower')
     }
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'liquidation',
@@ -788,7 +811,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async swapCollateral(pool, params: SwapParams) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'swapTokenByPosition',
@@ -806,7 +829,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async approveBorrowDelegation(pool, delegate, amount) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'approveBorrowDelegation',
@@ -816,7 +839,7 @@ export const liveChainAdapter: ChainAdapter = {
   },
 
   async approveWithdrawDelegation(pool, delegate, allowed) {
-    const hash = await writeContract(wagmiConfig, {
+    const hash = await writeWithGas({
       address: pool,
       abi: lendingPoolAbi,
       functionName: 'approveWithdrawDelegation',
