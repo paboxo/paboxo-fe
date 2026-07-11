@@ -27,6 +27,19 @@ describe('WRITE_INVALIDATE_KEYS', () => {
     )
   })
 
+  it('covers the swap panel position balances, which ["position"] does not match', () => {
+    // Regression guard: the swap collateral balances stayed stale after a swap
+    // because ["position"] does not prefix-match these distinct heads.
+    expect(coversSome(['position-balances', '0xpool', '0xpos'])).toBe(true)
+    expect(coversSome(['position-address', '0xpool', '0xabc'])).toBe(true)
+    expect(
+      coversSome(['position-token-balance', '0xpool', '0xtok', '0xpos']),
+    ).toBe(true)
+    expect(
+      prefixMatches(['position'], ['position-balances', '0xpool', '0xpos']),
+    ).toBe(false)
+  })
+
   it('covers allowances so a spent approval refreshes', () => {
     expect(coversSome(['allowances', '0xpool', '0xabc'])).toBe(true)
   })

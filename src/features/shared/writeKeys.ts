@@ -6,18 +6,23 @@ import type { QueryKey } from '@tanstack/react-query'
  * `['token-balances', address]` and `['market-position']` matches
  * `['market-position', id, address]`.
  *
- * A supply/borrow/repay/withdraw shifts more than the market and position:
+ * A supply/borrow/repay/withdraw/swap shifts more than the market and position:
  * the wallet's token balances change, per-market position reads change, and any
- * spent allowance changes. `['position']` does NOT prefix-match
- * `['market-position', ...]`, and none of the market keys match the wallet
- * balance keys — so both are listed explicitly here. Missing them is why a
- * confirmed tx left the header balance stale and the borrow gate reading old
- * collateral.
+ * spent allowance changes. Prefix-matching is per-element from the head, so a
+ * distinct head string is a distinct key: `['position']` does NOT match
+ * `['market-position', ...]`, `['position-balances', ...]`,
+ * `['position-address', ...]`, or `['position-token-balance', ...]` — each head
+ * must be listed explicitly. Missing the `position-balances` head is why a
+ * confirmed swap left the swap panel's collateral balances stale; missing
+ * `market-position` left the header balance and borrow gate stale.
  */
 export const WRITE_INVALIDATE_KEYS: QueryKey[] = [
   ['markets'],
   ['position'],
   ['market-position'],
+  ['position-balances'],
+  ['position-address'],
+  ['position-token-balance'],
   ['protocol-stats'],
   ['token-balances'],
   ['token-balance'],
