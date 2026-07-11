@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import {
+  getGasPrice,
   readContract,
   waitForTransactionReceipt,
   writeContract,
@@ -290,6 +291,20 @@ describe('liveChainAdapter writes', () => {
     const g1 = (mockWrite.mock.calls[0][1] as { gasPrice: bigint }).gasPrice
     const g2 = (mockWrite.mock.calls[1][1] as { gasPrice: bigint }).gasPrice
     expect(g2).toBeGreaterThan(g1) // escalated on the rejection
+  })
+
+  it('clamps a below-floor RPC gas price up to the HashKey minimum', async () => {
+    // eth_gasPrice on HashKey undershoots the enforced floor; the write must
+    // still go out at >= the 1_000_000 wei minimum a good tx pays.
+    mockWrite.mockReset()
+    mockWrite.mockResolvedValueOnce(HASH)
+    vi.mocked(getGasPrice).mockResolvedValueOnce(252n)
+
+    await liveChainAdapter.supplyLiquidity(nextPool(), USER, 1n)
+
+    const gasPrice = (mockWrite.mock.calls[0][1] as { gasPrice: bigint })
+      .gasPrice
+    expect(gasPrice).toBeGreaterThanOrEqual(1_000_000n)
   })
 
   it('does not retry a non-floor error (e.g. a real revert)', async () => {

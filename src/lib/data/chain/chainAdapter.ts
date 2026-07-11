@@ -232,18 +232,19 @@ function verifyDecimals(
 }
 
 /**
- * Broadcast a write with an explicit legacy `gasPrice`. HashKey enforces a
- * minimum gas price ("transaction gas price below minimum") that viem's default
- * fee estimation — and even the RPC's suggested price on a busy block — can
- * undershoot. A present `gasPrice` forces a legacy (type-0) tx.
+ * Broadcast a write with an explicit legacy `gasPrice`. HashKey enforces a fixed
+ * minimum gas price ("transaction gas price below minimum"). Crucially, the RPC's
+ * `eth_gasPrice` on HashKey returns a value near the base fee (a few hundred wei)
+ * — far below that floor — so buffering the *suggested* price never reaches it
+ * (252 wei * 2 is still ~500 wei). A confirmed-good tx paid exactly
+ * `MIN_GAS_PRICE` wei, so we clamp the price up to that floor, then buffer above
+ * it. A present `gasPrice` also forces a legacy (type-0) tx.
  *
- * Rather than hardcode one buffer, we let the chain dictate: read its suggested
- * price and, if the node rejects it as below the floor, re-read and escalate,
- * resubmitting until the node accepts (or the attempts run out). A rejected tx
- * never entered the mempool, so retrying is safe — no double broadcast. Only the
- * floor rejection is retried; every other error (user rejection, real revert)
- * propagates immediately. Gas on HashKey is cheap, so overpaying to clear a
- * spiking floor costs a negligible amount.
+ * If the node still rejects (a floor that rose), we escalate and resubmit. A
+ * rejected tx never entered the mempool, so retrying is safe — no double
+ * broadcast. Only the floor rejection is retried; every other error (user
+ * rejection, real revert) propagates immediately. Gas on HashKey is negligible,
+ * so overpaying to stay above the floor costs almost nothing.
  */
 interface WriteArgs {
   address: Address
@@ -252,10 +253,15 @@ interface WriteArgs {
   args?: readonly unknown[]
 }
 
-/** Escalating multipliers (percent of the RPC's suggested price) across attempts.
- *  The first attempt already carries a generous 2x buffer so a normal tx clears
- *  the floor on the first try (no re-prompt); the rest cover a spiking floor. */
-const GAS_ATTEMPT_PCT = [200n, 350n, 600n] as const
+/** HashKey's enforced floor in wei — a confirmed-good tx paid exactly this
+ *  (0.001 gwei). The RPC's suggested price sits well below it, so this is the
+ *  real basis for the gas price, not `eth_gasPrice`. */
+const MIN_GAS_PRICE = 1_000_000n
+
+/** Escalating multipliers (percent) applied to the clamped floor across attempts.
+ *  The first attempt is already 1.5x the floor so a normal tx clears it on the
+ *  first try (no re-prompt); the rest cover a floor that has risen. */
+const GAS_ATTEMPT_PCT = [150n, 300n, 600n] as const
 
 /** The node's "gas price below minimum" floor rejection, matched leniently. */
 function isGasPriceBelowMinimum(error: unknown): boolean {
@@ -280,9 +286,11 @@ async function writeWithGas(params: WriteArgs): Promise<Hash> {
   for (const pct of GAS_ATTEMPT_PCT) {
     try {
       const suggested = await getGasPrice(wagmiConfig, { chainId: CHAIN_ID })
+      // Clamp to the real floor: eth_gasPrice on HashKey undershoots it.
+      const base = suggested > MIN_GAS_PRICE ? suggested : MIN_GAS_PRICE
       return await writeContract(wagmiConfig, {
         ...params,
-        gasPrice: (suggested * pct) / 100n,
+        gasPrice: (base * pct) / 100n,
       })
     } catch (error) {
       lastError = error
