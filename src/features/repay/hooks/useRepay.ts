@@ -5,9 +5,9 @@
  *  - another wallet token (e.g. WETH) — approved, then swapped on-chain.
  *
  * The entered amount is converted to live debt shares so accrued interest is
- * covered (senja `useBorrowActions.ts:444-470`). Swap paths carry the deployed
- * 0.1% DEX fee tier and a non-zero `amountOutMinimum` so the swap can't be
- * sandwiched to ~0.
+ * covered (senja `useBorrowActions.ts:444-470`). Swap paths mirror senja's args
+ * exactly: fee tier 3000 and `amountOutMinimum` = 0 (the pool prices the swap; a
+ * non-zero value caps the swap input and reverts InsufficientBalance).
  */
 import { useCallback } from 'react'
 import { useAccount } from 'wagmi'
@@ -22,13 +22,9 @@ import type { MarketView } from '#/features/markets/types'
 
 /** Oracle price decimals (matches the chain adapter / position hooks). */
 const PRICE_DECIMALS = 8
-/** DEX fee tier for swap-repay paths — 1000 = 0.1%, the fee the pools are
- *  actually deployed at on HashKey (per the SC integration docs, same as
- *  `useSwapCollateral`). 3000 routed through an empty 0.3% pool, so the swap
- *  returned ~0 and the repay reverted InsufficientBalance. */
-const SWAP_FEE_TIER = 1000
-/** Slippage floor for swap-repay: reject worse than 0.5% adverse execution. */
-const SWAP_SLIPPAGE_BPS = 50n
+/** DEX fee tier for swap-repay paths — 3000, matching senja's working
+ *  `repayWithSelectedToken` call (`useBorrowActions.ts:514`). */
+const SWAP_FEE_TIER = 3000
 
 export interface RepayToken {
   address: Address
@@ -83,7 +79,7 @@ export function useRepay(market: MarketView) {
               shares,
               amountOutMinimum: 0n,
               fromPosition: false,
-              fee: 0,
+              fee: SWAP_FEE_TIER,
             }),
           invalidateKeys: WRITE_INVALIDATE_KEYS,
         })
@@ -107,19 +103,12 @@ export function useRepay(market: MarketView) {
         borrowTokens.toFixed(market.borrowDecimals),
         market.borrowDecimals,
       )
-      // Non-zero slippage floor so the on-chain swap can't be sandwiched to ~0.
-      const amountOutMinimum =
-        (borrowAmount * (10_000n - SWAP_SLIPPAGE_BPS)) / 10_000n
-      // Size shares a hair *below* the guaranteed swap output: the pool repays
-      // `shares` from the swap proceeds (only `amountOutMinimum` is guaranteed),
-      // and it converts shares->assets rounding UP with interest that accrues
-      // before execution — so shares sized at exactly amountOutMinimum can still
-      // need ~1 unit more than the swap delivers (observed InsufficientBalance:
-      // needed 17,882,240 vs 17,882,239). A 0.1% margin absorbs the round-up and
-      // accrual; the pool then always has enough proceeds to cover `shares`.
-      const sharesBasis = (amountOutMinimum * 999n) / 1000n
+      // senja parity (`useBorrowActions.ts:508-516`): shares from the full
+      // borrow-equivalent, `amountOutMinimum` = 0 (the pool prices the swap; a
+      // non-zero value here caps the swap input and reverts InsufficientBalance),
+      // fee tier 3000.
       const shares = debtSharesForAssets(
-        sharesBasis,
+        borrowAmount,
         totals.totalBorrowAssets,
         totals.totalBorrowShares,
       )
@@ -140,7 +129,7 @@ export function useRepay(market: MarketView) {
             user: target,
             token: repayToken.address,
             shares,
-            amountOutMinimum,
+            amountOutMinimum: 0n,
             fromPosition: repayToken.isCollateral,
             fee: SWAP_FEE_TIER,
           }),
