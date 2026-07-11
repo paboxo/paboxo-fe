@@ -3,6 +3,7 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
 import { positiveAmount } from '#/features/markets/gates'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '../hooks/useWithdraw'
 
@@ -28,8 +29,12 @@ export function WithdrawPanel({
   collateralBalance?: bigint
 }) {
   const { state, revert, withdrawCollateral } = useWithdraw(market)
-  // Withdraw is bounded by the supplied collateral, never the wallet.
+  // Withdraw is bounded by the supplied collateral, never the wallet — that is
+  // the MAX/validation cap. The "Your Balance" line shows the wallet balance so
+  // the user can watch the withdrawn collateral land back in their wallet.
   const collateral = collateralBalance ?? 0n
+  const { balance } = useTokenBalance(market.collateralAddress)
+  const wallet = balance ?? 0n
 
   const onSubmit = (amountTokens: number) => {
     void withdrawCollateral(
@@ -45,9 +50,8 @@ export function WithdrawPanel({
       tokenAddress={market.collateralAddress}
       decimals={market.collateralDecimals}
       priceUsd={market.priceUsd}
-      balance={collateral}
+      balance={wallet}
       maxTokens={toNumber(collateral, market.collateralDecimals)}
-      balanceLabel="Supplied"
       maxLabel="Supplied"
       preflight={positiveAmount}
       networkFeeUsd={0.42}

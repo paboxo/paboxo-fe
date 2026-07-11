@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
+import { useTokenBalance } from '#/features/shared/useTokenBalances'
 import type { MarketView } from '#/features/markets/types'
 import { useBorrow } from '../hooks/useBorrow'
 
@@ -22,6 +23,10 @@ export function BorrowPanel({
   belowSlider?: ReactNode
 }) {
   const { state, revert, borrow } = useBorrow(market)
+  // Wallet balance of the borrow token, shown for context (borrowed funds land
+  // here). It does not cap the borrow — max-borrow does.
+  const { balance } = useTokenBalance(market.borrowAddress)
+  const wallet = balance ?? 0n
 
   const onSubmit = (amountTokens: number) => {
     void borrow(parseUnits(amountTokens.toString(), market.borrowDecimals))
@@ -35,6 +40,7 @@ export function BorrowPanel({
       tokenAddress={market.borrowAddress}
       decimals={market.borrowDecimals}
       priceUsd={1}
+      balance={wallet}
       maxTokens={1000}
       preflight={positiveAmount}
       blockReason={staleBlockReason(market)}
