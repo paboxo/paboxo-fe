@@ -38,6 +38,15 @@ const MOCK_MESSAGE_ID: Hash =
 
 export type BridgeStatus = 'idle' | 'bridging' | 'delivered'
 
+/** The outcome of a borrow attempt, so a caller can drive its tracker imperatively
+ *  without racing the hook's transient `bridgeStatus` through re-renders. */
+export interface BorrowOutcome {
+  /** The HashKey borrow tx confirmed (debt booked, CCIP send fired). */
+  confirmed: boolean
+  /** Delivery on Base was observed (only possible via a real indexer; mock only). */
+  delivered: boolean
+}
+
 /** The `BorrowParams` for a Base-destined cross-chain borrow of `amount`. */
 function baseBorrowParams(amount: bigint) {
   return { amount, chainId: BigInt(BASE.id), destGasLimit: DEST_GAS_LIMIT }
@@ -84,9 +93,9 @@ export function useCrossChainBorrow(market: MarketView) {
   const [messageId, setMessageId] = useState<Hash | null>(null)
 
   const borrow = useCallback(
-    async (amount: bigint, onBehalf?: Address) => {
+    async (amount: bigint, onBehalf?: Address): Promise<BorrowOutcome> => {
       const borrower = onBehalf ?? address
-      if (!borrower || !address) return
+      if (!borrower || !address) return { confirmed: false, delivered: false }
       setBridgeStatus('idle')
       setMessageId(null)
       const isThirdParty = borrower !== address
@@ -125,18 +134,23 @@ export function useCrossChainBorrow(market: MarketView) {
         send: () => chain.borrowDebt(market.poolAddress, params, borrower, fee),
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
-      if (!confirmed) return
+      if (!confirmed) return { confirmed: false, delivered: false }
 
       // HashKey tx confirmed; delivery on Base is pending.
       setBridgeStatus('bridging')
       // Only the mock indexer can observe delivery today. In live mode we never
       // promote to 'delivered' from a fabricated id (R11); real messageId parsing
       // from the BorrowDebtCrossChain receipt is a follow-up.
+      let delivered = false
       if (DATA_MODE === 'mock') {
         setMessageId(MOCK_MESSAGE_ID)
         const status = await indexer.getCrossChainStatus(MOCK_MESSAGE_ID)
-        if (status.status === 'delivered') setBridgeStatus('delivered')
+        if (status.status === 'delivered') {
+          setBridgeStatus('delivered')
+          delivered = true
+        }
       }
+      return { confirmed: true, delivered }
     },
     [address, market.poolAddress, market.collateralAddress, write],
   )

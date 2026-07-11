@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { formatUnits, parseUnits } from 'viem'
 import { CROSS_CHAIN } from '#/lib/contracts'
@@ -36,8 +36,6 @@ export function BorrowPanel({
   const [destination, setDestination] = useState<Destination>('hashkey')
   const [pickerOpen, setPickerOpen] = useState(false)
   const [amountTokens, setAmountTokens] = useState(0)
-  // The last Base amount submitted, held until the tx confirms and the tracker starts.
-  const [pending, setPending] = useState<string | null>(null)
   const isBase = destination === 'base'
   const baseEnabled = CROSS_CHAIN.borrowBridge.enabled
 
@@ -46,39 +44,12 @@ export function BorrowPanel({
   const active = isBase ? cross : same
 
   const feeQuery = useCrossChainBorrowFee(market, amountTokens, isBase)
-  const { transfer, start, update, clear } = useCrossChainTransfer('borrow')
+  const { transfer, start, clear } = useCrossChainTransfer('borrow')
 
   // Wallet balance of the borrow token, shown for context (same-chain funds land
   // here). It does not cap the borrow — max-borrow does.
   const { balance } = useTokenBalance(market.borrowAddress)
   const wallet = balance ?? 0n
-
-  // Start and advance the tracker off the bridge status (R10, R11). The tracker
-  // only appears once the borrow tx confirms (status 'bridging') — never before
-  // signing — so a rejected/failed borrow leaves no stuck transfer. In live mode
-  // the status caps at 'bridging', so it never falsely reports arrival.
-  useEffect(() => {
-    if (!transfer && cross.bridgeStatus === 'bridging' && pending !== null) {
-      start({
-        id: 'xfer',
-        sourceChain: 'HashKey',
-        destChain: 'Base',
-        amount: pending,
-        symbol: market.borrowSymbol,
-        step: 'relaying',
-        startedAt: Date.now(),
-        etaSeconds: 300,
-        sourceTxUrl: '#',
-      })
-      setPending(null)
-    } else if (
-      transfer &&
-      cross.bridgeStatus === 'delivered' &&
-      transfer.step !== 'arrived'
-    ) {
-      update({ step: 'arrived', destTxUrl: '#' })
-    }
-  }, [cross.bridgeStatus, transfer, pending, start, update, market.borrowSymbol])
 
   // The quoted CCIP fee row, shown before signing (R8).
   const feeRows: ReviewRow[] =
@@ -111,9 +82,24 @@ export function BorrowPanel({
       void same.borrow(amount)
       return
     }
-    // Defer the tracker until the tx confirms (the effect starts it on 'bridging').
-    setPending(amt.toString())
-    void cross.borrow(amount)
+    // Start the tracker only after the borrow tx confirms — never before signing,
+    // so a rejected borrow leaves no stuck transfer. Read the final delivery state
+    // straight off the outcome rather than racing bridgeStatus through re-renders.
+    void cross.borrow(amount).then((outcome) => {
+      if (!outcome.confirmed) return
+      start({
+        id: 'xfer',
+        sourceChain: 'HashKey',
+        destChain: 'Base',
+        amount: amt.toString(),
+        symbol: market.borrowSymbol,
+        step: outcome.delivered ? 'arrived' : 'relaying',
+        startedAt: Date.now(),
+        etaSeconds: 300,
+        sourceTxUrl: '#',
+        ...(outcome.delivered ? { destTxUrl: '#' } : {}),
+      })
+    })
   }
 
   if (transfer) {
