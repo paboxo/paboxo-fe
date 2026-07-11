@@ -73,14 +73,20 @@ export function MoneyInput({
         ? typed * priceUsd
         : 0
 
-  const insufficient =
-    balanceTokens !== undefined && tokenAmount > balanceTokens + 1e-9
+  // The "Your Balance" line shows the wallet balance (display); validation is
+  // against `maxTokens` — the action's real cap (wallet for supply/repay,
+  // collateral for withdraw, max-borrow for borrow), which MAX and the slider
+  // also use. Keeping them separate lets a panel show the wallet balance while
+  // capping at a different amount.
+  const overCap =
+    maxTokens !== undefined && tokenAmount > maxTokens + 1e-9
+  const capNoun = maxLabel && maxLabel !== 'Max' ? maxLabel.toLowerCase() : 'available'
   const validationMessage =
     error ??
     (!validNumber
       ? 'Enter a valid amount'
-      : insufficient
-        ? `You only have ${formatTokenAmount(balance!, decimals, { full: true })} ${symbol}`
+      : overCap
+        ? `Exceeds ${capNoun} (${formatNumber(maxTokens, { maxFractionDigits: 6 })} ${symbol})`
         : undefined)
 
   const equiv =

@@ -50,11 +50,13 @@ describe('MoneyInput', () => {
     expect(onMax).toHaveBeenCalledOnce()
   })
 
-  it('blocks an over-balance amount before submit', () => {
-    render(<MoneyInput {...base} value="2500" onChange={() => {}} />)
+  it('flags an amount over the cap (maxTokens) before submit', () => {
+    render(
+      <MoneyInput {...base} value="2500" maxTokens={1900} onChange={() => {}} />,
+    )
     const input = screen.getByLabelText('Amount')
     expect(input.getAttribute('aria-invalid')).toBe('true')
-    expect(screen.getByRole('alert').textContent).toContain('You only have')
+    expect(screen.getByRole('alert').textContent).toContain('Exceeds')
   })
 
   it('auto-focuses the amount field when asked', () => {
