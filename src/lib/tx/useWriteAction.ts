@@ -133,14 +133,21 @@ export function useWriteAction(
         setState('signing')
         const hash = await input.send()
         setState('pending')
+        const txHref = `${HASHKEY.explorerUrl}/tx/${hash}`
+        showToast({
+          tone: 'neutral',
+          title: 'Pending',
+          actionLabel: 'View tx',
+          actionHref: txHref,
+        })
         // The send returns on broadcast; wait for the receipt before confirming.
         await chain.waitForReceipt(hash)
         setState('confirmed')
         showToast({
           tone: 'positive',
-          title: 'Transaction confirmed',
+          title: 'Success',
           actionLabel: 'View tx',
-          actionHref: `${HASHKEY.explorerUrl}/tx/${hash}`,
+          actionHref: txHref,
         })
       } catch (error) {
         if (isUserRejection(error)) {
@@ -150,7 +157,9 @@ export function useWriteAction(
         const normalized = normalizeRevertReason(error)
         setState('reverted')
         setRevert(normalized)
-        showToast({ tone: 'danger', title: normalized.message })
+        // Toast the short status; the detailed revert reason stays on the panel
+        // (TxStatus reads `revert`).
+        showToast({ tone: 'danger', title: 'Failed' })
         return false
       }
 

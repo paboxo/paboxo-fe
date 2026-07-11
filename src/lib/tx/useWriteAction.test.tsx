@@ -209,7 +209,7 @@ describe('useWriteAction', () => {
     await act(async () => {
       await result.current.run({ send })
     })
-    expect(screen.getByText('Transaction confirmed')).not.toBeNull()
+    expect(screen.getByText('Success')).not.toBeNull()
     expect(result.current.isPending).toBe(false)
     expect(result.current.isError).toBe(false)
   })
@@ -231,7 +231,9 @@ describe('useWriteAction', () => {
       await result.current.run({ send })
     })
     expect(result.current.isError).toBe(true)
-    expect(screen.getByText(/risk of liquidation/)).not.toBeNull()
+    // The toast shows the short status; the detailed reason stays on `revert`.
+    expect(screen.getByText('Failed')).not.toBeNull()
+    expect(result.current.revert?.message).toMatch(/risk of liquidation/)
   })
 
   it('stays confirmed when post-confirm cache invalidation fails', async () => {
