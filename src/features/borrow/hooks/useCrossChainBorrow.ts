@@ -32,6 +32,11 @@ const DEST_GAS_LIMIT = 500_000
 /** Headroom left for the borrow tx's own gas on top of the CCIP fee (R9). */
 const GAS_HEADROOM = 2_000_000_000_000_000n // ~0.002 HSK
 
+/** The CCIP fee can rise between the quote and mining. The contract refunds any
+ *  excess `msg.value` (verified in LendingPool._borrowDebtCrosschain), so send a
+ *  small headroom over the quote to survive drift; the surplus is returned. */
+const withFeeBuffer = (quotedFee: bigint) => quotedFee + quotedFee / 5n // +20%
+
 // A stand-in CCIP messageId used only in mock data mode.
 const MOCK_MESSAGE_ID: Hash =
   '0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
@@ -102,7 +107,7 @@ export function useCrossChainBorrow(market: MarketView) {
       const { chain, indexer } = getAdapters()
       const params = baseBorrowParams(amount)
 
-      const [totals, maxBorrow, price, nativeBalance, delegation, fee] =
+      const [totals, maxBorrow, price, nativeBalance, delegation, quotedFee] =
         await Promise.all([
           chain.getMarketTotals(market.poolAddress),
           chain.getMaxBorrowAmount(market.poolAddress, borrower),
@@ -113,6 +118,8 @@ export function useCrossChainBorrow(market: MarketView) {
             : Promise.resolve(0n),
           chain.quoteCrossChainBorrow(market.poolAddress, params, borrower),
         ])
+      // Attach a small buffer over the quote; the contract refunds the excess.
+      const fee = withFeeBuffer(quotedFee)
 
       const confirmed = await write.run({
         preflight: preflightCrossChainBorrow(

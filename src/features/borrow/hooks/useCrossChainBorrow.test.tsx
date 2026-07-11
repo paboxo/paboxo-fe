@@ -64,7 +64,8 @@ describe('useCrossChainBorrow', () => {
     expect(pool).toBe(market.poolAddress)
     expect(params.chainId).toBe(BigInt(BASE.id))
     expect(onBehalf).toBe(USER)
-    expect(value).toBe(500_000_000_000_000n) // the mock quoted fee
+    // mock quote 0.0005 HSK + 20% buffer (excess refunded on-chain).
+    expect(value).toBe(600_000_000_000_000n)
     // Receiving funds — never an approval (R7).
     expect(approve).not.toHaveBeenCalled()
     expect(result.current.state).toBe('confirmed')

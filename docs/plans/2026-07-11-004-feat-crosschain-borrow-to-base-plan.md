@@ -17,7 +17,7 @@ execution: code
 
 - **Objective:** Let a user borrow pxUSDT against their HashKey collateral and receive it on Base, exposed as a destination-chain picker inside the existing borrow flow, wired to the live CCIP rail (not mock).
 - **Product authority:** Frontend owner (brainstorm). Contract side is shipped and the borrow rail is enabled on the owner's live deployment.
-- **Open blockers:** None blocking the build. The fee quote must resolve against the live deployment — the plan wires two real on-chain paths (`HelperUtils.getFee` when its live address is configured; a revert-probe against `LendingPool.borrowDebt` otherwise), so no live address is strictly required to ship. Final sign-off needs one real mainnet cross-chain borrow to confirm the fee path and `destGasLimit` (see Verification Contract).
+- **Open blockers:** None. The rail is verified enabled on-chain (2026-07-11): the `LendingPoolFactory` has `ccipRouter` and `chainIdToSelector(8453)` set, so cross-chain `borrowDebt` clears its `CrossChainDisabled` gate. The fee is quoted via the revert-probe (`HelperUtils.getFee` is a permanent stub); excess `msg.value` is refunded by the contract. Final sign-off still needs one real mainnet cross-chain borrow to confirm `destGasLimit` on a market with a fresh collateral price feed (see Verification Contract / Open Questions).
 
 ---
 
@@ -119,9 +119,9 @@ flowchart TB
 
 ### Assumptions
 
-- The owner's live LendingPool deployment accepts cross-chain `borrowDebt` (`chainId=8453`) and charges the CCIP fee via `msg.value`, reverting `InsufficientFee(required, provided)` on shortfall (confirmed by the owner; to be re-confirmed by the Verification Contract mainnet run).
-- The live deployment either exposes a working `HelperUtils.getFee` at a config-supplied address, or the revert-probe fallback reaches the fee check for a valid borrow (the contract books/validates the borrow before the CCIP send, so a valid position is required to probe — true at real submit time).
-- Excess `msg.value` handling (refund vs. keep) is verified before finalizing the buffer strategy; default to quoting exactly and adding a small headroom only if the live contract refunds.
+- Cross-chain `borrowDebt` (`chainId=8453`) is **enabled and verified on-chain (2026-07-11)**: the `LendingPoolFactory` (`0xF0D1c6…`) has `ccipRouter = 0xf2Fd62…` and `chainIdToSelector(8453) = 15971525489660198786`, so `_borrowDebtCrosschain`'s `CrossChainDisabled` gate is cleared. The fee is `IRouterClient.getFee(destSelector, message)` computed inside the contract, paid via `msg.value`, reverting `InsufficientFee(required, provided)` on shortfall.
+- `HelperUtils.getFee` is a permanent `pure`-revert stub in this deployment (always `CrossChainDisabled`), so the fee is quoted via the **revert-probe** (`simulateContract borrowDebt(value:0)` → decode `InsufficientFee`). The probe reaches the fee check only for a valid borrow (the contract validates before the CCIP send) — true at real submit time; the reactive display simply shows no fee until the amount is valid (KTD8).
+- Excess `msg.value` is **refunded** by the contract (`_borrowDebtCrosschain` returns `msg.value - fee`), so the hook attaches a +20% buffer over the quote to survive fee drift.
 
 ### Sequencing
 
@@ -225,11 +225,12 @@ U1 → (U2, U4, U5 in parallel) → U3 → U6. U3 depends on U2 and U4; U6 depen
 
 Resolve during implementation or the mainnet verification run — none block starting the build:
 
-- **Non-EOA recipient safety.** `BorrowParams` carries no recipient, so the contract delivers to the caller's own address on Base. A smart-contract/AA wallet may not control the same address on Base — real funds could land somewhere unrecoverable. Decide whether to gate the Base destination to EOAs (detect via bytecode / connector type) or accept the risk with a warning.
-- **Excess `msg.value` refund + fee drift.** Confirm on testnet or a minimal-amount mainnet probe whether the live `borrowDebt` refunds excess native gas *before* enabling Base for general users. Re-quote the fee immediately before signing to minimize the drift window (a fee spike between quote and send reverts `InsufficientFee` after the user committed; a drop over-pays if there is no refund).
-- **`destGasLimit` under-provisioning = debt without delivery.** If the destination `ccipReceive` runs out of gas, the pxUSDT is never minted on Base but the HashKey debt is already booked (irreversible). Confirm the floor on mainnet (KTD7) and document whether CCIP manual re-execution is available on this lane as the recovery path.
+- **Non-EOA recipient safety.** Confirmed against the contract source: `_borrowDebtCrosschain` sets the CCIP `receiver = abi.encode(_msgSender())`, so funds land at the caller's own address on Base. A smart-contract/AA wallet may not control the same address on Base — real funds could land somewhere unrecoverable. Decide whether to gate the Base destination to EOAs (detect via bytecode / connector type) or accept the risk with a warning.
+- **Fee drift (refund confirmed).** Resolved in part: the contract refunds any excess `msg.value` (`_borrowDebtCrosschain` returns `msg.value - fee`), so the +20% buffer the hook attaches is safe. A fee *spike* beyond the buffer between quote and mining still reverts `InsufficientFee` after signing — acceptable (failed tx, negligible gas) but re-quoting immediately before send would shrink the window further.
+- **`destGasLimit` under-provisioning = debt without delivery.** If the destination `ccipReceive` runs out of gas, the pxUSDT is never minted on Base but the HashKey debt is already booked (irreversible). The message uses `allowOutOfOrderExecution: true` (EVMExtraArgsV2). Confirm the floor on mainnet (KTD7) and document whether CCIP manual re-execution is available on this lane as the recovery path.
 - **Tracker failure terminal state.** `CrossChainTracker` models `sent`/`relaying`/`arrived` plus an overdue nudge but no `failed` state. Decide whether a delivery failure surfaces a distinct terminal state and next step (inherited gap from the supply tracker).
 - **Receipt `messageId` parsing ownership.** Parsing the real `messageId` from the `BorrowDebtCrossChain` receipt is required before the live write path ships (R11); confirm it lands inside U3 rather than floating as unassigned work.
+- **Verification market — avoid the stale-feed market.** On-chain check (2026-07-11): the keeper is live and refreshes pxUSDT / pxWHSK-market / pxWBTC / pxWETH feeds (~1 min old), but the dedicated cross-chain market's collateral (`pxWHSK-xchain`, `0x7c9c…`) feed is ~41h stale, so any borrow there reverts `PriceStale`. Run the mainnet verification on a fresh-feed pxUSDT market (e.g. pxWBTC or pxWETH collateral), not the pxWHSK-xchain market — and flag to the keeper team that the cross-chain collateral feed is not being refreshed.
 
 ## Verification Contract
 
