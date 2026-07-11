@@ -46,11 +46,14 @@ export function BorrowActions({
   market,
   hasCollateral,
   positionCard,
+  collateralBalance,
 }: {
   market: MarketView
   hasCollateral: boolean
   /** The "Your position" block, rendered inside each panel below the slider. */
   positionCard?: ReactNode
+  /** Supplied collateral (base units) — the withdraw max/validation basis. */
+  collateralBalance?: bigint
 }) {
   const [active, setActive] = useState<ActionKey>('borrow')
 
@@ -65,7 +68,13 @@ export function BorrowActions({
       return <BorrowPanel market={market} belowSlider={positionCard} />
     if (active === 'repay')
       return <RepayPanel market={market} belowSlider={positionCard} />
-    return <WithdrawPanel market={market} belowSlider={positionCard} />
+    return (
+      <WithdrawPanel
+        market={market}
+        belowSlider={positionCard}
+        collateralBalance={collateralBalance}
+      />
+    )
   }
 
   return (

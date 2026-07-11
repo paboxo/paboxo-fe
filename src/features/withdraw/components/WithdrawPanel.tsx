@@ -3,7 +3,6 @@ import { parseUnits } from 'viem'
 import { ActionPanel } from '#/components/action/ActionPanel'
 import { toNumber } from '#/lib/format'
 import { positiveAmount } from '#/features/markets/gates'
-import { usePositionTokenBalance } from '#/features/position/hooks/usePositionTokenBalance'
 import type { MarketView } from '#/features/markets/types'
 import { useWithdraw } from '../hooks/useWithdraw'
 
@@ -19,17 +18,18 @@ import { useWithdraw } from '../hooks/useWithdraw'
 export function WithdrawPanel({
   market,
   belowSlider,
+  collateralBalance,
 }: {
   market: MarketView
   belowSlider?: ReactNode
+  /** Collateral the user holds in this pool position, in collateral base units.
+   *  Sourced from the same position read as the "Your position" card, so the
+   *  withdraw max/validation and the displayed collateral always agree. */
+  collateralBalance?: bigint
 }) {
   const { state, revert, withdrawCollateral } = useWithdraw(market)
-  // Max is the collateral the user actually holds in this pool position.
-  const { balance } = usePositionTokenBalance(
-    market.poolAddress,
-    market.collateralAddress,
-  )
-  const collateral = balance ?? 0n
+  // Withdraw is bounded by the supplied collateral, never the wallet.
+  const collateral = collateralBalance ?? 0n
 
   const onSubmit = (amountTokens: number) => {
     void withdrawCollateral(
@@ -47,6 +47,7 @@ export function WithdrawPanel({
       priceUsd={market.priceUsd}
       balance={collateral}
       maxTokens={toNumber(collateral, market.collateralDecimals)}
+      balanceLabel="Supplied"
       maxLabel="Supplied"
       preflight={positiveAmount}
       networkFeeUsd={0.42}

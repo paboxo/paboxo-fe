@@ -125,6 +125,7 @@ function BorrowPoolPage() {
                 market={pool.market}
                 hasCollateral={hasCollateral}
                 positionCard={positionCard}
+                collateralBalance={collateralRow?.balance}
               />
             </NetworkGuard>
           </aside>

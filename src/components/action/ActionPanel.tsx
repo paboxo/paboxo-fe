@@ -32,6 +32,8 @@ export interface ActionPanelProps {
   /** Basis for MAX and quick-fill (gas-reserved / risk-bounded, computed by the caller). */
   maxTokens?: number
   maxLabel?: string
+  /** Label for the balance line (e.g. "Your Balance", "Supplied"). */
+  balanceLabel?: string
   currentHf?: number
   projectHf?: (amountTokens: number) => number
   /** Injected revert-condition gate; blocks before the wallet opens (R18). */
@@ -59,6 +61,8 @@ export interface ActionPanelProps {
   /** Extra content rendered inside the card, below the slider (e.g. the borrow
    *  "Your position" block). Sits above the network line and the review. */
   belowSlider?: ReactNode
+  /** Content pinned to the right of the header title row (e.g. a token picker). */
+  headerRight?: ReactNode
   onSubmit: (amountTokens: number) => void
 }
 
@@ -81,6 +85,7 @@ export function ActionPanel(props: ActionPanelProps) {
     balance,
     maxTokens,
     maxLabel,
+    balanceLabel,
     currentHf,
     projectHf,
     preflight,
@@ -93,6 +98,7 @@ export function ActionPanel(props: ActionPanelProps) {
     txState = 'idle',
     revert,
     belowSlider,
+    headerRight,
     onSubmit,
   } = props
 
@@ -141,10 +147,13 @@ export function ActionPanel(props: ActionPanelProps) {
 
   return (
     <div className="island-shell flex flex-col gap-3 rounded-2xl p-4">
-      <h3 className="display-title m-0 flex items-center gap-2 text-base font-semibold">
-        <TokenGlyph symbol={symbol} address={tokenAddress} size={22} />
-        {title}
-      </h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="display-title m-0 flex items-center gap-2 text-base font-semibold">
+          <TokenGlyph symbol={symbol} address={tokenAddress} size={22} />
+          {title}
+        </h3>
+        {headerRight}
+      </div>
 
       <MoneyInput
         symbol={symbol}
@@ -160,6 +169,7 @@ export function ActionPanel(props: ActionPanelProps) {
         }
         onMax={maxTokens ? () => fillWith(maxTokens) : undefined}
         maxLabel={maxLabel}
+        balanceLabel={balanceLabel}
         error={gate.enabled ? undefined : gate.reason}
       />
 
