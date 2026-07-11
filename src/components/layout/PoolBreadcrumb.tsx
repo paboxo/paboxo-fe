@@ -29,7 +29,7 @@ export function PoolBreadcrumb({
       <Link
         to={to}
         activeOptions={{ exact: true }}
-        className="inline-flex items-center gap-1 font-semibold text-[var(--sea-ink)] no-underline"
+        className="inline-flex items-center gap-1 font-semibold text-[var(--palm)] no-underline hover:underline"
       >
         <span aria-hidden="true">‹</span>
         {label}

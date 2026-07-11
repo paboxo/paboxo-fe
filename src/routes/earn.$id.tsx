@@ -40,7 +40,7 @@ function EarnPoolPage() {
           />
           <Link
             to="/earn"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Earn
           </Link>
@@ -53,7 +53,7 @@ function EarnPoolPage() {
           />
           <Link
             to="/earn"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Earn
           </Link>

@@ -56,7 +56,7 @@ function BorrowPoolPage() {
           />
           <Link
             to="/borrow"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Borrow
           </Link>
@@ -69,7 +69,7 @@ function BorrowPoolPage() {
           />
           <Link
             to="/borrow"
-            className="text-sm font-bold text-[var(--sea-ink)] no-underline"
+            className="text-sm font-bold text-[var(--palm)] no-underline hover:underline"
           >
             ← Back to Borrow
           </Link>
