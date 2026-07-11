@@ -6,7 +6,6 @@ import { ActionPanel } from '#/components/action/ActionPanel'
 import { NETWORK_FEE_HSK } from '#/lib/tx/networkFee'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
 import { positiveAmount, staleBlockReason } from '#/features/markets/gates'
-import { TOKEN_REGISTRY } from '#/lib/tokens/registry'
 import { TOKENS, TOKEN_SYMBOLS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
 import { formatNumber, formatTokenAmount, toNumber } from '#/lib/format'
@@ -26,8 +25,15 @@ interface RepayOption {
   priceUsd: number | undefined
 }
 
-/** Repay-token options: the borrow token (mode A), the position collateral, and
- *  any other registry token (swapped on-chain). Mirrors senja's option set. */
+/**
+ * Repay-token options: the borrow token (mode A, direct) and the position
+ * collateral (swapped on-chain through the pool's own collateral↔borrow DEX
+ * pool). We deliberately do NOT offer arbitrary registry tokens: a swap-repay
+ * needs a liquid DEX pool for that token↔borrow, and on this deployment only the
+ * pool's own pair is guaranteed to have one — offering e.g. pxWETH just reverts
+ * InsufficientBalance when its pool has no liquidity. senja curates its list the
+ * same way (KNOWN_COLLATERAL_TOKENS), not the whole registry.
+ */
 function buildRepayOptions(market: MarketView): RepayOption[] {
   const borrow: RepayOption = {
     address: market.borrowAddress,
@@ -43,20 +49,7 @@ function buildRepayOptions(market: MarketView): RepayOption[] {
     isCollateral: true,
     priceUsd: market.priceUsd,
   }
-  const taken = new Set([
-    market.borrowAddress.toLowerCase(),
-    market.collateralAddress.toLowerCase(),
-  ])
-  const others: RepayOption[] = Object.entries(TOKEN_REGISTRY)
-    .filter(([addr]) => !taken.has(addr.toLowerCase()))
-    .map(([addr, entry]) => ({
-      address: addr as Address,
-      symbol: entry.label,
-      decimals: entry.decimals,
-      isCollateral: false,
-      priceUsd: undefined,
-    }))
-  return [borrow, collateral, ...others]
+  return [borrow, collateral]
 }
 
 /** Compact token picker shown to the right of the "Repay" header. Each row
