@@ -81,12 +81,13 @@ describe('useRepay', () => {
       borrowTokens.toFixed(market.borrowDecimals),
       market.borrowDecimals,
     )
-    // Shares are sized from the guaranteed swap floor, not the optimistic
-    // borrowAmount, so the pool always has enough proceeds to repay them.
+    // Shares are sized a hair below the guaranteed swap floor (0.1% margin) so
+    // the pool's proceeds always cover them after round-up + interest accrual.
     const amountOutMinimum = (borrowAmount * 9_950n) / 10_000n
+    const sharesBasis = (amountOutMinimum * 999n) / 1_000n
     return {
       shares: debtSharesForAssets(
-        amountOutMinimum,
+        sharesBasis,
         totals.totalBorrowAssets,
         totals.totalBorrowShares,
       ),

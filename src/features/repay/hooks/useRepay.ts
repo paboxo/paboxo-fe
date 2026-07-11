@@ -107,13 +107,16 @@ export function useRepay(market: MarketView) {
       // Non-zero slippage floor so the on-chain swap can't be sandwiched to ~0.
       const amountOutMinimum =
         (borrowAmount * (10_000n - SWAP_SLIPPAGE_BPS)) / 10_000n
-      // Size shares from the *guaranteed* swap output, not the optimistic
-      // borrowAmount: the pool repays `shares` from the swap proceeds, and the
-      // DEX only guarantees `amountOutMinimum`. Sizing from borrowAmount reverts
-      // InsufficientBalance when the DEX delivers only the floor (observed:
-      // needed 1,796,437 vs 1,787,301 received).
+      // Size shares a hair *below* the guaranteed swap output: the pool repays
+      // `shares` from the swap proceeds (only `amountOutMinimum` is guaranteed),
+      // and it converts shares->assets rounding UP with interest that accrues
+      // before execution — so shares sized at exactly amountOutMinimum can still
+      // need ~1 unit more than the swap delivers (observed InsufficientBalance:
+      // needed 17,882,240 vs 17,882,239). A 0.1% margin absorbs the round-up and
+      // accrual; the pool then always has enough proceeds to cover `shares`.
+      const sharesBasis = (amountOutMinimum * 999n) / 1000n
       const shares = debtSharesForAssets(
-        amountOutMinimum,
+        sharesBasis,
         totals.totalBorrowAssets,
         totals.totalBorrowShares,
       )
