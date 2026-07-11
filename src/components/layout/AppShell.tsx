@@ -14,7 +14,7 @@ import { AppHeader } from './AppHeader'
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div data-app-shell="" className="flex min-h-dvh flex-col">
+    <div data-app-shell="" className="app-frame flex flex-col">
       <AppHeader />
       <div className="flex flex-1 flex-col">{children}</div>
       <Footer />

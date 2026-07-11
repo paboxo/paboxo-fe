@@ -203,6 +203,21 @@ pre code {
   margin-inline: auto;
 }
 
+/* Outer app frame: a blue border wrapping the whole app at the outermost edge,
+   thicker on top, thinner on the sides/bottom, with softened rounded corners.
+   Fixed + internal scroll so the sticky header stays inside the frame and the
+   rounded corners clip the header/footer cleanly. */
+.app-frame {
+  position: fixed;
+  inset: 0.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1.5px solid var(--palm);
+  border-top-width: 3px;
+  border-radius: 20px;
+  background: var(--bg-base);
+}
+
 .display-title {
   font-family: var(--font-display);
   letter-spacing: -0.01em;

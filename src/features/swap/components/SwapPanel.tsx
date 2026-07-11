@@ -4,6 +4,7 @@ import { MARKETS, TOKENS, getMarketConfig } from '#/lib/contracts'
 import type { TokenSymbol } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
 import { TokenGlyph } from '#/components/ui/TokenGlyph'
+import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { ActionButton } from '#/components/ui/ActionButton'
 import {
   useTokenBalance,
@@ -59,17 +60,30 @@ export function SwapPanel() {
       {/* Select Market */}
       <label className="flex flex-col gap-1.5 text-[0.78rem] font-semibold text-[var(--sea-ink-soft)]">
         Select Market
-        <select
-          value={marketId}
-          onChange={(event) => setMarketId(event.target.value)}
-          className="rounded border border-[var(--palm)] bg-[var(--surface)] px-3 py-3 text-sm font-semibold text-[var(--sea-ink)]"
-        >
-          {MARKETS.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.collateralSymbol} / {entry.borrowSymbol}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          {/* The pair glyph reflects the selected market (a native select can't
+              render it inside an option, so it overlays on the left). */}
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+            <TokenPairGlyph
+              collateralSymbol={market.collateralSymbol}
+              borrowSymbol={market.borrowSymbol}
+              collateralAddress={market.collateralAddress}
+              borrowAddress={TOKENS.pxUSDT.address}
+              size={22}
+            />
+          </span>
+          <select
+            value={marketId}
+            onChange={(event) => setMarketId(event.target.value)}
+            className="w-full rounded border border-[var(--palm)] bg-[var(--surface)] py-3 pr-3 pl-14 text-sm font-semibold text-[var(--sea-ink)]"
+          >
+            {MARKETS.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.collateralSymbol} / {entry.borrowSymbol}
+              </option>
+            ))}
+          </select>
+        </div>
       </label>
 
       {/* Sell */}
