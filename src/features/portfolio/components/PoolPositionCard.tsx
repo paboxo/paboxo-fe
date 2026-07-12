@@ -12,8 +12,14 @@ import type { MarketView } from '#/features/markets/types'
 
 /** Collapsible details (supply chart + protection). Content mounts only when
  *  open so the recharts container measures a real width instead of zero. */
-function CardDetails({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false)
+function CardDetails({
+  children,
+  defaultOpen = false,
+}: {
+  children: ReactNode
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="border-t border-[var(--line)] pt-3">
       <button
@@ -47,10 +53,13 @@ export function PoolPositionCard({
   market,
   onResolve,
   children,
+  detailsOpen = false,
 }: {
   market: MarketView
   onResolve?: (id: string, active: boolean) => void
   children?: ReactNode
+  /** Show the collapsible details expanded from the start (selected pool). */
+  detailsOpen?: boolean
 }) {
   const { data, isLoading, error } = useMarketPosition(market.id)
 
@@ -124,7 +133,9 @@ export function PoolPositionCard({
         />
       </div>
 
-      {children ? <CardDetails>{children}</CardDetails> : null}
+      {children ? (
+        <CardDetails defaultOpen={detailsOpen}>{children}</CardDetails>
+      ) : null}
     </section>
   )
 }

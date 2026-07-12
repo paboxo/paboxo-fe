@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergePositionSeries } from './positionSeries'
+import { aggregateMerged, mergePositionSeries } from './positionSeries'
 
 const DAY = 86_400
 
@@ -33,5 +33,26 @@ describe('mergePositionSeries', () => {
     expect(
       mergePositionSeries({ supply: [], collateral: [], debt: [] }),
     ).toEqual([])
+  })
+})
+
+describe('aggregateMerged', () => {
+  it('sums pools onto one axis, carrying each pool forward', () => {
+    const poolA = [
+      { timestamp: 0, supply: 100, collateral: 10, debt: 5 },
+      { timestamp: DAY, supply: 100, collateral: 10, debt: 5 },
+    ]
+    const poolB = [{ timestamp: DAY, supply: 50, collateral: 2, debt: 1 }]
+    const total = aggregateMerged([poolA, poolB])
+    expect(total).toEqual([
+      // Day 0: only pool A is active.
+      { timestamp: 0, supply: 100, collateral: 10, debt: 5 },
+      // Day 1: both pools sum.
+      { timestamp: DAY, supply: 150, collateral: 12, debt: 6 },
+    ])
+  })
+
+  it('is empty with no pools', () => {
+    expect(aggregateMerged([])).toEqual([])
   })
 })

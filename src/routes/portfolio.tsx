@@ -3,7 +3,8 @@ import { useAccount } from 'wagmi'
 import { AppPageHeader } from '#/components/layout/AppPageHeader'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
 import { PortfolioOverview } from '#/features/portfolio/components/PortfolioOverview'
-import { PoolPositionList } from '#/features/portfolio/components/PoolPositionList'
+import { AggregatePositionChart } from '#/features/portfolio/components/AggregatePositionChart'
+import { PoolSelector } from '#/features/portfolio/components/PoolSelector'
 import { PositionHistoryChart } from '#/features/portfolio/components/PositionHistoryChart'
 import { TrustNote } from '#/features/portfolio/components/TrustNote'
 import { ProtectAllButton } from '#/features/protection/components/ProtectAllButton'
@@ -14,9 +15,8 @@ import type { MarketView } from '#/features/markets/types'
 
 export const Route = createFileRoute('/portfolio')({ component: PortfolioPage })
 
-// Each pool card gets its daily supply chart and a free protection toggle,
-// composed in through the list's `renderCardExtras` slot. The card collapses
-// these behind an expander, so this stays layout-agnostic.
+// The selected pool card gets its position chart and a free protection toggle,
+// composed in through the selector's `renderCardExtras` slot.
 function cardExtras(market: MarketView) {
   return (
     <>
@@ -34,8 +34,9 @@ function PortfolioPage() {
       <NetworkGuard description="Connect a wallet to view your supplies, borrows, and health.">
         <div className="flex flex-col gap-6">
           <PortfolioOverview />
+          <AggregatePositionChart />
           <ProtectAllButton />
-          <PoolPositionList renderCardExtras={cardExtras} />
+          <PoolSelector renderCardExtras={cardExtras} />
           <AgentActivityFeed user={address} />
           <TrustNote />
           <section className="flex flex-col gap-2">

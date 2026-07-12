@@ -19,6 +19,39 @@ function valueAt(series: HistoryPoint[], t: number): number {
   return value
 }
 
+function mergedValueAt(
+  rows: MergedPoint[],
+  t: number,
+  key: 'supply' | 'collateral' | 'debt',
+): number {
+  let value = 0
+  for (const point of rows) {
+    if (point.timestamp <= t) value = point[key]
+    else break
+  }
+  return value
+}
+
+/** Sum several pools' merged series onto one union-of-days axis (carry-forward)
+ *  — the portfolio total supply / collateral / debt in USD over time. */
+export function aggregateMerged(perPool: MergedPoint[][]): MergedPoint[] {
+  const days = [...new Set(perPool.flat().map((p) => p.timestamp))].sort(
+    (a, b) => a - b,
+  )
+  return days.map((t) => ({
+    timestamp: t,
+    supply: perPool.reduce(
+      (s, rows) => s + mergedValueAt(rows, t, 'supply'),
+      0,
+    ),
+    collateral: perPool.reduce(
+      (s, rows) => s + mergedValueAt(rows, t, 'collateral'),
+      0,
+    ),
+    debt: perPool.reduce((s, rows) => s + mergedValueAt(rows, t, 'debt'), 0),
+  }))
+}
+
 /** Merge the supply/collateral/debt series onto a single union-of-days x-axis. */
 export function mergePositionSeries(
   history: PositionHistoryUsd,
