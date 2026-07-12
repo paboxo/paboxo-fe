@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useAccount } from 'wagmi'
 import { AppPageHeader } from '#/components/layout/AppPageHeader'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
-import { PortfolioSummary } from '#/features/portfolio/components/PortfolioSummary'
+import { PortfolioOverview } from '#/features/portfolio/components/PortfolioOverview'
 import { PoolPositionList } from '#/features/portfolio/components/PoolPositionList'
 import { SupplyHistoryChart } from '#/features/portfolio/components/SupplyHistoryChart'
 import { TrustNote } from '#/features/portfolio/components/TrustNote'
@@ -32,7 +32,7 @@ function PortfolioPage() {
       <AppPageHeader kicker="Portfolio" title="Your position" />
       <NetworkGuard description="Connect a wallet to view your supplies, borrows, and health.">
         <div className="flex flex-col gap-6">
-          <PortfolioSummary />
+          <PortfolioOverview />
           <ProtectAllButton />
           <PoolPositionList renderCardExtras={cardExtras} />
           <AgentActivityFeed user={address} />
