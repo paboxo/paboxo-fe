@@ -55,15 +55,15 @@ export function AppHeader() {
       <nav className="page-wrap flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--sea-ink)] no-underline"
+          className="inline-flex items-center gap-2 text-base font-bold text-[var(--sea-ink)] no-underline"
         >
           <img
             src="/paboxo-logo.png"
             alt=""
             aria-hidden="true"
-            width={20}
-            height={20}
-            className="h-5 w-5 rounded-full object-contain"
+            width={28}
+            height={28}
+            className="h-7 w-7 object-contain"
           />
           Paboxo
         </Link>

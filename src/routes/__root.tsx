@@ -19,13 +19,18 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Paboxo — earn and borrow on HashKey',
+        title: 'Paboxo — Lend and borrow across chains',
       },
     ],
     links: [
       {
         rel: 'stylesheet',
         href: appCss,
+      },
+      {
+        rel: 'icon',
+        type: 'image/png',
+        href: '/paboxo-logo.png',
       },
     ],
   }),
