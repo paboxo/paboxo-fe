@@ -34,6 +34,8 @@ import {
   RATE_HISTORY_QUERY,
   USER_HISTORY_QUERY,
 } from './queries'
+import { deriveDailySupply } from './supplyHistory'
+import type { SupplyDelta } from './supplyHistory'
 
 /** A pool list that never arrives is an outage, not a permanent spinner. */
 const GET_POOLS_TIMEOUT_MS = 15_000
@@ -82,6 +84,9 @@ const EMPTY_AGGREGATES: ProtocolAggregates = {
 
 /** The universal borrow token — every live market borrows pxUSDT. */
 const BORROW_TOKEN = TOKENS.pxUSDT.address
+
+/** Lender liquidity is supplied in pxUSDT; its decimals scale the supply series. */
+const SUPPLY_TOKEN_DECIMALS = TOKENS.pxUSDT.decimals
 
 function tokenMeta(address: string): { symbol: string; decimals: number } {
   const lower = address.toLowerCase()
@@ -326,11 +331,32 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     // to a current-value indicator (KTD4). Wire a query here once the backend
     // adds a liquidity-snapshot entity.
     getLiquidityHistory: () => Promise.resolve([]),
-    // The indexer does not persist a per-user supply time-series yet, so this
-    // degrades to empty in live mode and the portfolio chart shows its empty
-    // state. Wire a subgraph query here once a per-user supply-snapshot entity
-    // exists — no component change is needed across the swap.
-    getUserSupplyHistory: () => Promise.resolve([]),
+    async getUserSupplyHistory(user, pool) {
+      // No per-user supply-snapshot entity exists, so derive the daily series by
+      // replaying this user's supply/withdraw liquidity events for the pool.
+      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, { user })
+      if (!data) return []
+      const target = pool.toLowerCase()
+      const forPool = (e: RawActivity) =>
+        e.lendingPoolAddress.toLowerCase() === target
+      const deltas: SupplyDelta[] = [
+        ...items(data.supplyLiquiditys)
+          .filter(forPool)
+          .map((e) => ({
+            timestamp: Number(e.timestamp || 0),
+            amount: BigInt(e.amount || '0'),
+            direction: 1 as const,
+          })),
+        ...items(data.withdrawLiquiditys)
+          .filter(forPool)
+          .map((e) => ({
+            timestamp: Number(e.timestamp || 0),
+            amount: BigInt(e.amount || '0'),
+            direction: -1 as const,
+          })),
+      ]
+      return deriveDailySupply(deltas, SUPPLY_TOKEN_DECIMALS)
+    },
   }
 }
 
