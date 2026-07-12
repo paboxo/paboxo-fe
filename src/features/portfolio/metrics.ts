@@ -23,10 +23,15 @@ export const METRICS: Metric[] = [
   {
     key: 'collateral',
     label: 'Collateral',
-    color: 'var(--lagoon)',
+    color: 'var(--caution)',
     statKey: 'collateralUsd',
   },
-  { key: 'debt', label: 'Borrow', color: 'var(--danger)', statKey: 'debtUsd' },
+  {
+    key: 'debt',
+    label: 'Borrow',
+    color: 'var(--lagoon-deep)',
+    statKey: 'debtUsd',
+  },
 ]
 
 /** One pool's current contribution to a metric, for the breakdown list. */

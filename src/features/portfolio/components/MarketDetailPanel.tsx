@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { NON_FINITE, formatTokenAmount, formatUsd } from '#/lib/format'
 import { HealthFactorBadge } from '#/components/ui/HealthFactorBadge'
-import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { StatTile } from '#/components/ui/StatTile'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
@@ -16,6 +15,7 @@ import { METRICS } from '../metrics'
 import type { MetricKey } from '../metrics'
 import { MetricChart } from './MetricChart'
 import { MetricTabs } from './MetricTabs'
+import { MarketDropdown } from './MarketDropdown'
 
 /** Reports whether the user is in this pool, for the dropdown options. */
 function PoolActiveCollector({
@@ -170,44 +170,16 @@ export function MarketDetailPanel() {
               Market detail
             </h3>
             {activeMarkets.length > 0 && current ? (
-              <label className="flex items-center gap-2 text-[0.8rem] text-[var(--sea-ink-soft)]">
-                Market
-                <select
-                  value={current}
-                  onChange={(e) => setSelected(e.target.value)}
-                  className="rounded-lg px-2 py-1 text-[0.85rem] font-semibold text-[var(--sea-ink)]"
-                  style={{
-                    border: '1px solid var(--line)',
-                    background: 'var(--surface-strong)',
-                  }}
-                >
-                  {activeMarkets.map((market) => (
-                    <option key={market.id} value={market.id}>
-                      {market.collateralSymbol} / {market.borrowSymbol}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <MarketDropdown
+                markets={activeMarkets}
+                current={current}
+                onSelect={setSelected}
+              />
             ) : null}
           </div>
 
           {currentMarket ? (
-            <>
-              <div className="flex items-center gap-2">
-                <TokenPairGlyph
-                  collateralSymbol={currentMarket.collateralSymbol}
-                  borrowSymbol={currentMarket.borrowSymbol}
-                  collateralAddress={currentMarket.collateralAddress}
-                  borrowAddress={currentMarket.borrowAddress}
-                  size={24}
-                />
-                <span className="font-semibold text-[var(--sea-ink)]">
-                  {currentMarket.collateralSymbol} /{' '}
-                  {currentMarket.borrowSymbol}
-                </span>
-              </div>
-              <MarketDetailBody market={currentMarket} />
-            </>
+            <MarketDetailBody market={currentMarket} />
           ) : (
             <LoadingCard />
           )}
