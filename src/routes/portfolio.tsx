@@ -15,7 +15,7 @@ function PortfolioPage() {
   const { address } = useAccount()
   return (
     <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
-      <AppPageHeader kicker="Portfolio" title="Your position" />
+      <AppPageHeader kicker="Portfolio" compact />
       <NetworkGuard description="Connect a wallet to view your supplies, borrows, and health.">
         <div className="flex flex-col gap-6">
           <PortfolioGeneral />

@@ -9,7 +9,7 @@ function EarnPage() {
     <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
       <AppPageHeader
         compact
-        title="Earn"
+        kicker="Earn"
         subtitle="Lend and borrow across chains — supply pxUSDT to earn its pool APY."
       />
       <EarnList />

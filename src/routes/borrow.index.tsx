@@ -9,7 +9,7 @@ function BorrowPage() {
     <main className="page-wrap flex flex-col gap-6 px-4 pb-12 pt-8">
       <AppPageHeader
         compact
-        title="Borrow"
+        kicker="Borrow"
         subtitle="Lend and borrow across chains — post collateral to borrow pxUSDT."
       />
       <BorrowList />

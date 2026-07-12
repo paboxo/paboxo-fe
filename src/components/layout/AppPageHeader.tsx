@@ -11,22 +11,25 @@ export function AppPageHeader({
   compact = false,
 }: {
   kicker?: string
-  title: string
+  /** Optional — omit to use the `kicker` alone as the page marker. */
+  title?: string
   subtitle?: ReactNode
   compact?: boolean
 }) {
   return (
     <div className={compact ? 'mb-3' : 'mb-8'}>
       {kicker ? <p className="island-kicker mb-1">{kicker}</p> : null}
-      <h1
-        className={
-          compact
-            ? 'display-title text-xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-2xl'
-            : 'display-title text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl'
-        }
-      >
-        {title}
-      </h1>
+      {title ? (
+        <h1
+          className={
+            compact
+              ? 'display-title text-xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-2xl'
+              : 'display-title text-4xl font-bold tracking-tight text-[var(--sea-ink)] sm:text-5xl'
+          }
+        >
+          {title}
+        </h1>
+      ) : null}
       {subtitle ? (
         <p
           className={
