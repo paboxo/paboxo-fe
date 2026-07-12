@@ -21,5 +21,5 @@ references/
 # references/ is a symlink into the sibling checkout
 references
 
-# Netlify CLI
-.netlify/
+# Vercel CLI
+.vercel/

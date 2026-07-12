@@ -22,6 +22,11 @@ export default [
       'references/**',
       // Vendored HSP SDK source — upstream style; transpiled, not linted here.
       'vendor/**',
+      // Build artifacts (Vite client + Nitro server output).
+      'dist/**',
+      '.output/**',
+      '.nitro/**',
+      '.vercel/**',
     ],
   },
 ]
