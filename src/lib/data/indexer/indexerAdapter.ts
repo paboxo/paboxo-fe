@@ -257,7 +257,12 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     },
 
     async getUserHistory(user) {
-      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, { user })
+      // The indexer stores `user` lowercased; wagmi hands us a checksummed
+      // address, and `where: { user }` is an exact match — so normalise or the
+      // read silently returns nothing for a real wallet.
+      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, {
+        user: user.toLowerCase(),
+      })
       if (!data) return []
       const events: HistoryEvent[] = [
         ...items(data.supplyLiquiditys).map((e) =>
@@ -334,7 +339,10 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     async getUserSupplyHistory(user, pool) {
       // No per-user supply-snapshot entity exists, so derive the daily series by
       // replaying this user's supply/withdraw liquidity events for the pool.
-      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, { user })
+      // `user` is lowercased for the same exact-match reason as getUserHistory.
+      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, {
+        user: user.toLowerCase(),
+      })
       if (!data) return []
       const target = pool.toLowerCase()
       const forPool = (e: RawActivity) =>
