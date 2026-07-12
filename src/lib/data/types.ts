@@ -279,6 +279,14 @@ export interface LiquidityPoint {
   liquidityUsd: number
 }
 
+/** A point on a user's supplied-value history for one pool (USD), for the
+ *  portfolio supply-over-time chart. Buckets are DAILY. */
+export interface SupplyPoint {
+  /** Unix seconds (start of the day bucket). */
+  timestamp: number
+  suppliedUsd: number
+}
+
 /**
  * A lending market exactly as the indexer emits it (`lendingPoolCreateds`).
  * Addresses stay `Address`; risk/rate params stay raw WAD `bigint` (1e18 = 100%);
@@ -383,4 +391,8 @@ export interface IndexerAdapter {
   /** Liquidity-over-time series. Empty until the indexer persists liquidity
    *  snapshots — consumers then fall back to a current-value indicator (KTD4). */
   getLiquidityHistory: (pool: Address) => Promise<LiquidityPoint[]>
+  /** A user's DAILY supplied-value series for one pool (USD). Empty until the
+   *  indexer persists per-user supply snapshots; the chart shows its empty
+   *  state until then. Mock mode returns a plausible daily series. */
+  getUserSupplyHistory: (user: Address, pool: Address) => Promise<SupplyPoint[]>
 }

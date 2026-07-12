@@ -326,6 +326,11 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     // to a current-value indicator (KTD4). Wire a query here once the backend
     // adds a liquidity-snapshot entity.
     getLiquidityHistory: () => Promise.resolve([]),
+    // The indexer does not persist a per-user supply time-series yet, so this
+    // degrades to empty in live mode and the portfolio chart shows its empty
+    // state. Wire a subgraph query here once a per-user supply-snapshot entity
+    // exists — no component change is needed across the swap.
+    getUserSupplyHistory: () => Promise.resolve([]),
   }
 }
 

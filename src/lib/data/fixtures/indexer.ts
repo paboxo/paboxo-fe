@@ -11,6 +11,7 @@ import type {
   ProtocolAggregates,
   RatePoint,
   RawPool,
+  SupplyPoint,
 } from '../types'
 
 const PXWHSK = MARKETS[0]
@@ -112,6 +113,22 @@ export function liquidityHistoryFixture(baseUsd: number): LiquidityPoint[] {
     return {
       timestamp: base + i * day,
       liquidityUsd: Number(liquidity.toFixed(2)),
+    }
+  })
+}
+
+/** A representative DAILY supplied-value series (USD) for the preview user, so
+ *  the portfolio supply-over-time chart renders in dev even though the live
+ *  indexer has no per-user supply snapshots yet. Daily buckets, oldest first. */
+export function supplyHistoryFixture(baseUsd: number): SupplyPoint[] {
+  const base = 1_720_000_000
+  const day = 86_400
+  return Array.from({ length: 14 }, (_, i) => {
+    const drift = ((i % 5) - 2) * 0.04
+    const supplied = Math.max(0, baseUsd * (1 + i * 0.02 + drift))
+    return {
+      timestamp: base + i * day,
+      suppliedUsd: Number(supplied.toFixed(2)),
     }
   })
 }

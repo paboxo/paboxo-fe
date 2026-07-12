@@ -12,6 +12,7 @@ import type {
   ProtocolAggregates,
   RatePoint,
   RawPool,
+  SupplyPoint,
 } from '../types'
 import {
   HISTORY_FIXTURES,
@@ -19,6 +20,7 @@ import {
   PROTOCOL_AGGREGATES,
   liquidityHistoryFixture,
   rateHistoryFixture,
+  supplyHistoryFixture,
 } from '../fixtures/indexer'
 import { IndexerError } from './indexerAdapter'
 
@@ -56,6 +58,18 @@ export function createMockIndexerAdapter(
     },
     getLiquidityHistory(): Promise<LiquidityPoint[]> {
       return Promise.resolve(liquidityHistoryFixture(1_000_000))
+    },
+    getUserSupplyHistory(
+      _user: Address,
+      pool: Address,
+    ): Promise<SupplyPoint[]> {
+      // Base the series on the pool so the three cards don't chart an identical
+      // line; the value is illustrative until the indexer records real history.
+      const market = MARKETS.find(
+        (m) => m.pool.toLowerCase() === pool.toLowerCase(),
+      )
+      const base = market ? 4_000 + market.id.length * 500 : 5_000
+      return Promise.resolve(supplyHistoryFixture(base))
     },
   }
 }
