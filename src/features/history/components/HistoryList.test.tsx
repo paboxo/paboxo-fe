@@ -36,6 +36,30 @@ beforeEach(() => {
 })
 
 describe('HistoryList', () => {
+  it('links a bridged (cross-chain) tx to CCIP, others to the block explorer', () => {
+    const supplyEvt = {
+      ...event(0),
+      action: 'supply' as const,
+      txHash: `0x${'11'.repeat(32)}` as const,
+    }
+    const bridgedEvt = {
+      ...event(1),
+      action: 'crosschain' as const,
+      txHash: `0x${'22'.repeat(32)}` as const,
+    }
+    mockUseHistory.mockReturnValue({
+      data: [supplyEvt, bridgedEvt],
+      isLoading: false,
+      error: null,
+    })
+    render(<HistoryList />)
+    const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'))
+    expect(hrefs).toContain(`https://ccip.chain.link/tx/${bridgedEvt.txHash}`)
+    const supplyHref = hrefs.find((h) => h?.includes(supplyEvt.txHash))
+    expect(supplyHref).not.toContain('ccip.chain.link')
+    expect(supplyHref).toContain('/tx/')
+  })
+
   it('paginates to 10 rows per page with the pool label and a tx link', () => {
     render(<HistoryList />)
 
