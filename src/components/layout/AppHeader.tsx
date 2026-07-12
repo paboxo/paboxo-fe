@@ -57,9 +57,13 @@ export function AppHeader() {
           to="/"
           className="inline-flex items-center gap-2 rounded-full border border-[var(--chip-line)] bg-[var(--chip-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--sea-ink)] no-underline"
         >
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: 'linear-gradient(90deg,#38a8e0,#6cc6f0)' }}
+          <img
+            src="/paboxo-logo.png"
+            alt=""
+            aria-hidden="true"
+            width={20}
+            height={20}
+            className="h-5 w-5 rounded-full object-contain"
           />
           Paboxo
         </Link>
