@@ -9,10 +9,10 @@ import type {
   Hash,
   IndexerAdapter,
   LiquidityPoint,
+  PositionHistory,
   ProtocolAggregates,
   RatePoint,
   RawPool,
-  SupplyPoint,
 } from '../types'
 import {
   HISTORY_FIXTURES,
@@ -20,7 +20,7 @@ import {
   PROTOCOL_AGGREGATES,
   liquidityHistoryFixture,
   rateHistoryFixture,
-  supplyHistoryFixture,
+  positionHistoryFixture,
 } from '../fixtures/indexer'
 import { IndexerError } from './indexerAdapter'
 
@@ -59,17 +59,17 @@ export function createMockIndexerAdapter(
     getLiquidityHistory(): Promise<LiquidityPoint[]> {
       return Promise.resolve(liquidityHistoryFixture(1_000_000))
     },
-    getUserSupplyHistory(
+    getUserPositionHistory(
       _user: Address,
       pool: Address,
-    ): Promise<SupplyPoint[]> {
-      // Base the series on the pool so the three cards don't chart an identical
-      // line; the value is illustrative until the indexer records real history.
+    ): Promise<PositionHistory> {
+      // Base the series on the pool so the cards don't chart identical lines;
+      // illustrative until the indexer records real history.
       const market = MARKETS.find(
         (m) => m.pool.toLowerCase() === pool.toLowerCase(),
       )
-      const base = market ? 4_000 + market.id.length * 500 : 5_000
-      return Promise.resolve(supplyHistoryFixture(base))
+      const supplyBase = market ? 4_000 + market.id.length * 500 : 5_000
+      return Promise.resolve(positionHistoryFixture(supplyBase, 1.5, 1_200))
     },
   }
 }

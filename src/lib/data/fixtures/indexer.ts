@@ -7,11 +7,12 @@
 import { MARKETS, TOKENS } from '#/lib/contracts'
 import type {
   HistoryEvent,
+  HistoryPoint,
   LiquidityPoint,
+  PositionHistory,
   ProtocolAggregates,
   RatePoint,
   RawPool,
-  SupplyPoint,
 } from '../types'
 
 const PXWHSK = MARKETS[0]
@@ -117,20 +118,26 @@ export function liquidityHistoryFixture(baseUsd: number): LiquidityPoint[] {
   })
 }
 
-/** A representative DAILY supplied-value series (USD) for the preview user, so
- *  the portfolio supply-over-time chart renders in dev even though the live
- *  indexer has no per-user supply snapshots yet. Daily buckets, oldest first. */
-export function supplyHistoryFixture(baseUsd: number): SupplyPoint[] {
+/** A representative DAILY position history (whole-token balances) for the
+ *  preview user, so the portfolio charts render in dev. Daily buckets, oldest
+ *  first; `collateralBase` is in collateral tokens, supply/debt in pxUSDT. */
+export function positionHistoryFixture(
+  supplyBase: number,
+  collateralBase: number,
+  debtBase: number,
+): PositionHistory {
   const base = 1_720_000_000
   const day = 86_400
-  return Array.from({ length: 14 }, (_, i) => {
-    const drift = ((i % 5) - 2) * 0.04
-    const supplied = Math.max(0, baseUsd * (1 + i * 0.02 + drift))
-    return {
+  const series = (start: number, growth: number): HistoryPoint[] =>
+    Array.from({ length: 14 }, (_, i) => ({
       timestamp: base + i * day,
-      suppliedUsd: Number(supplied.toFixed(2)),
-    }
-  })
+      value: Number(Math.max(0, start * (1 + i * growth)).toFixed(4)),
+    }))
+  return {
+    supply: series(supplyBase, 0.02),
+    collateral: series(collateralBase, 0),
+    debt: series(debtBase, 0.01),
+  }
 }
 
 /** Recent activity for the preview user, newest first. */

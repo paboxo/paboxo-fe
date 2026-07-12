@@ -17,12 +17,10 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('live indexer lowercases the user filter', () => {
   it('getUserHistory sends a lowercased user', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ data: {} }),
-      })
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: {} }),
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     await createLiveIndexerAdapter('https://x/graphql').getUserHistory(
@@ -32,16 +30,14 @@ describe('live indexer lowercases the user filter', () => {
     expect(userVarFromLastCall(fetchMock)).toBe(LOWER)
   })
 
-  it('getUserSupplyHistory sends a lowercased user', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ data: {} }),
-      })
+  it('getUserPositionHistory sends a lowercased user', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: {} }),
+    })
     vi.stubGlobal('fetch', fetchMock)
 
-    await createLiveIndexerAdapter('https://x/graphql').getUserSupplyHistory(
+    await createLiveIndexerAdapter('https://x/graphql').getUserPositionHistory(
       CHECKSUMMED,
       '0xC6FA92dFDABd64e0605e479b5cAB3696B5d17270',
     )

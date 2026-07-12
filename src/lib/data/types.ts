@@ -279,12 +279,23 @@ export interface LiquidityPoint {
   liquidityUsd: number
 }
 
-/** A point on a user's supplied-value history for one pool (USD), for the
- *  portfolio supply-over-time chart. Buckets are DAILY. */
-export interface SupplyPoint {
+/** A point on a user's daily position-history series. `value` is a whole-token
+ *  balance (the hook scales collateral to USD via the current price). */
+export interface HistoryPoint {
   /** Unix seconds (start of the day bucket). */
   timestamp: number
-  suppliedUsd: number
+  value: number
+}
+
+/** A user's daily balance history for one pool: lender supply + collateral +
+ *  debt, each a whole-token series carried forward to today. */
+export interface PositionHistory {
+  /** Lender liquidity supplied (whole pxUSDT ≈ USD). */
+  supply: HistoryPoint[]
+  /** Collateral supplied (whole collateral tokens — scale to USD via price). */
+  collateral: HistoryPoint[]
+  /** Debt owed (whole pxUSDT ≈ USD). */
+  debt: HistoryPoint[]
 }
 
 /**
@@ -391,8 +402,11 @@ export interface IndexerAdapter {
   /** Liquidity-over-time series. Empty until the indexer persists liquidity
    *  snapshots — consumers then fall back to a current-value indicator (KTD4). */
   getLiquidityHistory: (pool: Address) => Promise<LiquidityPoint[]>
-  /** A user's DAILY supplied-value series for one pool (USD). Empty until the
-   *  indexer persists per-user supply snapshots; the chart shows its empty
-   *  state until then. Mock mode returns a plausible daily series. */
-  getUserSupplyHistory: (user: Address, pool: Address) => Promise<SupplyPoint[]>
+  /** A user's DAILY position history for one pool: supply, collateral, and debt
+   *  series (whole-token balances, carried forward to today), derived from the
+   *  user's liquidity/collateral/debt events. */
+  getUserPositionHistory: (
+    user: Address,
+    pool: Address,
+  ) => Promise<PositionHistory>
 }

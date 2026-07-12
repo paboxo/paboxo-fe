@@ -4,7 +4,7 @@ import { AppPageHeader } from '#/components/layout/AppPageHeader'
 import { NetworkGuard } from '#/components/wallet/NetworkGuard'
 import { PortfolioOverview } from '#/features/portfolio/components/PortfolioOverview'
 import { PoolPositionList } from '#/features/portfolio/components/PoolPositionList'
-import { SupplyHistoryChart } from '#/features/portfolio/components/SupplyHistoryChart'
+import { PositionHistoryChart } from '#/features/portfolio/components/PositionHistoryChart'
 import { TrustNote } from '#/features/portfolio/components/TrustNote'
 import { ProtectAllButton } from '#/features/protection/components/ProtectAllButton'
 import { ProtectionToggle } from '#/features/protection/components/ProtectionToggle'
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/portfolio')({ component: PortfolioPage })
 function cardExtras(market: MarketView) {
   return (
     <>
-      <SupplyHistoryChart market={market} />
+      <PositionHistoryChart market={market} />
       <ProtectionToggle market={market} />
     </>
   )
