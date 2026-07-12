@@ -138,6 +138,8 @@ export interface ChainAdapter {
     spender: Address,
   ) => Promise<bigint>
   getTokenBalance: (token: Address, user: Address) => Promise<bigint>
+  /** Native-gas balance (wei) — the wallet's HSK, to cover a cross-chain fee. */
+  getNativeBalance: (user: Address) => Promise<bigint>
   getBorrowDelegation: (
     pool: Address,
     owner: Address,
@@ -171,6 +173,8 @@ export interface ChainAdapter {
     pool: Address,
     params: BorrowParams,
     onBehalf: Address,
+    /** Native-gas CCIP fee as msg.value for a cross-chain (chainId != 177) borrow. */
+    value?: bigint,
   ) => Promise<Hash>
   repayWithSelectedToken: (pool: Address, params: RepayParams) => Promise<Hash>
   withdrawCollateral: (
@@ -228,6 +232,18 @@ export interface ChainAdapter {
     destGasLimit: number,
     fee: bigint,
   ) => Promise<Hash>
+
+  /**
+   * Native-gas CCIP fee for a cross-chain BORROW (bridging the borrowed asset to
+   * `params.chainId`). Two real on-chain tiers: `HelperUtils.getFee` when
+   * configured and enabled, else a revert-probe of `borrowDebt` decoding
+   * `InsufficientFee(required, provided)`. Returns 0n when no cross-chain fee applies.
+   */
+  quoteCrossChainBorrow: (
+    pool: Address,
+    params: BorrowParams,
+    onBehalf: Address,
+  ) => Promise<bigint>
 }
 
 // ------------------------------------------------------------- indexer adapter

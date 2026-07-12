@@ -122,6 +122,33 @@ export function preflightBorrow(ctx: BorrowContext): PreflightResult {
   )
 }
 
+export interface NativeFeeContext {
+  /** The wallet's native-gas balance on HashKey (where the borrow tx signs). */
+  nativeBalance: bigint
+  /** The quoted CCIP fee, attached as msg.value. */
+  fee: bigint
+  /** Headroom to leave for the transaction's own gas. */
+  gasHeadroom: bigint
+}
+
+/** Cross-chain borrow native-gas gate (R9): the CCIP fee rides as `msg.value`
+ *  in native HSK, so the wallet must cover fee + tx gas or the payable
+ *  `borrowDebt` reverts *after* the user has signed. */
+export function preflightNativeFee(ctx: NativeFeeContext): PreflightResult {
+  return ctx.nativeBalance >= ctx.fee + ctx.gasHeadroom
+    ? OK
+    : block('Not enough HSK to cover the cross-chain fee and gas')
+}
+
+/** Cross-chain borrow: the same-chain borrow gates first (so an over-max-borrow
+ *  or stale-price block takes precedence), then the native-gas sufficiency check. */
+export function preflightCrossChainBorrow(
+  borrow: BorrowContext,
+  native: NativeFeeContext,
+): PreflightResult {
+  return firstBlock(preflightBorrow(borrow), preflightNativeFee(native))
+}
+
 export interface WithdrawContext {
   amount: bigint
   /** Live debt this withdrawal must leave covered. */

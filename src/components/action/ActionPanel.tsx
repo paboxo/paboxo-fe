@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import { MoneyInput } from '#/components/ui/MoneyInput'
 import { NetworkBadge } from '#/components/ui/NetworkBadge'
@@ -65,6 +65,11 @@ export interface ActionPanelProps {
   belowSlider?: ReactNode
   /** Content pinned to the right of the header title row (e.g. a token picker). */
   headerRight?: ReactNode
+  /** Notified with the current token amount (0 when invalid) so a parent can
+   *  react to it — e.g. quote a cross-chain fee. Pass a stable callback. */
+  onAmountChange?: (amountTokens: number) => void
+  /** Extra rows appended to the review block (e.g. a cross-chain bridge fee). */
+  extraReviewRows?: ReviewRow[]
   onSubmit: (amountTokens: number) => void
 }
 
@@ -101,6 +106,8 @@ export function ActionPanel(props: ActionPanelProps) {
     revert,
     belowSlider,
     headerRight,
+    onAmountChange,
+    extraReviewRows,
     onSubmit,
   } = props
 
@@ -115,6 +122,12 @@ export function ActionPanel(props: ActionPanelProps) {
   const amountTokens =
     denomination === 'token' ? typed : priceUsd ? typed / priceUsd : 0
   const validAmount = Number.isFinite(amountTokens) && amountTokens > 0
+
+  // Surface the current amount (0 when invalid) so a parent can react — e.g.
+  // quote a cross-chain fee. `onAmountChange` must be stable to avoid re-runs.
+  useEffect(() => {
+    onAmountChange?.(validAmount ? amountTokens : 0)
+  }, [amountTokens, validAmount, onAmountChange])
 
   const projectedHf =
     projectHf && validAmount ? projectHf(amountTokens) : undefined
@@ -150,6 +163,7 @@ export function ActionPanel(props: ActionPanelProps) {
           },
         ]
       : []),
+    ...(extraReviewRows ?? []),
   ]
 
   return (

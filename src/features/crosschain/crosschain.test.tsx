@@ -40,9 +40,9 @@ describe('CrossChainTracker', () => {
 
 describe('cross-chain persistence', () => {
   it('persists and restores an in-flight transfer', () => {
-    saveTransfer(base)
-    expect(loadTransfer()?.id).toBe('xfer-1')
-    saveTransfer(null)
-    expect(loadTransfer()).toBeNull()
+    saveTransfer('supply', base)
+    expect(loadTransfer('supply')?.id).toBe('xfer-1')
+    saveTransfer('supply', null)
+    expect(loadTransfer('supply')).toBeNull()
   })
 })
