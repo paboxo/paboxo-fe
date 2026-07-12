@@ -1,5 +1,5 @@
-import { RISK_COLOR, healthBuffer, healthZone } from '#/lib/risk/health'
-import { RiskZone } from './RiskZone'
+import { healthBuffer } from '#/lib/risk/health'
+import { hfZone } from '#/lib/risk/hfZone'
 
 function formatHf(hf: number): string {
   return Number.isFinite(hf) ? `HF ${hf.toFixed(2)}` : 'HF ∞'
@@ -7,7 +7,9 @@ function formatHf(hf: number): string {
 
 /**
  * The buffer-to-liquidation meter (U4, R10). The fill EMPTIES toward danger and
- * takes the zone's tone; the raw HF number is present but subordinate.
+ * takes the agent zone's color; the raw HF number is present but subordinate.
+ * Zone color/label route through `hfZone` so the meter matches every other HF
+ * surface and the agent's action thresholds.
  */
 export function HealthMeter({
   hf,
@@ -16,7 +18,7 @@ export function HealthMeter({
   hf: number
   showNumber?: boolean
 }) {
-  const zone = healthZone(hf)
+  const zone = hfZone(hf)
   const buffer = healthBuffer(hf)
   return (
     <div
@@ -25,7 +27,13 @@ export function HealthMeter({
       aria-label={`Health ${zone.label}, ${formatHf(hf)}`}
     >
       <div className="flex items-center justify-between">
-        <RiskZone zone={zone} />
+        <span
+          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.72rem] font-bold"
+          data-zone={zone.key}
+          style={{ color: zone.color, background: zone.soft }}
+        >
+          <span aria-hidden="true">{zone.shape}</span> {zone.label}
+        </span>
         {showNumber ? (
           <span className="num text-[0.8rem] text-[var(--sea-ink-soft)]">
             {formatHf(hf)}
@@ -43,7 +51,7 @@ export function HealthMeter({
           className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-300"
           style={{
             width: `${buffer * 100}%`,
-            background: RISK_COLOR[zone.tone],
+            background: zone.color,
           }}
         />
       </div>
