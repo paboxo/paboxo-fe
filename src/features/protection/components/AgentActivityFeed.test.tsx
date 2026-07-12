@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { QueryWrapper } from '#/test/utils'
-import * as activityMock from '../agent/activity.mock'
+import * as activity from '../agent/activity'
 import { AgentActivityFeed } from './AgentActivityFeed'
 
 afterEach(() => {
@@ -37,7 +37,7 @@ describe('AgentActivityFeed (AE5)', () => {
   })
 
   it('shows an empty state when there is no agent activity', async () => {
-    vi.spyOn(activityMock, 'getAgentActions').mockResolvedValue([])
+    vi.spyOn(activity, 'getAgentActions').mockResolvedValue([])
 
     render(<AgentActivityFeed />, { wrapper: QueryWrapper })
 

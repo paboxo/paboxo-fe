@@ -1,8 +1,8 @@
 /**
- * Mock agent-activity source (R10, R11). Preview-grade fixture standing in for
- * the backend REST read (`GET /api/actions?user=`) until that endpoint is wired.
- * `getAgentActions` is the seam the hook depends on — swapping to a `fetch`
- * against your backend proxy needs no component change.
+ * Mock agent-activity source (R10, R11). Preview-grade fixture used when no
+ * agent REST base is configured (`VITE_AGENT_API_URL`). The registry in
+ * `activity.ts` picks this or the live fetcher — the hook/components never see
+ * the difference.
  */
 import type { Address } from '#/lib/contracts'
 import type { AgentAction } from './types'
@@ -47,10 +47,7 @@ export const AGENT_ACTIONS_FIXTURE: AgentAction[] = [
   },
 ]
 
-/**
- * The seam. Returns the preview fixture today; swap the body for a `fetch`
- * against your backend proxy (`/api/actions?user=`) later — the shape matches.
- */
-export function getAgentActions(_user?: Address): Promise<AgentAction[]> {
+/** Preview fixture source, selected by the registry when no REST base is set. */
+export function getMockAgentActions(_user?: Address): Promise<AgentAction[]> {
   return Promise.resolve(AGENT_ACTIONS_FIXTURE)
 }
