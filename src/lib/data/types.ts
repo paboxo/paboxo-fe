@@ -244,6 +244,9 @@ export interface ChainAdapter {
     params: BorrowParams,
     onBehalf: Address,
   ) => Promise<bigint>
+  /** The CCIP messageId emitted by a cross-chain tx (from `CCIPSendRequested`),
+   *  for a `ccip.chain.link/msg/<id>` link. `null` when the log isn't found. */
+  getCrossChainMessageId: (txHash: Hash) => Promise<Hash | null>
 }
 
 // ------------------------------------------------------------- indexer adapter

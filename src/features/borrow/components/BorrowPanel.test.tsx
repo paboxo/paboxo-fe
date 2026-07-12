@@ -106,9 +106,15 @@ describe('BorrowPanel', () => {
     expect(sameBorrow).not.toHaveBeenCalled()
   })
 
-  it('starts the tracker with a CCIP explorer link when the borrow confirms', async () => {
+  it('starts the tracker with a CCIP /msg link from the messageId when present', async () => {
     const hash = `0x${'ab'.repeat(32)}`
-    crossBorrow.mockResolvedValue({ confirmed: true, delivered: true, hash })
+    const messageId = `0x${'cd'.repeat(32)}`
+    crossBorrow.mockResolvedValue({
+      confirmed: true,
+      delivered: true,
+      hash,
+      messageId,
+    })
     render(<BorrowPanel market={market} />)
     fireEvent.click(screen.getByRole('button', { name: /HashKey/ }))
     fireEvent.click(screen.getByRole('button', { name: /Base/ }))
@@ -118,6 +124,23 @@ describe('BorrowPanel', () => {
       expect(trackerStart).toHaveBeenCalledWith(
         expect.objectContaining({
           destChain: 'Base',
+          ccipUrl: `https://ccip.chain.link/msg/${messageId}`,
+        }),
+      ),
+    )
+  })
+
+  it('falls back to a CCIP /tx link when only the source hash is present', async () => {
+    const hash = `0x${'ab'.repeat(32)}`
+    crossBorrow.mockResolvedValue({ confirmed: true, delivered: false, hash })
+    render(<BorrowPanel market={market} />)
+    fireEvent.click(screen.getByRole('button', { name: /HashKey/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Base/ }))
+    typeAmount('100')
+    fireEvent.click(screen.getByRole('button', { name: 'Borrow' }))
+    await waitFor(() =>
+      expect(trackerStart).toHaveBeenCalledWith(
+        expect.objectContaining({
           ccipUrl: `https://ccip.chain.link/tx/${hash}`,
         }),
       ),

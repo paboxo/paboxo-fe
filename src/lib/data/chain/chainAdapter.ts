@@ -32,6 +32,7 @@ import {
   BaseError,
   ContractFunctionRevertedError,
   formatUnits,
+  parseEventLogs,
   parseUnits,
   zeroAddress,
 } from 'viem'
@@ -170,8 +171,7 @@ const tokenDecimals = (token: Address): number => {
   // Record indexing is typed non-nullish, but an unknown token is genuinely
   // absent at runtime — treat the lookup as possibly-undefined.
   const entry = TOKEN_REGISTRY[token.toLowerCase()] as
-    | { decimals: number }
-    | undefined
+    { decimals: number } | undefined
   return entry?.decimals ?? 18
 }
 
@@ -730,7 +730,11 @@ export const liveChainAdapter: ChainAdapter = {
         functionName: 'totalBorrowShares',
       }),
     ])
-    if (balance === 0n || collateralPrice.price === 0n || borrowPrice.price === 0n)
+    if (
+      balance === 0n ||
+      collateralPrice.price === 0n ||
+      borrowPrice.price === 0n
+    )
       return 0n
 
     const colDec = tokenDecimals(collateralToken)
@@ -739,7 +743,9 @@ export const liveChainAdapter: ChainAdapter = {
       Number(formatUnits(balance, colDec)) *
       Number(formatUnits(collateralPrice.price, PRICE_DECIMALS))
     const ltvFraction = Number(ltvRaw) / 1e18
-    const borrowPriceUsd = Number(formatUnits(borrowPrice.price, PRICE_DECIMALS))
+    const borrowPriceUsd = Number(
+      formatUnits(borrowPrice.price, PRICE_DECIMALS),
+    )
     if (borrowPriceUsd === 0) return 0n
     const maxTokens = (colUsd * ltvFraction) / borrowPriceUsd
     const maxRaw = parseUnits(maxTokens.toFixed(borDec), borDec)
@@ -1036,4 +1042,61 @@ export const liveChainAdapter: ChainAdapter = {
       throw error
     }
   },
+
+  async getCrossChainMessageId(txHash) {
+    // The CCIP OnRamp emits `CCIPSendRequested(EVM2EVMMessage message)`; the
+    // `message.messageId` (last field) is the id for `ccip.chain.link/msg/<id>`.
+    // Degrade to null (the caller falls back to a `/tx/<hash>` link) if absent.
+    try {
+      const receipt = await waitForTransactionReceipt(wagmiConfig, {
+        hash: txHash,
+      })
+      const events = parseEventLogs({
+        abi: ccipSendRequestedAbi,
+        logs: receipt.logs,
+      })
+      const event = events.at(0)
+      return event ? event.args.message.messageId : null
+    } catch {
+      return null
+    }
+  },
 }
+
+/** Minimal ABI for CCIP's `CCIPSendRequested` — only the fields needed to read
+ *  `message.messageId` off a cross-chain tx receipt. */
+const ccipSendRequestedAbi = [
+  {
+    type: 'event',
+    name: 'CCIPSendRequested',
+    inputs: [
+      {
+        name: 'message',
+        type: 'tuple',
+        indexed: false,
+        components: [
+          { name: 'sourceChainSelector', type: 'uint64' },
+          { name: 'sender', type: 'address' },
+          { name: 'receiver', type: 'address' },
+          { name: 'sequenceNumber', type: 'uint64' },
+          { name: 'gasLimit', type: 'uint256' },
+          { name: 'strict', type: 'bool' },
+          { name: 'nonce', type: 'uint64' },
+          { name: 'feeToken', type: 'address' },
+          { name: 'feeTokenAmount', type: 'uint256' },
+          { name: 'data', type: 'bytes' },
+          {
+            name: 'tokenAmounts',
+            type: 'tuple[]',
+            components: [
+              { name: 'token', type: 'address' },
+              { name: 'amount', type: 'uint256' },
+            ],
+          },
+          { name: 'sourceTokenData', type: 'bytes[]' },
+          { name: 'messageId', type: 'bytes32' },
+        ],
+      },
+    ],
+  },
+] as const
