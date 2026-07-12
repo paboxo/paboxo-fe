@@ -58,7 +58,11 @@ describe('useCrossChainBorrow', () => {
       outcome = await result.current.borrow(AMOUNT)
     })
 
-    expect(outcome).toEqual({ confirmed: true, delivered: true })
+    expect(outcome).toEqual({
+      confirmed: true,
+      delivered: true,
+      hash: expect.any(String),
+    })
     expect(send).toHaveBeenCalledOnce()
     const [pool, params, onBehalf, value] = send.mock.calls[0]
     expect(pool).toBe(market.poolAddress)

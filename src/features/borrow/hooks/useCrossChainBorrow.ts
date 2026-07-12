@@ -50,6 +50,8 @@ export interface BorrowOutcome {
   confirmed: boolean
   /** Delivery on Base was observed (only possible via a real indexer; mock only). */
   delivered: boolean
+  /** The HashKey source tx hash — used to link the CCIP explorer. */
+  hash?: Hash
 }
 
 /** The `BorrowParams` for a Base-destined cross-chain borrow of `amount`. */
@@ -121,6 +123,7 @@ export function useCrossChainBorrow(market: MarketView) {
       // Attach a small buffer over the quote; the contract refunds the excess.
       const fee = withFeeBuffer(quotedFee)
 
+      let sentHash: Hash | undefined
       const confirmed = await write.run({
         preflight: preflightCrossChainBorrow(
           {
@@ -138,7 +141,15 @@ export function useCrossChainBorrow(market: MarketView) {
           { nativeBalance, fee, gasHeadroom: GAS_HEADROOM },
         ),
         // No approval — the user receives funds, not sends a token (R7).
-        send: () => chain.borrowDebt(market.poolAddress, params, borrower, fee),
+        send: async () => {
+          sentHash = await chain.borrowDebt(
+            market.poolAddress,
+            params,
+            borrower,
+            fee,
+          )
+          return sentHash
+        },
         invalidateKeys: WRITE_INVALIDATE_KEYS,
       })
       if (!confirmed) return { confirmed: false, delivered: false }
@@ -157,7 +168,7 @@ export function useCrossChainBorrow(market: MarketView) {
           delivered = true
         }
       }
-      return { confirmed: true, delivered }
+      return { confirmed: true, delivered, hash: sentHash }
     },
     [address, market.poolAddress, market.collateralAddress, write],
   )
