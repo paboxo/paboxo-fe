@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { loadEnv } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
@@ -7,6 +8,13 @@ import { nitro } from 'nitro/vite'
 
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+
+// Runs at Nitro server startup, before the first request lazily imports the
+// Reown AppKit / Lit chunks — defines the browser globals Lit reads at module
+// eval so SSR does not 500 with `HTMLElement is not defined`. See the plugin.
+const domShimPlugin = fileURLToPath(
+  new URL('./server/plugins/dom-shim.ts', import.meta.url),
+)
 
 export default defineConfig(({ mode }) => {
   // Load ALL vars (no prefix filter) so the dev-server can read non-VITE_ vars
@@ -46,7 +54,7 @@ export default defineConfig(({ mode }) => {
       devtools(),
       tailwindcss(),
       tanstackStart(),
-      nitro(),
+      nitro({ plugins: [domShimPlugin] }),
       viteReact(),
     ],
     server: { proxy },
