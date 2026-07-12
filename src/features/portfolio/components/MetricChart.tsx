@@ -1,14 +1,14 @@
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 import { formatCompact, formatUsd } from '#/lib/format'
+import type { Metric } from '../metrics'
 import type { MergedPoint } from '../positionSeries'
 
 function dayLabel(timestampSeconds: number): string {
@@ -18,24 +18,30 @@ function dayLabel(timestampSeconds: number): string {
   })
 }
 
-const LINES = [
-  { key: 'supply', name: 'Supplied', color: 'var(--palm)' },
-  { key: 'collateral', name: 'Collateral', color: 'var(--lagoon)' },
-  { key: 'debt', name: 'Debt', color: 'var(--danger)' },
-] as const
-
-/** Presentational Supplied / Collateral / Debt line chart, all in USD (R5, R6). */
-export function PositionSeriesChart({
+/** A single metric (Earn / Collateral / Borrow) as a USD area over time. */
+export function MetricChart({
   rows,
-  height = 200,
+  metric,
+  height = 220,
 }: {
   rows: MergedPoint[]
+  metric: Metric
   height?: number
 }) {
-  const data = rows.map((r) => ({ ...r, label: dayLabel(r.timestamp) }))
+  const data = rows.map((r) => ({
+    label: dayLabel(r.timestamp),
+    value: r[metric.key],
+  }))
+  const gradientId = `metric-fill-${metric.key}`
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }}>
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -4 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={metric.color} stopOpacity={0.3} />
+            <stop offset="100%" stopColor={metric.color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
         <XAxis
           dataKey="label"
@@ -57,19 +63,15 @@ export function PositionSeriesChart({
           }}
           formatter={(value) => formatUsd(Number(value))}
         />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        {LINES.map((line) => (
-          <Line
-            key={line.key}
-            type="monotone"
-            dataKey={line.key}
-            name={line.name}
-            stroke={line.color}
-            strokeWidth={2}
-            dot={false}
-          />
-        ))}
-      </LineChart>
+        <Area
+          type="monotone"
+          dataKey="value"
+          name={metric.label}
+          stroke={metric.color}
+          strokeWidth={2}
+          fill={`url(#${gradientId})`}
+        />
+      </AreaChart>
     </ResponsiveContainer>
   )
 }
