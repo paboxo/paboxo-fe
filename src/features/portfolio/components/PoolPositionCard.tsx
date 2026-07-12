@@ -1,12 +1,38 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { NON_FINITE, formatTokenAmount, formatUsd } from '#/lib/format'
 import { HealthFactorBadge } from '#/components/ui/HealthFactorBadge'
 import { StatTile } from '#/components/ui/StatTile'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
+import { ChevronIcon } from '#/components/icons/ChevronIcon'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import type { MarketView } from '#/features/markets/types'
+
+/** Collapsible details (supply chart + protection). Content mounts only when
+ *  open so the recharts container measures a real width instead of zero. */
+function CardDetails({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-t border-[var(--line)] pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between text-[0.8rem] font-semibold text-[var(--sea-ink-soft)]"
+      >
+        {open ? 'Hide details' : 'Supply chart & protection'}
+        <span
+          className="motion-safe:transition-transform"
+          style={{ transform: open ? 'rotate(180deg)' : 'none' }}
+        >
+          <ChevronIcon size={16} />
+        </span>
+      </button>
+      {open ? <div className="mt-4 flex flex-col gap-4">{children}</div> : null}
+    </div>
+  )
+}
 
 /**
  * One isolated pool's position (R1, R2, R3): collateral, supplied liquidity,
@@ -88,7 +114,7 @@ export function PoolPositionCard({
         />
       </div>
 
-      {children}
+      {children ? <CardDetails>{children}</CardDetails> : null}
     </section>
   )
 }

@@ -15,13 +15,14 @@ import type { MarketView } from '#/features/markets/types'
 export const Route = createFileRoute('/portfolio')({ component: PortfolioPage })
 
 // Each pool card gets its daily supply chart and a free protection toggle,
-// composed in through the list's `renderCardExtras` slot.
+// composed in through the list's `renderCardExtras` slot. The card collapses
+// these behind an expander, so this stays layout-agnostic.
 function cardExtras(market: MarketView) {
   return (
-    <div className="flex flex-col gap-4 border-t border-[var(--line)] pt-4">
+    <>
       <SupplyHistoryChart market={market} />
       <ProtectionToggle market={market} />
-    </div>
+    </>
   )
 }
 
