@@ -93,11 +93,9 @@ export function BorrowPanel({
         destChain: 'Base',
         amount: amt.toString(),
         symbol: market.borrowSymbol,
-        step: outcome.delivered ? 'arrived' : 'relaying',
-        startedAt: Date.now(),
-        etaSeconds: 300,
-        sourceTxUrl: '#',
-        ...(outcome.delivered ? { destTxUrl: '#' } : {}),
+        ...(outcome.hash
+          ? { ccipUrl: `https://ccip.chain.link/tx/${outcome.hash}` }
+          : {}),
       })
     })
   }
@@ -106,16 +104,14 @@ export function BorrowPanel({
     return (
       <div className="flex flex-col gap-3">
         <CrossChainTracker transfer={transfer} />
-        {transfer.step === 'arrived' ? (
-          <button
-            type="button"
-            onClick={clear}
-            className="rounded-xl px-4 py-2 text-sm font-bold"
-            style={{ background: 'var(--palm)', color: '#f3faf5' }}
-          >
-            Done
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={clear}
+          className="rounded-xl px-4 py-2 text-sm font-bold"
+          style={{ background: 'var(--palm)', color: '#f3faf5' }}
+        >
+          Done
+        </button>
       </div>
     )
   }

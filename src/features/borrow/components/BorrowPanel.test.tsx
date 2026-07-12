@@ -40,7 +40,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   sameBorrow = vi.fn()
   // Default: the borrow does not confirm (rejected/failed) — no tracker starts.
-  crossBorrow = vi.fn().mockResolvedValue({ confirmed: false, delivered: false })
+  crossBorrow = vi
+    .fn()
+    .mockResolvedValue({ confirmed: false, delivered: false })
   trackerStart = vi.fn()
   mockUseBorrow.mockReturnValue({
     state: 'idle',
@@ -104,8 +106,9 @@ describe('BorrowPanel', () => {
     expect(sameBorrow).not.toHaveBeenCalled()
   })
 
-  it('starts the tracker at "arrived" when the borrow confirms and delivers', async () => {
-    crossBorrow.mockResolvedValue({ confirmed: true, delivered: true })
+  it('starts the tracker with a CCIP explorer link when the borrow confirms', async () => {
+    const hash = `0x${'ab'.repeat(32)}`
+    crossBorrow.mockResolvedValue({ confirmed: true, delivered: true, hash })
     render(<BorrowPanel market={market} />)
     fireEvent.click(screen.getByRole('button', { name: /HashKey/ }))
     fireEvent.click(screen.getByRole('button', { name: /Base/ }))
@@ -113,12 +116,15 @@ describe('BorrowPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Borrow' }))
     await waitFor(() =>
       expect(trackerStart).toHaveBeenCalledWith(
-        expect.objectContaining({ destChain: 'Base', step: 'arrived' }),
+        expect.objectContaining({
+          destChain: 'Base',
+          ccipUrl: `https://ccip.chain.link/tx/${hash}`,
+        }),
       ),
     )
   })
 
-  it('starts the tracker at "relaying" when confirmed but delivery unobserved (live)', async () => {
+  it('starts the tracker without a link when no source hash is returned', async () => {
     crossBorrow.mockResolvedValue({ confirmed: true, delivered: false })
     render(<BorrowPanel market={market} />)
     fireEvent.click(screen.getByRole('button', { name: /HashKey/ }))
@@ -127,7 +133,7 @@ describe('BorrowPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Borrow' }))
     await waitFor(() =>
       expect(trackerStart).toHaveBeenCalledWith(
-        expect.objectContaining({ step: 'relaying' }),
+        expect.objectContaining({ destChain: 'Base' }),
       ),
     )
   })

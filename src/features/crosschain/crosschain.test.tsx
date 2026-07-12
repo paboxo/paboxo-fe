@@ -6,35 +6,31 @@ import { loadTransfer, saveTransfer } from './useCrossChainTransfer'
 
 const base: CrossChainTransfer = {
   id: 'xfer-1',
-  sourceChain: 'Base',
-  destChain: 'HashKey',
+  sourceChain: 'HashKey',
+  destChain: 'Base',
   amount: '100',
   symbol: 'pxUSDT',
-  step: 'relaying',
-  startedAt: 1000,
-  etaSeconds: 300,
-  sourceTxUrl: '#source',
-  destTxUrl: '#dest',
+  ccipUrl: 'https://ccip.chain.link/tx/0xabc',
 }
 
 describe('CrossChainTracker', () => {
-  it('marks the active step and links both ledgers', () => {
-    render(<CrossChainTracker transfer={base} nowMs={1000 + 60_000} />)
-    const group = screen.getByRole('group', { name: 'Cross-chain transfer' })
-    expect(group.getAttribute('data-step')).toBe('relaying')
-    expect(screen.getByText('Source tx ↗')).toBeTruthy()
-    expect(screen.getByText('Destination tx ↗')).toBeTruthy()
+  it('shows a success state with the amount and destination', () => {
+    render(<CrossChainTracker transfer={base} />)
+    expect(
+      screen.getByRole('group', { name: 'Cross-chain transfer' }),
+    ).toBeTruthy()
+    expect(screen.getByText('100 pxUSDT → Base')).toBeTruthy()
+    expect(screen.getByText(/arriving on Base/i)).toBeTruthy()
   })
 
-  it('flags overdue once elapsed exceeds the ETA', () => {
-    render(
-      <CrossChainTracker
-        transfer={{ ...base, startedAt: 0, etaSeconds: 60 }}
-        nowMs={200_000}
-        onCheckStatus={() => {}}
-      />,
-    )
-    expect(screen.getByText(/Taking longer than usual/)).toBeTruthy()
+  it('links the CCIP explorer when a ccipUrl is set, omits it otherwise', () => {
+    const { rerender } = render(<CrossChainTracker transfer={base} />)
+    expect(
+      screen.getByRole('link', { name: /Track on CCIP/ }).getAttribute('href'),
+    ).toBe('https://ccip.chain.link/tx/0xabc')
+
+    rerender(<CrossChainTracker transfer={{ ...base, ccipUrl: undefined }} />)
+    expect(screen.queryByRole('link', { name: /Track on CCIP/ })).toBeNull()
   })
 })
 
