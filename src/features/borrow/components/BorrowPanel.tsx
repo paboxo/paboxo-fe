@@ -87,15 +87,19 @@ export function BorrowPanel({
     // straight off the outcome rather than racing bridgeStatus through re-renders.
     void cross.borrow(amount).then((outcome) => {
       if (!outcome.confirmed) return
+      // Prefer the exact CCIP message link; fall back to the source-tx lookup.
+      const ccipUrl = outcome.messageId
+        ? `https://ccip.chain.link/msg/${outcome.messageId}`
+        : outcome.hash
+          ? `https://ccip.chain.link/tx/${outcome.hash}`
+          : undefined
       start({
         id: 'xfer',
         sourceChain: 'HashKey',
         destChain: 'Base',
         amount: amt.toString(),
         symbol: market.borrowSymbol,
-        ...(outcome.hash
-          ? { ccipUrl: `https://ccip.chain.link/tx/${outcome.hash}` }
-          : {}),
+        ...(ccipUrl ? { ccipUrl } : {}),
       })
     })
   }
