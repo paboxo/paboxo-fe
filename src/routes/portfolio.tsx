@@ -41,7 +41,7 @@ function PortfolioPage() {
             <h2 className="display-title m-0 text-lg font-semibold">
               Recent activity
             </h2>
-            <HistoryList />
+            <HistoryList address={address} />
           </section>
         </div>
       </NetworkGuard>
