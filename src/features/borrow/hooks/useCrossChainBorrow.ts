@@ -7,7 +7,8 @@
  * The fee is real (KTD1: HelperUtils.getFee, else an InsufficientFee revert-probe).
  * After the HashKey tx confirms, delivery on Base is still in flight — a `bridging`
  * state until observed. Only the (mock) indexer can observe delivery today, so in
- * live mode we never fake `delivered`; real messageId parsing is a follow-up.
+ * live mode we never fake `delivered`. The real CCIP messageId is parsed from the
+ * tx's CCIPSendRequested event for the `ccip.chain.link/msg/<id>` link.
  */
 import { useCallback, useState } from 'react'
 import { parseUnits } from 'viem'
@@ -37,10 +38,6 @@ const GAS_HEADROOM = 2_000_000_000_000_000n // ~0.002 HSK
  *  small headroom over the quote to survive drift; the surplus is returned. */
 const withFeeBuffer = (quotedFee: bigint) => quotedFee + quotedFee / 5n // +20%
 
-// A stand-in CCIP messageId used only in mock data mode.
-const MOCK_MESSAGE_ID: Hash =
-  '0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
-
 export type BridgeStatus = 'idle' | 'bridging' | 'delivered'
 
 /** The outcome of a borrow attempt, so a caller can drive its tracker imperatively
@@ -50,8 +47,10 @@ export interface BorrowOutcome {
   confirmed: boolean
   /** Delivery on Base was observed (only possible via a real indexer; mock only). */
   delivered: boolean
-  /** The HashKey source tx hash — used to link the CCIP explorer. */
+  /** The HashKey source tx hash — a fallback CCIP explorer link. */
   hash?: Hash
+  /** The CCIP messageId (from CCIPSendRequested) — the exact `/msg/<id>` link. */
+  messageId?: Hash
 }
 
 /** The `BorrowParams` for a Base-destined cross-chain borrow of `amount`. */
@@ -156,19 +155,25 @@ export function useCrossChainBorrow(market: MarketView) {
 
       // HashKey tx confirmed; delivery on Base is pending.
       setBridgeStatus('bridging')
-      // Only the mock indexer can observe delivery today. In live mode we never
-      // promote to 'delivered' from a fabricated id (R11); real messageId parsing
-      // from the BorrowDebtCrossChain receipt is a follow-up.
+      // The real CCIP messageId parsed from the borrow tx's CCIPSendRequested
+      // event — powers the `ccip.chain.link/msg/<id>` link.
+      const mid = sentHash ? await chain.getCrossChainMessageId(sentHash) : null
+      if (mid) setMessageId(mid)
+      // Only the mock indexer can observe delivery today (R11).
       let delivered = false
-      if (DATA_MODE === 'mock') {
-        setMessageId(MOCK_MESSAGE_ID)
-        const status = await indexer.getCrossChainStatus(MOCK_MESSAGE_ID)
+      if (DATA_MODE === 'mock' && mid) {
+        const status = await indexer.getCrossChainStatus(mid)
         if (status.status === 'delivered') {
           setBridgeStatus('delivered')
           delivered = true
         }
       }
-      return { confirmed: true, delivered, hash: sentHash }
+      return {
+        confirmed: true,
+        delivered,
+        hash: sentHash,
+        messageId: mid ?? undefined,
+      }
     },
     [address, market.poolAddress, market.collateralAddress, write],
   )

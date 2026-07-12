@@ -62,6 +62,7 @@ describe('useCrossChainBorrow', () => {
       confirmed: true,
       delivered: true,
       hash: expect.any(String),
+      messageId: expect.any(String),
     })
     expect(send).toHaveBeenCalledOnce()
     const [pool, params, onBehalf, value] = send.mock.calls[0]

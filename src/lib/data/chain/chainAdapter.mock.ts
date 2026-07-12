@@ -280,4 +280,10 @@ export const mockChainAdapter: ChainAdapter = {
   quoteCrossChainBorrow() {
     return resolve(500_000_000_000_000n) // 0.0005 HSK mock fee
   },
+  getCrossChainMessageId(_txHash: Hash): Promise<Hash | null> {
+    // A stand-in CCIP messageId so the mock flow renders a `/msg/<id>` link.
+    return resolve(
+      '0x2220020000000000000000000000000000000000000000000000000000000000',
+    )
+  },
 }
