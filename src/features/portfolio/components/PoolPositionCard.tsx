@@ -6,6 +6,7 @@ import { StatTile } from '#/components/ui/StatTile'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { ErrorState } from '#/components/ui/states/ErrorState'
 import { ChevronIcon } from '#/components/icons/ChevronIcon'
+import { TokenPairGlyph } from '#/components/ui/TokenPairGlyph'
 import { useMarketPosition } from '#/features/position/hooks/usePosition'
 import type { MarketView } from '#/features/markets/types'
 
@@ -79,9 +80,18 @@ export function PoolPositionCard({
   return (
     <section className="island-shell flex flex-col gap-4 rounded-2xl p-5">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="display-title m-0 text-base font-semibold">
-          {market.collateralSymbol} / {market.borrowSymbol}
-        </h3>
+        <div className="flex items-center gap-2">
+          <TokenPairGlyph
+            collateralSymbol={market.collateralSymbol}
+            borrowSymbol={market.borrowSymbol}
+            collateralAddress={market.collateralAddress}
+            borrowAddress={market.borrowAddress}
+            size={26}
+          />
+          <h3 className="display-title m-0 text-base font-semibold">
+            {market.collateralSymbol} / {market.borrowSymbol}
+          </h3>
+        </div>
         <HealthFactorBadge hf={hf} showNote />
       </header>
 

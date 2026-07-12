@@ -40,7 +40,7 @@ describe('HistoryList', () => {
     render(<HistoryList />)
 
     // 10 of 12 on the first page.
-    expect(screen.getAllByText('Supplied pxUSDT').length).toBe(10)
+    expect(screen.getAllByText('Supplied').length).toBe(10)
     expect(screen.getByText('Page 1 of 2')).toBeTruthy()
 
     // Pool label resolved from the market id.
@@ -61,7 +61,7 @@ describe('HistoryList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     // Page 2 holds the remaining 2 rows.
     expect(screen.getByText('Page 2 of 2')).toBeTruthy()
-    expect(screen.getAllByText('Supplied pxUSDT').length).toBe(2)
+    expect(screen.getAllByText('Supplied').length).toBe(2)
     expect(
       screen.getByRole('button', { name: 'Next' }).hasAttribute('disabled'),
     ).toBe(true)
