@@ -42,7 +42,7 @@ const ZONES: Record<HealthZoneKey, HealthZone> = {
     key: 'liquidatable',
     label: 'Liquidatable',
     tone: 'danger',
-    shape: '⛔',
+    shape: '✕',
   },
 }
 

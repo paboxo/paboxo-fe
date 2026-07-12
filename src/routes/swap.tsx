@@ -10,8 +10,9 @@ function SwapPage() {
     <main className="page-wrap px-4 pb-12 pt-8">
       <div className="text-center">
         <AppPageHeader
-          title="Swap Tokens"
-          subtitle="Trade assets instantly across networks."
+          compact
+          kicker="Swap"
+          subtitle="Trade the collateral in your position."
         />
       </div>
       <NetworkGuard description="Connect a wallet to swap the collateral in your position.">

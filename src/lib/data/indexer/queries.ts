@@ -156,6 +156,88 @@ export const USER_HISTORY_QUERY = /* GraphQL */ `
 `
 
 /**
+ * A user's balance-changing events for the position-history chart: lender
+ * liquidity, collateral, and debt (both directions each). Filtered by pool
+ * client-side; each row carries the pool, amount, and timestamp.
+ */
+export const USER_POSITION_HISTORY_QUERY = /* GraphQL */ `
+  query UserPositionHistory($user: String!, $limit: Int = 500) {
+    supplyLiquiditys(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+    withdrawLiquiditys(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+    supplyCollaterals(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+    withdrawCollaterals(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+    borrowDebts(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+    repayByPositions(
+      where: { user: $user }
+      orderBy: "timestamp"
+      orderDirection: "asc"
+      limit: $limit
+    ) {
+      items {
+        lendingPoolAddress
+        amount
+        timestamp
+      }
+    }
+  }
+`
+
+/**
  * Protocol activity counts. There is no aggregates entity in this schema, so the
  * only indexer-owned figure is a transaction count summed from the activity
  * tables' `totalCount`; USD volumes come from elsewhere and stay 0 here.

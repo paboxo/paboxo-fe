@@ -78,8 +78,9 @@ describe('usePools — validation and degraded states', () => {
     const { result } = renderPools()
     await settled(result)
 
-    // The pxWHSK collateral pool is gone; the other three remain.
-    expect(result.current.data).toHaveLength(3)
+    // The pxWHSK collateral pool is gone; of the rest only the two same-chain
+    // pools remain (the cross-chain pool is hidden from the list).
+    expect(result.current.data).toHaveLength(2)
     expect(result.current.data.map((m) => m.id)).not.toContain(PXWHSK_POOL)
     expect(error.mock.calls.flat().join(' ')).toContain(TOKENS.pxWHSK.address)
   })
@@ -91,7 +92,7 @@ describe('usePools — validation and degraded states', () => {
     const { result } = renderPools()
     await settled(result)
 
-    expect(result.current.data).toHaveLength(3)
+    expect(result.current.data).toHaveLength(2)
     expect(
       result.current.data.some(
         (m) => m.collateralAddress.toLowerCase() === PXWBTC,

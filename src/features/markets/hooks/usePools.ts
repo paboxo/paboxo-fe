@@ -161,7 +161,9 @@ function usePoolsQuery() {
 export function usePools(): PoolsResult {
   const query = usePoolsQuery()
   return {
-    data: query.data?.views ?? [],
+    // Cross-chain pools live on another chain — hide them from every market list
+    // (Earn/Borrow/Portfolio); `usePool` still resolves one by direct address.
+    data: (query.data?.views ?? []).filter((view) => !view.crossChain),
     isLoading: query.isLoading,
     error: query.error,
     sharedTokenFailed: query.data?.sharedTokenFailed ?? false,

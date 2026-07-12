@@ -19,7 +19,7 @@ describe('MarketList', () => {
     window.localStorage.setItem('density', 'simple')
     renderList()
     const articles = await screen.findAllByRole('article')
-    expect(articles.length).toBe(4)
+    expect(articles.length).toBe(3)
   })
 
   it('renders one dense table in Pro density', async () => {
@@ -28,6 +28,6 @@ describe('MarketList', () => {
     const table = await screen.findByRole('table')
     expect(table).toBeTruthy()
     // header row + one row per market
-    expect(screen.getAllByRole('row').length).toBe(5)
+    expect(screen.getAllByRole('row').length).toBe(4)
   })
 })

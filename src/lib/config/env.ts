@@ -18,6 +18,12 @@ export const HASHKEY_RPC_OVERRIDE: string | undefined =
 export const INDEXER_URL: string | undefined =
   import.meta.env.VITE_INDEXER_URL || undefined
 
+/** Rebalance-agent REST base for the activity feed. Absent → the mock fixture is
+ *  used. Point this at a same-origin proxy PATH (e.g. `/agent-api`) so the real
+ *  upstream host + any auth stay server-side, never in the client bundle. */
+export const AGENT_API_URL: string | undefined =
+  import.meta.env.VITE_AGENT_API_URL || undefined
+
 export type PaymentMode = 'mock' | 'hsp'
 
 /** Payment gateway: `mock` (preview default) or `hsp` (real HSP coordinator).

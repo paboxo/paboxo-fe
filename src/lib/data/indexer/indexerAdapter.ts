@@ -23,6 +23,7 @@ import type {
   HistoryAction,
   HistoryEvent,
   IndexerAdapter,
+  PositionHistory,
   ProtocolAggregates,
   RatePoint,
   RawPool,
@@ -33,7 +34,10 @@ import {
   PROTOCOL_AGGREGATES_QUERY,
   RATE_HISTORY_QUERY,
   USER_HISTORY_QUERY,
+  USER_POSITION_HISTORY_QUERY,
 } from './queries'
+import { deriveDailySeries } from './positionHistory'
+import type { SupplyDelta } from './positionHistory'
 
 /** A pool list that never arrives is an outage, not a permanent spinner. */
 const GET_POOLS_TIMEOUT_MS = 15_000
@@ -82,6 +86,33 @@ const EMPTY_AGGREGATES: ProtocolAggregates = {
 
 /** The universal borrow token — every live market borrows pxUSDT. */
 const BORROW_TOKEN = TOKENS.pxUSDT.address
+
+/** Lender liquidity + debt are denominated in pxUSDT; its decimals scale them. */
+const SUPPLY_TOKEN_DECIMALS = TOKENS.pxUSDT.decimals
+
+/** The pool's collateral-token decimals (whole-token scaling for the series). */
+function collateralDecimalsForPool(pool: string): number {
+  const config = MARKETS.find(
+    (m) => m.pool.toLowerCase() === pool.toLowerCase(),
+  )
+  return config?.collateralDecimals ?? 18
+}
+
+/** A balance-changing row from USER_POSITION_HISTORY_QUERY. */
+interface RawBalanceRow {
+  lendingPoolAddress: string
+  amount: string
+  timestamp: number | string
+}
+
+interface PositionHistoryData {
+  supplyLiquiditys?: Page<RawBalanceRow>
+  withdrawLiquiditys?: Page<RawBalanceRow>
+  supplyCollaterals?: Page<RawBalanceRow>
+  withdrawCollaterals?: Page<RawBalanceRow>
+  borrowDebts?: Page<RawBalanceRow>
+  repayByPositions?: Page<RawBalanceRow>
+}
 
 function tokenMeta(address: string): { symbol: string; decimals: number } {
   const lower = address.toLowerCase()
@@ -252,7 +283,12 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     },
 
     async getUserHistory(user) {
-      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, { user })
+      // The indexer stores `user` lowercased; wagmi hands us a checksummed
+      // address, and `where: { user }` is an exact match — so normalise or the
+      // read silently returns nothing for a real wallet.
+      const data = await graphql<HistoryData>(url, USER_HISTORY_QUERY, {
+        user: user.toLowerCase(),
+      })
       if (!data) return []
       const events: HistoryEvent[] = [
         ...items(data.supplyLiquiditys).map((e) =>
@@ -326,6 +362,62 @@ export function createLiveIndexerAdapter(url: string): IndexerAdapter {
     // to a current-value indicator (KTD4). Wire a query here once the backend
     // adds a liquidity-snapshot entity.
     getLiquidityHistory: () => Promise.resolve([]),
+    async getUserPositionHistory(user, pool) {
+      // No per-user snapshot entity exists, so replay the user's balance events
+      // for the pool into daily series. `user` is lowercased for the same
+      // exact-match reason as getUserHistory.
+      const data = await graphql<PositionHistoryData>(
+        url,
+        USER_POSITION_HISTORY_QUERY,
+        { user: user.toLowerCase() },
+      )
+      const empty: PositionHistory = { supply: [], collateral: [], debt: [] }
+      if (!data) return empty
+
+      const target = pool.toLowerCase()
+      const nowTs = Math.floor(Date.now() / 1000)
+      const forPool = (e: RawBalanceRow) =>
+        e.lendingPoolAddress.toLowerCase() === target
+      const toDelta =
+        (direction: 1 | -1) =>
+        (e: RawBalanceRow): SupplyDelta => ({
+          timestamp: Number(e.timestamp || 0),
+          amount: BigInt(e.amount || '0'),
+          direction,
+        })
+
+      const series = (
+        up: RawBalanceRow[],
+        down: RawBalanceRow[],
+        decimals: number,
+      ) =>
+        deriveDailySeries(
+          [
+            ...up.filter(forPool).map(toDelta(1)),
+            ...down.filter(forPool).map(toDelta(-1)),
+          ],
+          decimals,
+          nowTs,
+        )
+
+      return {
+        supply: series(
+          items(data.supplyLiquiditys),
+          items(data.withdrawLiquiditys),
+          SUPPLY_TOKEN_DECIMALS,
+        ),
+        collateral: series(
+          items(data.supplyCollaterals),
+          items(data.withdrawCollaterals),
+          collateralDecimalsForPool(pool),
+        ),
+        debt: series(
+          items(data.borrowDebts),
+          items(data.repayByPositions),
+          SUPPLY_TOKEN_DECIMALS,
+        ),
+      }
+    },
   }
 }
 

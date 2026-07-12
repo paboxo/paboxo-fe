@@ -17,7 +17,7 @@ describe('accessibility & responsive', () => {
     )
     expect(await screen.findByRole('table')).toBeTruthy()
     // the sm:hidden card grid is present in the DOM for small screens
-    expect(screen.getAllByRole('article').length).toBe(4)
+    expect(screen.getAllByRole('article').length).toBe(3)
   })
 
   it('announces projected-health changes via an aria-live status region', () => {

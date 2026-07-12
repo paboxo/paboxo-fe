@@ -7,7 +7,9 @@
 import { MARKETS, TOKENS } from '#/lib/contracts'
 import type {
   HistoryEvent,
+  HistoryPoint,
   LiquidityPoint,
+  PositionHistory,
   ProtocolAggregates,
   RatePoint,
   RawPool,
@@ -114,6 +116,28 @@ export function liquidityHistoryFixture(baseUsd: number): LiquidityPoint[] {
       liquidityUsd: Number(liquidity.toFixed(2)),
     }
   })
+}
+
+/** A representative DAILY position history (whole-token balances) for the
+ *  preview user, so the portfolio charts render in dev. Daily buckets, oldest
+ *  first; `collateralBase` is in collateral tokens, supply/debt in pxUSDT. */
+export function positionHistoryFixture(
+  supplyBase: number,
+  collateralBase: number,
+  debtBase: number,
+): PositionHistory {
+  const base = 1_720_000_000
+  const day = 86_400
+  const series = (start: number, growth: number): HistoryPoint[] =>
+    Array.from({ length: 14 }, (_, i) => ({
+      timestamp: base + i * day,
+      value: Number(Math.max(0, start * (1 + i * growth)).toFixed(4)),
+    }))
+  return {
+    supply: series(supplyBase, 0.02),
+    collateral: series(collateralBase, 0),
+    debt: series(debtBase, 0.01),
+  }
 }
 
 /** Recent activity for the preview user, newest first. */
