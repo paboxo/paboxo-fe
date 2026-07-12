@@ -48,9 +48,16 @@ export default defineConfig(({ mode }) => {
       setupFiles: ['./vitest.setup.ts'],
       // Reference material (senja-*) ships its own test suites — never run them.
       exclude: [...configDefaults.exclude, 'references/**'],
-      // Pin the data source for tests so a local `.env.local` (e.g. live mode
-      // for dev) can never flip the suite onto real RPC reads.
-      env: { VITE_DATA_MODE: 'mock' },
+      // Pin every source-selecting var so a local `.env.local` (dev live mode,
+      // real indexer/agent endpoints) can never flip the suite onto real
+      // network reads — tests must be hermetic and always use the mocks.
+      env: {
+        VITE_DATA_MODE: 'mock',
+        VITE_PAYMENT_MODE: 'mock',
+        VITE_INDEXER_URL: '',
+        VITE_AGENT_API_URL: '',
+        VITE_HASHKEY_RPC: '',
+      },
     },
   }
 })

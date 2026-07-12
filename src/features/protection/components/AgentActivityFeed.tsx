@@ -2,6 +2,7 @@ import { HASHKEY, TOKENS } from '#/lib/contracts'
 import type { Address } from '#/lib/contracts'
 import { formatTokenAmount } from '#/lib/format'
 import { HealthFactorBadge } from '#/components/ui/HealthFactorBadge'
+import { ShieldIcon } from '#/components/icons/ShieldIcon'
 import { LoadingCard } from '#/components/ui/states/Loading'
 import { EmptyState } from '#/components/ui/states/EmptyState'
 import { ErrorState } from '#/components/ui/states/ErrorState'
@@ -10,7 +11,7 @@ import type { AgentAction, AgentOutcome } from '../agent/types'
 
 /** How each outcome reads. `dry-run` is a SIMULATION, never a failure. */
 const OUTCOME_LABEL: Record<AgentOutcome, string> = {
-  sent: '🛡️ Protected',
+  sent: 'Protected',
   'dry-run': 'Simulation',
   skipped: 'Skipped',
   'signal-only': 'Signal',
@@ -47,9 +48,10 @@ function ActionCard({ action }: { action: AgentAction }) {
     <li className="flex flex-col gap-2 border-b border-[var(--line)] py-3 last:border-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span
-          className="text-[0.78rem] font-bold"
+          className="inline-flex items-center gap-1 text-[0.78rem] font-bold"
           style={{ color: OUTCOME_TONE[action.outcome] }}
         >
+          {action.outcome === 'sent' ? <ShieldIcon size={13} /> : null}
           {OUTCOME_LABEL[action.outcome]}
         </span>
         <HealthFactorBadge hf={action.hf} />

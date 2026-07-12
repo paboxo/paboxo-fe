@@ -20,13 +20,6 @@ describe('hfZone', () => {
     expect(hfZone(NaN).key).toBe('healthy')
   })
 
-  it('carries a non-color shape for every zone', () => {
-    expect(hfZone(1.31).shape).toBe('●')
-    expect(hfZone(1.2).shape).toBe('◐')
-    expect(hfZone(1.08).shape).toBe('△')
-    expect(hfZone(0.98).shape).toBe('⛔')
-  })
-
   it('only the watch zone explains the agent action range', () => {
     expect(hfZone(1.2).note).toMatch(/1\.15.*1\.30/)
     expect(hfZone(1.31).note).toBeUndefined()

@@ -1,4 +1,5 @@
 import { useAgentProtection } from '../hooks/useAgentProtection'
+import { ShieldIcon } from '#/components/icons/ShieldIcon'
 import type { MarketView } from '#/features/markets/types'
 
 /**
@@ -18,8 +19,9 @@ export function ProtectionToggle({ market }: { market: MarketView }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="flex flex-col">
-        <span className="text-sm font-semibold text-[var(--sea-ink)]">
-          🛡️ Agent protection
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--sea-ink)]">
+          <ShieldIcon size={15} />
+          Agent protection
         </span>
         <span className="text-[0.72rem] text-[var(--sea-ink-soft)]">
           {active

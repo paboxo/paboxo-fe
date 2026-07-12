@@ -17,8 +17,6 @@ export interface HfZone {
   color: string
   /** Soft background companion to `color`. */
   soft: string
-  /** A non-color glyph so the zone reads without relying on hue alone (a11y). */
-  shape: string
   /** Extra context; only the `watch` zone explains that the agent acts here. */
   note?: string
 }
@@ -33,14 +31,12 @@ const ZONES: Record<HfZoneKey, HfZone> = {
     label: 'Healthy',
     color: 'var(--safe)',
     soft: 'var(--safe-soft)',
-    shape: '●',
   },
   watch: {
     key: 'watch',
     label: 'Watch',
     color: 'var(--caution)',
     soft: 'var(--caution-soft)',
-    shape: '◐',
     note: 'Agent acts here (1.15 → 1.30)',
   },
   danger: {
@@ -48,14 +44,12 @@ const ZONES: Record<HfZoneKey, HfZone> = {
     label: 'Danger',
     color: 'var(--warning)',
     soft: 'var(--warning-soft)',
-    shape: '△',
   },
   liquidatable: {
     key: 'liquidatable',
     label: 'Liquidatable',
     color: 'var(--danger)',
     soft: 'var(--danger-soft)',
-    shape: '⛔',
   },
 }
 

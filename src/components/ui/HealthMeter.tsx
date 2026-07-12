@@ -1,5 +1,6 @@
 import { healthBuffer } from '#/lib/risk/health'
 import { hfZone } from '#/lib/risk/hfZone'
+import { HfZoneMark } from '#/components/icons/HfZoneMark'
 
 function formatHf(hf: number): string {
   return Number.isFinite(hf) ? `HF ${hf.toFixed(2)}` : 'HF ∞'
@@ -32,7 +33,7 @@ export function HealthMeter({
           data-zone={zone.key}
           style={{ color: zone.color, background: zone.soft }}
         >
-          <span aria-hidden="true">{zone.shape}</span> {zone.label}
+          <HfZoneMark zone={zone.key} /> {zone.label}
         </span>
         {showNumber ? (
           <span className="num text-[0.8rem] text-[var(--sea-ink-soft)]">

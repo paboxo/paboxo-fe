@@ -68,9 +68,7 @@ describe('ProtectAllButton', () => {
     expect(enable0).not.toHaveBeenCalled()
 
     // Per-pool progress ends protected for both.
-    await waitFor(() =>
-      expect(screen.getAllByText('🛡️ Protected').length).toBe(2),
-    )
+    await waitFor(() => expect(screen.getAllByText('Protected').length).toBe(2))
   })
 
   it('leaves a visible mixed state when one pool fails (AE4)', async () => {
@@ -86,7 +84,7 @@ describe('ProtectAllButton', () => {
     render(<ProtectAllButton />)
     fireEvent.click(screen.getByRole('button', { name: 'Protect all' }))
 
-    await waitFor(() => expect(screen.getByText('🛡️ Protected')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Protected')).toBeTruthy())
     expect(screen.getByText('Failed')).toBeTruthy()
     expect(screen.getByText(/Some pools/)).toBeTruthy()
   })

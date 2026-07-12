@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMarkets } from '#/features/markets/hooks/useMarkets'
+import { ShieldIcon } from '#/components/icons/ShieldIcon'
 import type { MarketView } from '#/features/markets/types'
 import { useAgentProtection } from '../hooks/useAgentProtection'
 
@@ -33,7 +34,7 @@ function PoolProtectionController({
 
 const PROGRESS_LABEL: Record<PoolProgress, string> = {
   pending: 'Protecting…',
-  done: '🛡️ Protected',
+  done: 'Protected',
   error: 'Failed',
 }
 
@@ -135,9 +136,10 @@ export function ProtectAllButton() {
                   {m.collateralSymbol} / {m.borrowSymbol}
                 </span>
                 <span
-                  className="font-semibold"
+                  className="inline-flex items-center gap-1 font-semibold"
                   style={{ color: PROGRESS_COLOR[progress[m.id]] }}
                 >
+                  {progress[m.id] === 'done' ? <ShieldIcon size={13} /> : null}
                   {PROGRESS_LABEL[progress[m.id]]}
                 </span>
               </li>

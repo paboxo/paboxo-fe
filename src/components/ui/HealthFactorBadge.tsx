@@ -1,4 +1,5 @@
 import { hfZone } from '#/lib/risk/hfZone'
+import { HfZoneMark } from '#/components/icons/HfZoneMark'
 
 function formatHf(hf: number): string {
   return Number.isFinite(hf) ? hf.toFixed(2) : '∞'
@@ -25,7 +26,7 @@ export function HealthFactorBadge({
         style={{ color: zone.color, background: zone.soft }}
         aria-label={`Health factor ${formatHf(hf)}, ${zone.label}`}
       >
-        <span aria-hidden="true">{zone.shape}</span>
+        <HfZoneMark zone={zone.key} />
         <span className="num">HF {formatHf(hf)}</span>
         <span className="text-[0.7rem] font-semibold opacity-80">
           {zone.label}
