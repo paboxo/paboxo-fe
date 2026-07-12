@@ -54,6 +54,14 @@ function shortHash(hash: string): string {
   return `${hash.slice(0, 6)}…${hash.slice(-4)}`
 }
 
+/** A bridged (cross-chain) tx links to the CCIP explorer — the relay/delivery
+ *  view across chains; everything else links to the HashKey block explorer. */
+function txHref(event: HistoryEvent): string {
+  return event.action === 'crosschain'
+    ? `https://ccip.chain.link/tx/${event.txHash}`
+    : `${HASHKEY.explorerUrl}/tx/${event.txHash}`
+}
+
 const TH =
   'px-3 py-2 text-left text-[0.66rem] font-bold uppercase tracking-[0.06em] text-[var(--sea-ink-soft)]'
 const TD = 'px-3 py-2.5 align-middle'
@@ -102,7 +110,7 @@ function HistoryRow({ event }: { event: HistoryEvent }) {
       </td>
       <td className={`${TD} text-right`}>
         <a
-          href={`${HASHKEY.explorerUrl}/tx/${event.txHash}`}
+          href={txHref(event)}
           target="_blank"
           rel="noreferrer"
           className="num text-[0.8rem] font-semibold underline"
