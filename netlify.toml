@@ -1,0 +1,15 @@
+# Netlify deploy config for the TanStack Start (SSR) app.
+#
+# The build output + SSR functions are wired by @netlify/vite-plugin-tanstack-start
+# (added to vite.config.ts); `netlify init` auto-detects the rest.
+#
+# NOTE: the dev-only Vite proxies (/hsk-rpc, /agent-api) do NOT run in production.
+# Point the client env vars directly at CORS-enabled endpoints in the Netlify UI
+# or via `netlify env:set` — e.g. VITE_HASHKEY_RPC and VITE_AGENT_API_URL — so no
+# same-origin proxy is needed.
+
+[build]
+  command = "vite build"
+
+[build.environment]
+  NODE_VERSION = "20"

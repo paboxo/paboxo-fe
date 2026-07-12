@@ -3,6 +3,7 @@ import { loadEnv } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import netlify from '@netlify/vite-plugin-tanstack-start'
 
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -41,7 +42,13 @@ export default defineConfig(({ mode }) => {
 
   return {
     resolve: { tsconfigPaths: true },
-    plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+    plugins: [
+      devtools(),
+      tailwindcss(),
+      tanstackStart(),
+      netlify(),
+      viteReact(),
+    ],
     server: { proxy },
     test: {
       environment: 'jsdom',
